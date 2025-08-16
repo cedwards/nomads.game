@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Nomad IF prototype — Utah slice (items via YAML)
+# Nomad IF prototype — Utah slice (seasons + UV + temp/humidity; items via YAML)
 
 import os, sys, math, json, random
 from collections import defaultdict, deque
@@ -52,126 +52,209 @@ JOBS = {
     "artist": {"label": "Artist (muse on wheels)", "morale_bonus_dispersed": 3, "epic_bonus": 0.10}
 }
 
-# ---------------------------- Utility ---------------------------------
+# ===== Seasons & environment model =====
+# 360-day simple calendar: Spring(0-89) → Summer(90-209) → Autumn(210-299) → Winter(300-359)
+SEASONS = [
+    ("spring",  90, {"uv_peak":7.5,  "temp_base":60.0, "diurnal_amp":14.0, "humidity_base":35.0}),
+    ("summer", 120, {"uv_peak":10.5, "temp_base":88.0, "diurnal_amp":18.0, "humidity_base":25.0}),
+    ("autumn",  90, {"uv_peak":6.0,  "temp_base":65.0, "diurnal_amp":12.0, "humidity_base":30.0}),
+    ("winter",  60, {"uv_peak":3.5,  "temp_base":38.0, "diurnal_amp":10.0, "humidity_base":35.0}),
+]
+REF_ELEV_FT = 4000.0
+LAPSE_F_PER_KFT = -3.5   # ~ -3.5°F per 1000 ft elevation vs reference
+
 def clamp(v, lo, hi): return max(lo, min(hi, v))
 
-def draw_bar(pct, width=20):
+                      def draw_bar(pct, width=20):
     pct = clamp(pct, 0, 1)
     full = int(round(pct*width))
     return "[" + "█"*full + "·"*(width-full) + "]"
 
-def minutes_to_hhmm(total_minutes):
-    d = total_minutes // DAY_MINUTES + 1
-    m = total_minutes % DAY_MINUTES
-    hh = m // 60
-    mm = m % 60
-    return f"Day {d} {hh:02d}:{mm:02d}"
+    def minutes_to_hhmm(total_minutes):
+        d = total_minutes // DAY_MINUTES + 1
+        m = total_minutes % DAY_MINUTES
+        hh = m // 60
+        mm = m % 60
+        return f"Day {d} {hh:02d}:{mm:02d}"
 
-def is_daylight(total_minutes):
-    m = total_minutes % DAY_MINUTES
-    return 6*60 <= m < 20*60  # 06:00–20:00
+        def is_daylight(total_minutes):
+            m = total_minutes % DAY_MINUTES
+            return 6*60 <= m < 20*60  # 06:00–20:00
 
-def seeded_rng(*parts):
-    seed = 0xABCDEF
-    for p in parts:
-        seed ^= hash(p) & 0xFFFFFFFF
-        seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
-    return random.Random(seed)
+            def daylight_sine(total_minutes):
+                """0..1 bell centered midday, 0 at night; window 06:00..20:00 mapped to sin(pi*t)"""
+                    m = total_minutes % DAY_MINUTES
+                    if m < 360 or m > 1200:
+    return 0.0
+              t = (m - 360) / (1200 - 360)
+                    return max(0.0, math.sin(math.pi * t))  # 0..1
+
+                    def seeded_rng(*parts):
+                        seed = 0xABCDEF
+                        for p in parts:
+                        seed ^= hash(p) & 0xFFFFFFFF
+    seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
+                        return random.Random(seed)
+
+                        def get_season(total_minutes):
+                            """Return (season_name, season_meta) cycling every 360 days. Day 1 starts in Spring."""
+                                day = (total_minutes // DAY_MINUTES) % 360
+                                idx = day
+                                acc = 0
+                                for name, span, meta in SEASONS:
+                                if idx < acc + span:
+                                return name, meta
+                                acc += span
+                                return "winter", SEASONS[-1][2]  # fallback
 
 # ---------------------------- World -----------------------------------
-class World:
-    def __init__(self, nodes):
-        self.nodes = {n['id']: n for n in nodes}
-        self._ensure_bidirectional()
+                                class World:
+                                    def __init__(self, nodes):
+                                        self.nodes = {n['id']: n for n in nodes}
+self._ensure_bidirectional()
 
     def _ensure_bidirectional(self):
         for nid, node in self.nodes.items():
             for c in node.get('connections', []):
                 other = c['to']
                 if other not in self.nodes:
-                    continue
+                continue
                 back = None
                 for bc in self.nodes[other].get('connections', []):
                     if bc['to'] == nid:
-                        back = bc; break
-                if not back:
+                    back = bc; break
+                    if not back:
                     rev = dict(c); rev['to'] = nid
                     self.nodes[other].setdefault('connections', []).append(rev)
 
-    def find_node(self, key):
-        key_l = key.strip().lower()
-        if key_l in self.nodes: return key_l
-        for nid, n in self.nodes.items():
-            if n.get('name','').lower() == key_l:
-                return nid
-        for nid, n in self.nodes.items():
-            if key_l in nid or key_l in n.get('name','').lower():
-                return nid
-        return None
+                    def find_node(self, key):
+                        key_l = key.strip().lower()
+                        if key_l in self.nodes: return key_l
+                        for nid, n in self.nodes.items():
+                            if n.get('name','').lower() == key_l:
+                            return nid
+                            for nid, n in self.nodes.items():
+                                if key_l in nid or key_l in n.get('name','').lower():
+                                    return nid
+                                    return None
 
 # ---- Time windows & weather helpers ----
-def current_time_windows(total_minutes, node):
+                                    def current_time_windows(total_minutes, node):
     m = total_minutes % DAY_MINUTES
     w = derive_weather(node, total_minutes)
     tags = set()
     if 330 <= m <= 450:
-        tags.add("sunrise"); tags.add("golden_hour")
+    tags.add("sunrise"); tags.add("golden_hour")
     if 360 <= m <= 480:
-        tags.add("golden_hour")
+    tags.add("golden_hour")
     if 420 <= m <= 660:
-        tags.add("morning"); tags.add("daylight")
+    tags.add("morning"); tags.add("daylight")
     if 660 < m < 1110:
-        tags.add("daylight")
+    tags.add("daylight")
     if 1110 <= m <= 1200:
-        tags.add("golden_hour"); tags.add("daylight")
+    tags.add("golden_hour"); tags.add("daylight")
     if not (360 <= m < 1200):
         tags.add("night")
         if (not w['monsoon']) and (w['wind'] != 'high') and (not w['flood_watch']):
             tags.add("night_clear")
-    return tags, w
+            return tags, w
 
-def window_multiplier(tag, windows):
-    if tag not in windows: return 0.6
-    return {"sunrise":1.6,"golden_hour":1.5,"morning":1.15,"daylight":1.0,"night":0.9,"night_clear":1.4}.get(tag,1.0)
+            def window_multiplier(tag, windows):
+                if tag not in windows: return 0.6
+                return {"sunrise":1.6,"golden_hour":1.5,"morning":1.15,"daylight":1.0,"night":0.9,"night_clear":1.4}.get(tag,1.0)
 
-# ---------------------------- Weather ---------------------------------
-def derive_weather(node, total_minutes):
-    day = total_minutes // DAY_MINUTES + 1
-    rng = seeded_rng(node['id'], day)
-    wind = rng.choices(['low','medium','high'], weights=[4,3,2])[0]
-    if 'summer_heat' in node.get('season_rules', []):
-        heat = rng.choices(['mild','hot','very_hot'], weights=[2,4,2])[0]
-    elif 'cold_nights' in node.get('season_rules', []):
-        heat = rng.choices(['cold','mild'], weights=[3,2])[0]
-    elif 'alpine' in node.get('biome',''):
-        heat = rng.choices(['cold','mild'], weights=[3,2])[0]
-    else:
-        heat = rng.choices(['mild','hot'], weights=[3,3])[0]
-    monsoon = 'monsoon' in ''.join(node.get('season_rules', [])) and rng.random() < 0.2
-    flood_watch = ('flash_flood' in ''.join(node.get('season_rules', [])) or 'monsoon' in ''.join(node.get('season_rules', []))) and rng.random() < 0.15
-    return {'heat': heat, 'wind': wind, 'monsoon': monsoon, 'flood_watch': flood_watch}
+# ---------------------------- Environment & Weather -------------------
+                def derive_weather(node, total_minutes):
+                    """Stochastic-but-seasonal weather with numeric temp/humidity/UV."""
+                        day = total_minutes // DAY_MINUTES + 1
+                        rng = seeded_rng(node['id'], day)
+
+# Base categories
+                        wind = rng.choices(['low','medium','high'], weights=[4,3,2])[0]
+
+# Season & diurnal
+season_name, meta = get_season(total_minutes)
+    uv_peak = meta["uv_peak"]
+    temp_base = meta["temp_base"]
+    diurnal_amp = meta["diurnal_amp"]
+    humidity_base = meta["humidity_base"]
+
+# Node context
+    elev = float(node.get('elevation_ft', REF_ELEV_FT))
+    biome = (node.get('biome') or '').lower()
+
+# Diurnal shape (peaks mid-afternoon-ish; overnight cool)
+sun = daylight_sine(total_minutes)
+# Skew temperature peak a bit later than solar: flatter rise AM, slower decay PM
+    temp_diurnal = (sun ** 0.8)  # 0..1
+    temp = temp_base + diurnal_amp * (temp_diurnal - 0.4)  # center near base
+
+# Elevation lapse
+temp += LAPSE_F_PER_KFT * ((elev - REF_ELEV_FT) / 1000.0)
+
+# Seasonal/monsoon-ish toggles from node tags
+    srules = node.get('season_rules', [])
+    monsoon_flag = ('monsoon' in ''.join(srules)) and (season_name == 'summer')
+
+    monsoon = monsoon_flag and rng.random() < 0.20
+    flood_watch = (monsoon_flag or 'flash_flood' in ''.join(srules)) and rng.random() < 0.15
+
+# Humidity: season baseline, biome tweak, monsoon bump
+    humidity = humidity_base
+    if any(k in biome for k in ['desert','swell','mesa','canyon','high_desert','salt']): humidity -= 8
+                                                                                         if 'alpine' in biome: humidity += 8
+    if monsoon: humidity += 10
+                              humidity = clamp(round(humidity + rng.uniform(-5, 5), 1), 5, 95)
+
+# UV index model: season peak * time-of-day * altitude * weather attenuation
+                                                                                         uv_time = sun ** 1.2  # punchier midday
+                                                                                         uv = uv_peak * uv_time
+# altitude: ~ +4% per 1000 ft vs 4000 ft reference
+uv *= (1.0 + 0.04 * ((elev - REF_ELEV_FT) / 1000.0))
+# clouds/monsoon attenuation
+    if monsoon: uv *= 0.6
+    if wind == 'high': uv *= 0.95  # dust/sand haze
+
+uv = clamp(round(uv, 1), 0.0, 12.0)
+
+# Back-derive a simple "heat" category for legacy logic
+    heat = 'cold' if temp < 45 else 'mild' if temp < 70 else 'hot' if temp < 90 else 'very_hot'
+
+    return {
+        'season': season_name,
+        'heat': heat,
+        'wind': wind,
+        'monsoon': monsoon,
+        'flood_watch': flood_watch,
+        'temp_f': round(temp, 1),
+        'humidity': humidity,
+        'uv': uv
+    }
 
 def weather_speed_mod(w):
     mod = 1.0
     if w['heat'] in ('hot','very_hot'): mod *= 0.95
-    if w['wind'] == 'high': mod *= 0.92
-    if w['flood_watch']: mod *= 0.90
-    return mod
+                                        if w['wind'] == 'high': mod *= 0.92
+                                        if w['flood_watch']: mod *= 0.90
+                                        return mod
 
-def describe_weather(w):
-    parts = [
-        {'cold':"cold",'mild':"mild",'hot':"hot",'very_hot':"very hot"}[w['heat']],
-        {'low':"light winds",'medium':"breezy",'high':"windy"}[w['wind']]
-    ]
-    if w['monsoon']: parts.append("monsoon cells around")
-    if w['flood_watch']: parts.append("flash-flood watch")
-    return ", ".join(parts)
+                                        def describe_weather(w):
+                                            parts = [
+{'cold':"cold",'mild':"mild",'hot':"hot",'very_hot':"very hot"}[w['heat']],
+{'low':"light winds",'medium':"breezy",'high':"windy"}[w['wind']]
+                                            ]
+                                            if w['monsoon']: parts.append("monsoon cells around")
+                                            if w['flood_watch']: parts.append("flash-flood watch")
+                                            parts.append(f"Temp {w['temp_f']:.0f}°F")
+                                            parts.append(f"Humidity {w['humidity']:.0f}%")
+                                            parts.append(f"UV {w['uv']:.1f}")
+                                            return ", ".join(parts)
 
 # ---------------------------- Travel ----------------------------------
-BASE_SPEED = {'interstate':65.0,'highway':55.0,'scenic':45.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
-GRADE_MOD  = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
+                                            BASE_SPEED = {'interstate':65.0,'highway':55.0,'scenic':45.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
+                                            GRADE_MOD  = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
 
-def edge_drive_turns(world, start_node_id, conn, total_minutes):
+                                            def edge_drive_turns(world, start_node_id, conn, total_minutes):
     node = world.nodes[start_node_id]
     w = derive_weather(node, total_minutes)
     speed = BASE_SPEED.get(conn.get('road','mixed'), 40.0)
@@ -183,168 +266,165 @@ def edge_drive_turns(world, start_node_id, conn, total_minutes):
     turns = max(1, math.ceil(hours * 60 / TURN_MINUTES))
     return turns, w
 
-def dijkstra_route(world, src, dst, total_minutes):
-    dist = {nid: math.inf for nid in world.nodes}
-    prev = {nid: None for nid in world.nodes}
+    def dijkstra_route(world, src, dst, total_minutes):
+        dist = {nid: math.inf for nid in world.nodes}
+        prev = {nid: None for nid in world.nodes}
     dist[src] = 0
-    visited = set()
+visited = set()
     while True:
-        cur, cur_dist = None, math.inf
-        for nid, d in dist.items():
-            if nid in visited: continue
-            if d < cur_dist: cur, cur_dist = nid, d
-        if cur is None or cur == dst: break
+    cur, cur_dist = None, math.inf
+    for nid, d in dist.items():
+        if nid in visited: continue
+        if d < cur_dist: cur, cur_dist = nid, d
+    if cur is None or cur == dst: break
         visited.add(cur)
         for c in world.nodes[cur].get('connections', []):
             turns, _w = edge_drive_turns(world, cur, c, total_minutes + dist[cur]*TURN_MINUTES)
             nd = dist[cur] + turns
             if nd < dist[c['to']]:
-                dist[c['to']] = nd
-                prev[c['to']] = (cur, c)
-    if dist[dst] == math.inf: return None, None
-    path = []
-    nid = dst
-    while nid != src:
-        p = prev[nid]
-        if not p: break
-        path.append((p[0], nid, p[1]))
-        nid = p[0]
-    path.reverse()
-    return path, dist[dst]
+            dist[c['to']] = nd
+            prev[c['to']] = (cur, c)
+            if dist[dst] == math.inf: return None, None
+            path = []
+            nid = dst
+            while nid != src:
+            p = prev[nid]
+    if not p: break
+            path.append((p[0], nid, p[1]))
+    nid = p[0]
+            path.reverse()
+            return path, dist[dst]
 
 # ---------------------------- Items Catalog ---------------------------
-def load_items_catalog():
-    here = os.path.dirname(os.path.abspath(__file__))
-    cand_yaml = os.path.join(here, "items.yaml")
-    catalog = {"order": [], "by_id": {}, "discountable_categories": set()}
-    if not os.path.exists(cand_yaml):
-        print("Missing items.yaml. Place it next to this script.")
-        sys.exit(1)
+            def load_items_catalog():
+                here = os.path.dirname(os.path.abspath(__file__))
+                cand_yaml = os.path.join(here, "items.yaml")
+                catalog = {"order": [], "by_id": {}, "discountable_categories": set()}
+                if not os.path.exists(cand_yaml):
+    print("Missing items.yaml. Place it next to this script.")
+    sys.exit(1)
     try:
         import yaml
-    except Exception:
+        except Exception:
         print("PyYAML is required (pip install pyyaml)."); sys.exit(1)
-    with open(cand_yaml, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+        with open(cand_yaml, "r", encoding="utf-8") as f:
+data = yaml.safe_load(f)
     discountable = set(data.get("discountable_categories", []))
     catalog["discountable_categories"] = discountable
     for item in data.get("items", []):
         iid = item["id"]
         catalog["order"].append(iid)
         catalog["by_id"][iid] = item
-    return catalog
+        return catalog
 
 # ---------------------------- Game State ------------------------------
-class Pet:
-    def __init__(self, name):
-        self.name = name
-        self.bond = 30
-        self.energy = 70
-        self.obedience = 60
-        self.paw = 100
-        self.alert = 50
-        self.guard_mode = False
-    def tick(self, minutes):
-        self.energy = clamp(self.energy - (minutes/60)*2, 0, 100)
+        class Pet:
+            def __init__(self, name):
+                self.name = name
+                self.bond = 30
+                self.energy = 70
+                self.obedience = 60
+                self.paw = 100
+                self.alert = 50
+                self.guard_mode = False
+                def tick(self, minutes):
+                    self.energy = clamp(self.energy - (minutes/60)*2, 0, 100)
 
-class Game:
-    def __init__(self, world, config, catalog):
-        self.world = world
-        self.catalog = catalog
-        self.location = 'moab' if 'moab' in world.nodes else next(iter(world.nodes.keys()))
-        self.minutes = 8*60  # start Day 1 morning
+                    class Game:
+                        def __init__(self, world, config, catalog):
+                            self.world = world
+                            self.catalog = catalog
+                            self.location = 'moab' if 'moab' in world.nodes else next(iter(world.nodes.keys()))
+                            self.minutes = 8*60  # start Day 1 morning
 
-        # Player & role
-        self.player_name   = config.get("name", "Traveler")
-        self.vehicle_type  = config.get("vehicle_key", "van")
-        self.vehicle_color = config.get("color", "white")
-        self.job           = config.get("job_key", "photographer")
-        self.job_perks     = JOBS.get(self.job, {})
-        self.mode          = config.get("mode", "electric")
+# Player & role
+                            self.player_name   = config.get("name", "Traveler")
+                            self.vehicle_type  = config.get("vehicle_key", "van")
+                            self.vehicle_color = config.get("color", "white")
+    self.job           = config.get("job_key", "photographer")
+self.job_perks     = JOBS.get(self.job, {})
+    self.mode          = config.get("mode", "electric")
 
-        # Vehicle archetype
-        v = VEHICLES[self.vehicle_type]
-        self.water_cap_liters = v["base_water_cap"]
-        self.food_cap_rations = v["base_food_cap"]
-        self.max_water_cap    = v["max_water_cap"]
-        self.max_food_cap     = v["max_food_cap"]
-        self.house_cap        = v["house_cap_factor"]
-        self.solar_cap_watts  = v["solar_cap_watts"]
-        self.wind_cap_watts   = v["wind_cap_watts"]
+# Vehicle archetype
+    v = VEHICLES[self.vehicle_type]
+    self.water_cap_liters = v["base_water_cap"]
+    self.food_cap_rations = v["base_food_cap"]
+    self.max_water_cap    = v["max_water_cap"]
+    self.max_food_cap     = v["max_food_cap"]
+    self.house_cap        = v["house_cap_factor"]
+    self.solar_cap_watts  = v["solar_cap_watts"]
+    self.wind_cap_watts   = v["wind_cap_watts"]
 
-        # Upgrades / stores
-        self.solar_watts = 0
-        self.wind_watts  = 0
-        self.has_tent    = False
-        self.battery = 62.0  # house %
-        self.water  = min(8.0, self.water_cap_liters)
-        self.food   = min(6,   self.food_cap_rations)
+# Upgrades / stores
+    self.solar_watts = 0
+    self.wind_watts  = 0
+    self.has_tent    = False
+    self.battery = 62.0  # house %
+    self.water  = min(8.0, self.water_cap_liters)
+self.food   = min(6,   self.food_cap_rations)
 
-        # Cash & needs
-        self.cash   = float(config.get("start_cash", 120.0))
-        self.morale = 60.0
-        self.energy = 80.0
+# Cash & needs
+    self.cash   = float(config.get("start_cash", 120.0))
+    self.morale = 60.0
+    self.energy = 80.0
 
-        # Pet
-        self.pet = None
+# Pet
+    self.pet = None
 
-        # Routing
-        self.route = None
-        self.route_idx = 0
+# Routing
+    self.route = None
+    self.route_idx = 0
 
-        # EV / Fuel systems
-        self.ev_battery   = 80.0
-        self.ev_range_mi  = v["ev_range"]
-        self.fuel_gal     = 0.0
-        self.mpg          = v["mpg"]
-        self.fuel_tank_gal= v["fuel_tank_gal"]
-        if self.mode == 'fuel':
-            self.fuel_gal = 0.6 * self.fuel_tank_gal
+# EV / Fuel systems
+    self.ev_battery   = 80.0
+    self.ev_range_mi  = v["ev_range"]
+    self.fuel_gal     = 0.0
+    self.mpg          = v["mpg"]
+    self.fuel_tank_gal= v["fuel_tank_gal"]
+    if self.mode == 'fuel':
+    self.fuel_gal = 0.6 * self.fuel_tank_gal
 
-        # Work tracking
-        self.work_hours_day = -1
-        self.work_hours_today = {}
-        self.gig_cooldowns = {}
+# Work tracking
+    self.work_hours_day = -1
+    self.work_hours_today = {}
+    self.gig_cooldowns = {}
 
-        # Fuels (not propulsion fuel)
-        self.diesel_can_gal = 0.0
-        self.propane_lb     = 0.0
-        self.butane_can     = 0.0
+# Fuels (not propulsion fuel)
+    self.diesel_can_gal = 0.0
+    self.propane_lb     = 0.0
+    self.butane_can     = 0.0
 
-        # Devices: build from catalog items of type device_install
-        self.devices = {}
-        for iid in self.catalog["order"]:
-            it = self.catalog["by_id"][iid]
-            p = it.get("purchase", {})
-            if p.get("type") == "device_install":
-                key = p["device_key"]
-                amps = float(p.get("amps", 0.0))
-                toggle = bool(p.get("toggle", False))
-                d = {'owned': False, 'amps': amps}
-                if toggle:
-                    d['on'] = False
-                self.devices[key] = d
+# Devices: build from catalog items of type device_install
+    self.devices = {}
+    for iid in self.catalog["order"]:
+    it = self.catalog["by_id"][iid]
+    p = it.get("purchase", {})
+    if p.get("type") == "device_install":
+    key = p["device_key"]
+    amps = float(p.get("amps", 0.0))
+    toggle = bool(p.get("toggle", False))
+    d = {'owned': False, 'amps': amps}
+    if toggle: d['on'] = False
+    self.devices[key] = d
 
-        # Base idle draw
-        self.base_draw_amps = 0.8
+# Base idle draw
+    self.base_draw_amps = 0.8
 
-    # ---------- Helpers ----------
-    def _device_known(self, key): return key in self.devices
-
+# ---------- Helpers ----------
     def _discount_applies(self, item_obj):
         cat = (item_obj.get("category") or "").lower()
         return cat in self.catalog["discountable_categories"]
 
-    # ---------- Devices & Power ----------
-    def devices_panel(self):
-        print("Devices:")
-        if not self.devices:
+# ---------- Devices & Power ----------
+        def devices_panel(self):
+            print("Devices:")
+            if not self.devices:
             print("  (none installed)")
-        for name, d in self.devices.items():
-            owned = d.get('owned', False)
-            amps  = d.get('amps', 0.0)
-            has_toggle = 'on' in d
-            if not owned:
+            for name, d in self.devices.items():
+                owned = d.get('owned', False)
+                amps  = d.get('amps', 0.0)
+                has_toggle = 'on' in d
+                if not owned:
                 print(f"  - {name}: not installed")
             else:
                 if has_toggle:
@@ -373,15 +453,18 @@ class Game:
         print(f"{name} set to {'ON' if on else 'off'}.")
 
     def _solar_input_watts_now(self):
+        """Nameplate * site * daylight * mild UV modulation."""
         node = self.node()
         sol = (node.get('resources', {}) or {}).get('solar', 'fair')
         site = {'excellent':1.0,'good':0.75,'fair':0.5,'poor':0.25}.get(sol, 0.5)
-        m = self.minutes % DAY_MINUTES
-        if m < 360 or m > 1200 or self.solar_watts <= 0:
+        sun = daylight_sine(self.minutes)
+        if self.solar_watts <= 0 or sun <= 0:
             return 0.0
-        t = (m-360) / (1200-360)
-        sun = max(0.0, math.sin(math.pi * t))
-        return self.solar_watts * site * sun
+        # UV coupling: soften impact (extend slightly, not overhaul)
+        w = derive_weather(node, self.minutes)
+        uv_norm = min(w['uv'], 11.0) / 11.0  # 0..1 (11 ≈ "extreme")
+        uv_factor = 0.5 + 0.5 * uv_norm     # 0.5..1.0
+        return self.solar_watts * site * sun * uv_factor
 
     def _wind_input_watts_now(self):
         if self.wind_watts <= 0: return 0.0
@@ -422,9 +505,11 @@ class Game:
 
     def print_hud(self):
         netA, pvA, windA, loadA = self.compute_current()
-        #bar = draw_bar(self.battery/100.0, width=22)
+        w = derive_weather(self.node(), self.minutes)
+        bar = draw_bar(self.battery/100.0, width=22)
         mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric' else f"Fuel {self.fuel_gal:.1f} gal")
-        print(f"Power {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}")
+        # include UV here as requested
+        print(f"Power {bar} {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  UV {w['uv']:.1f}  {mode_line}")
         print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}")
 
     # ---------- Signal ----------
@@ -602,7 +687,7 @@ class Game:
             dusk_truncated = False
         sol_quality = (node.get('resources', {}) or {}).get('solar', 'fair')
         site = {'excellent':1.0, 'good':0.75, 'fair':0.5, 'poor':0.25}.get(sol_quality, 0.5)
-        print(f"You set out {dir_clean} for a ~{hours:.1f}h hike.")
+        print(f"You set out {dir_clean.upper()} for a ~{hours:.1f}h hike.")
         found = False
         for _ in range(ticks):
             if self.mode == 'electric' and self.solar_watts > 0 and is_daylight(self.minutes):
@@ -641,7 +726,6 @@ class Game:
         print("Outfitter — items (BUY <item_id> [qty])")
         disc = int(self.job_perks.get('shop_discount', 0)*100)
         if disc: print(f"* {disc}% job discount applies to: {', '.join(sorted(self.catalog['discountable_categories']))}")
-        # helper to show a line
         def allowed(iid): return (inv is None) or (iid in inv)
         for iid in self.catalog["order"]:
             if not allowed(iid): continue
@@ -650,9 +734,8 @@ class Game:
             price = it.get("price", 0)
             info  = it.get("info","")
             p = it.get("purchase", {})
-            # append amps if device
-            if p.get("type") == "device_install" and float(p.get("amps", 0.0)) > 0:
-                info = info or f"~{p.get('amps')}A when ON"
+            if p.get("type") == "device_install" and float(p.get("amps", 0.0)) > 0 and "~" not in info:
+                info = (info + f" ~{p.get('amps')}A when ON").strip()
             print(f"  {iid:<13} ${price:<4}  {info}")
         print(f"Cash: ${self.cash:.0f}")
 
@@ -676,7 +759,6 @@ class Game:
             attr = effect["attr"]
             amount = float(effect.get("amount", 0.0)) * qty
             before = getattr(self, attr)
-            # cap_abs or cap_attr
             if "cap_abs" in effect:
                 cap = float(effect["cap_abs"])
             elif "cap_attr" in effect:
@@ -706,7 +788,6 @@ class Game:
             key = effect["device_key"]
             d = self.devices.get(key)
             if not d:
-                # In case someone adds a device the init didn't see
                 amps = float(effect.get("amps", 0.0))
                 d = {'owned': False, 'amps': amps}
                 if effect.get("toggle", False): d['on'] = False
@@ -714,7 +795,6 @@ class Game:
             if d.get('owned'):
                 raise ValueError("already_owned")
             d['owned'] = True
-            # make sure amps/toggle reflect YAML latest
             d['amps'] = float(effect.get("amps", d.get('amps', 0.0)))
             if effect.get("toggle", False) and 'on' not in d:
                 d['on'] = False
@@ -732,14 +812,12 @@ class Game:
                 if submsg: parts.append(submsg)
             msg = "; ".join([p for p in parts if p])
         elif etype == "mode_inc":
-            # conditional bump by mode with relative caps to vehicle base
-            mode_req = sub_mode = effect["mode"]
+            mode_req = effect["mode"]
             if self.mode != mode_req:
                 return f"(no effect in {self.mode} mode)"
             attr = effect["attr"]
             amount = float(effect.get("amount", 0.0)) * qty
             before = getattr(self, attr)
-            # build relative cap: VEHICLES base + delta
             rel_attr = effect.get("cap_rel_attr")
             delta    = float(effect.get("cap_rel_delta", 0.0))
             if rel_attr:
@@ -760,7 +838,6 @@ class Game:
         except Exception: qty = 1
         if qty <= 0: qty = 1
 
-        # Node inventory gate (if provided on node)
         inv = self.node().get('shop_inventory')
         if self.location != 'moab' and inv is None:
             print("No outfitter here."); return
@@ -783,8 +860,6 @@ class Game:
         if self.cash < price:
             print(f"Not enough cash (${self.cash:.0f}). This costs ${price:.0f}."); return
 
-        # Try to apply purchase effects
-        purchased_msg = None
         try:
             purchased_msg = self._apply_effect(it["purchase"], qty)
         except ValueError as e:
@@ -797,7 +872,6 @@ class Game:
         info_tail = f" Gained: {purchased_msg}" if purchased_msg else ""
         print(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}.{info_tail}")
 
-        # Friendly upgrades summary
         if it.get("purchase", {}).get("type") in ('stat_inc','multi_inc','device_install'):
             print(f"Upgrades — solar: {self.solar_watts}W | wind: {self.wind_watts}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_liters:.0f}L/{self.food_cap_rations} rations")
 
@@ -863,7 +937,7 @@ class Game:
         if m not in ('electric','fuel'):
             print("MODE electric | MODE fuel"); return
         self.mode = m
-        print(f"Drivetrain set to {self.mode.UPPER()}.")
+        print(f"Drivetrain set to {self.mode.upper()}.")
 
     def node(self): return self.world.nodes[self.location]
 
@@ -903,7 +977,8 @@ class Game:
         w = derive_weather(n, self.minutes)
         biome = n.get('biome','').replace('_',' ')
         elev = n.get('elevation_ft','?')
-        print(f"You are at {n['name']}. {biome} at {elev} ft.")
+        print(f"You are at {n['name']}. {biome} at {elev} ft. Season: {w['season'].title()}.")
+        self.print_hud()
         desc = n.get('description')
         if desc: print(desc)
         print(f"Time: {minutes_to_hhmm(self.minutes)} | Weather: {describe_weather(w)}.")
@@ -914,9 +989,11 @@ class Game:
             print(f"Your companion {self.pet.name} watches the horizon. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
 
     def status(self):
-        #print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
-        print(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)}")
+        w = derive_weather(self.node(), self.minutes)
+        print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
+        print(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)} | Season: {w['season'].title()}")
         self.print_hud()
+        print(f"Env  Temp {w['temp_f']:.0f}°F | Humidity {w['humidity']:.0f}% | UV {w['uv']:.1f}")
         if self.pet:
             p = self.pet
             print(f"Pet {p.name}: Bond {int(p.bond)} | Energy {int(p.energy)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}")
@@ -982,7 +1059,7 @@ class Game:
     def check_weather(self):
         w = derive_weather(self.node(), self.minutes)
         daylight = "daylight" if is_daylight(self.minutes) else "night"
-        print(f"At {self.node()['name']} ({daylight}): {describe_weather(w)}.")
+        print(f"At {self.node()['name']} ({daylight}, {w['season'].title()}): {describe_weather(w)}.")
 
     def camp(self, style):
         style = (style or "").lower()
@@ -1014,6 +1091,14 @@ class Game:
                 note = "Dispersed site: free, solitary, sky for days."
             in_park = self.location in {'zion','bryce','arches','canyonlands','capitol_reef'}
             ranger_knock = 0.04 if in_park else 0.005
+
+        # Light seasonal flavor: cold night penalty without heat in winter
+        if w['season'] == 'winter' and w['temp_f'] < 40:
+            if not (self.devices.get('diesel_heater', {}).get('owned') and self.devices['diesel_heater'].get('on') and self.diesel_can_gal > 0):
+                self.morale = clamp(self.morale - 4, 0, 100)
+                self.energy = clamp(self.energy - 6, 0, 100)
+                print("The cold gnaws at you. A heater would help on winter nights.")
+
         self.water   = clamp(self.water - 0.1*hours, 0, self.water_cap_liters)
         self.food    = max(0, self.food - 1)
         self.energy  = clamp(self.energy + energy_gain, 0, 100)
@@ -1202,11 +1287,6 @@ def pick_from_dict(title, dct):
 
 def character_creation():
     print("=== Character & Vehicle Setup ===")
-    print("Welcome to Nomads, the only (known) text-based nomad adventure game!")
-    print("In this game you select a vehicle and profession, start with a few items")
-    print("with the goal of leaving the area and making it to Alaska!")
-    print("See HELP for commands and exploration options")
-
     name = input("Name (enter to randomize): ").strip()
     if not name: name = random.choice(["River","Juniper","Sky","Ash","Indigo","Cedar","Rook"])
     color = input("Vehicle color (e.g., white/sand/forest/red): ").strip() or "white"
@@ -1216,7 +1296,7 @@ def character_creation():
     while mode not in ("electric", "fuel"):
         mode = input("Drivetrain [electric|fuel]: ").strip().lower() or "electric"
     rng = seeded_rng(name, color, vkey, jkey, mode)
-    start_cash = rng.randint(1000, 20000)
+    start_cash = rng.randint(500, 2000)
     cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
     print(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: ${start_cash}")
     return cfg
