@@ -25,7 +25,7 @@ nodes:
       - { to: valley_of_gods, road: "highway", miles: 155, grade: "mixed", wind_exposure: "medium" }
 
   - id: bryce
-    description: >
+    description: |
       A high-cold amphitheater of hoodoos—orange organ pipes cut by frost and time. Air runs thin,
       nights run star-heavy, and sunrise paints the rim with molten gold. Beauty taxes your lungs,
       rewards your patience.
@@ -46,7 +46,7 @@ nodes:
       - { to: mirror_lake_highway, road: "highway", miles: 250, grade: "mixed", wind_exposure: "medium" }
 
   - id: capitol_reef
-    description: >
+    description: |
       The Waterpocket Fold kinks the desert like a rug pushed against a wall. Orchards, spigots,
       pies, and a river ribbon lend mercy; backroads wander to views that feel unclaimed. Flash floods
       redraw the map without asking.
@@ -67,7 +67,7 @@ nodes:
       - { to: moab, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
 
   - id: arches
-    description: >
+    description: |
       Stone windows, fins, and gravity tricks—earth doing yoga at sunrise. Crowds ebb before dawn,
       heat rises by noon, and cryptobiotic soil begs for a wide step. Timed entry turns time itself
       into a puzzle.
@@ -87,7 +87,7 @@ nodes:
       - { to: canyonlands, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
 
   - id: canyonlands
-    description: >
+    description: |
       A continent of canyons stacked to the horizon. Island in the Sky drops off the edge of thought,
       The Needles maze your compass, and the Maze whispers “come prepared.” Water is rumor; wind is fact.
     name: "Canyonlands"
@@ -108,7 +108,7 @@ nodes:
       - { to: san_rafael_swell, road: "scenic", miles: 100, grade: "mix"}
 
   - id: moab
-    description: >
+    description: |
       Red-rock boomtown and gearhead bazaar: welders, espresso, river showers, trail gossip. Vans line
       the back streets, dogs nap under patio tables, and upgrades happen between burritos. If the desert
       is your circuit board, Moab is the soldering iron.
@@ -132,7 +132,7 @@ nodes:
       - { to: capitol_reef, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
 
   - id: san_rafael_swell
-    description: >
+    description: |
       Empty horizons and reefed stone, sinuous slots that taste like wind. Nights turn pitch and galaxies
       show off; turbines purr while the van hums itself warm. Solitude sharpens listening and batteries.
     name: "San Rafael Swell"
@@ -154,7 +154,7 @@ nodes:
       - { to: canyonlands, road: "scenic", miles: 100, grade: "mixed", wind_exposure: "high" }
 
   - id: bonneville_salt_flats
-    description: >
+    description: |
       A white so bright it hums; after rain the world becomes mirror and myth. Mirage highways point
       everywhere at once, corrosion licks at metal, and shade is a fairy tale. Speed-record ghosts
       pace the horizon.
@@ -174,7 +174,7 @@ nodes:
       - { to: mirror_lake_highway, road: "highway", miles: 150, grade: "mixed", wind_exposure: "medium" }
 
   - id: mirror_lake_highway
-    description: >
+    description: |
       Spruce and lodgepole ladder up to glassy tarns under quick weather. Gates close with snow, mosquitoes
       conduct summer choirs, and moose write their own right-of-way. Solar sulks in the trees; wind doesn’t.
     name: "Mirror Lake Highway (Uintas)"
@@ -193,7 +193,7 @@ nodes:
       - { to: bryce, road: "highway", miles: 250, grade: "mixed", wind_exposure: "medium" }
 
   - id: valley_of_gods
-    description: >
+    description: |
       Monoliths stand like patient giants along crimson washboard. Piñon and juniper dot the silence,
       thunderheads parade at dusk, and camps sprawl with a thousand-mile view. Dispersed is king; the night
       is loud with quiet.

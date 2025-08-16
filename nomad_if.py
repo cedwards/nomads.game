@@ -422,9 +422,9 @@ class Game:
 
     def print_hud(self):
         netA, pvA, windA, loadA = self.compute_current()
-        bar = draw_bar(self.battery/100.0, width=22)
+        #bar = draw_bar(self.battery/100.0, width=22)
         mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric' else f"Fuel {self.fuel_gal:.1f} gal")
-        print(f"Power {bar} {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}")
+        print(f"Power {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}")
         print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}")
 
     # ---------- Signal ----------
@@ -904,7 +904,6 @@ class Game:
         biome = n.get('biome','').replace('_',' ')
         elev = n.get('elevation_ft','?')
         print(f"You are at {n['name']}. {biome} at {elev} ft.")
-        self.print_hud()
         desc = n.get('description')
         if desc: print(desc)
         print(f"Time: {minutes_to_hhmm(self.minutes)} | Weather: {describe_weather(w)}.")
@@ -915,7 +914,7 @@ class Game:
             print(f"Your companion {self.pet.name} watches the horizon. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
 
     def status(self):
-        print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
+        #print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
         print(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)}")
         self.print_hud()
         if self.pet:
@@ -1203,6 +1202,11 @@ def pick_from_dict(title, dct):
 
 def character_creation():
     print("=== Character & Vehicle Setup ===")
+    print("Welcome to Nomads, the only (known) text-based nomad adventure game!")
+    print("In this game you select a vehicle and profession, start with a few items")
+    print("with the goal of leaving the area and making it to Alaska!")
+    print("See HELP for commands and exploration options")
+
     name = input("Name (enter to randomize): ").strip()
     if not name: name = random.choice(["River","Juniper","Sky","Ash","Indigo","Cedar","Rook"])
     color = input("Vehicle color (e.g., white/sand/forest/red): ").strip() or "white"
