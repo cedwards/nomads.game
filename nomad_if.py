@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
 # Nomad IF prototype — Utah slice
-# CLI game loop with basic verbs:
-# LOOK, STATUS, MAP, ROUTE TO <place>, DRIVE, CHECK WEATHER,
-# CAMP [stealth|paid], COOK, SLEEP,
-# ADOPT PET, FEED PET, WATER PET, WALK PET, PLAY WITH PET,
-# COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>, HELP, QUIT
 
-import os, sys, math, json, re, random, datetime
+import os, sys, math, json, random
 from collections import defaultdict, deque
 
 TURN_MINUTES = 15
-DAY_MINUTES = 24 * 60
+DAY_MINUTES  = 24 * 60
+SYSTEM_VOLTAGE = 12.0  # 12V house system
 
 # ===== Archetypes & Jobs =====
-
 VEHICLES = {
-    # battery_capacity_factor affects how fast HOUSE battery % changes:
-    # bigger pack => slower % drift and slower % charging (more real)
     "sedan": {
         "label": "Sedan (stealthy, light)",
         "base_water_cap": 25, "max_water_cap": 40,
@@ -52,34 +45,20 @@ VEHICLES = {
 }
 
 JOBS = {
-    "photographer": {
-        "label": "Photographer (eye for light)",
-        "epic_bonus": 0.25   # +25% on epic photo payouts
-    },
-    "mechanic": {
-        "label": "Mechanic (handy with tools)",
-        "shop_discount": 0.15  # 15% off shop upgrades
-    },
-    "remote_dev": {
-        "label": "Remote Dev (wifi wizard)",
-        "remote_camp_income": 30  # earn $ on camps with signal
-    },
-    "trail_guide": {
-        "label": "Trail Guide (path whisperer)",
-        "hike_energy_mult": 0.8,     # hikes cost 20% less energy
-        "hike_find_bonus": 0.10      # +10% to scenic-find chance
-    },
-    "artist": {
-        "label": "Artist (muse on wheels)",
-        "morale_bonus_dispersed": 3,  # extra joy at dispersed camps
-        "epic_bonus": 0.10
-    }
+    "photographer": {"label": "Photographer (eye for light)", "epic_bonus": 0.25},
+    "mechanic": {"label": "Mechanic (handy with tools)", "shop_discount": 0.15},
+    "remote_dev": {"label": "Remote Dev (wifi wizard)", "remote_camp_income": 30},
+    "trail_guide": {"label": "Trail Guide (path whisperer)", "hike_energy_mult": 0.8, "hike_find_bonus": 0.10},
+    "artist": {"label": "Artist (muse on wheels)", "morale_bonus_dispersed": 3, "epic_bonus": 0.10}
 }
 
 # ---------------------------- Utility ---------------------------------
+def clamp(v, lo, hi): return max(lo, min(hi, v))
 
-def clamp(v, lo, hi):
-    return max(lo, min(hi, v))
+def draw_bar(pct, width=20):
+    pct = clamp(pct, 0, 1)
+    full = int(round(pct*width))
+    return "[" + "█"*full + "·"*(width-full) + "]"
 
 def minutes_to_hhmm(total_minutes):
     d = total_minutes // DAY_MINUTES + 1
@@ -89,9 +68,8 @@ def minutes_to_hhmm(total_minutes):
     return f"Day {d} {hh:02d}:{mm:02d}"
 
 def is_daylight(total_minutes):
-    # Simple model: daylight 06:00 - 20:00
     m = total_minutes % DAY_MINUTES
-    return 6*60 <= m < 20*60
+    return 6*60 <= m < 20*60  # 06:00–20:00
 
 def seeded_rng(*parts):
     seed = 0xABCDEF
@@ -101,17 +79,14 @@ def seeded_rng(*parts):
     return random.Random(seed)
 
 # ---------------------------- World -----------------------------------
-
 class World:
     def __init__(self, nodes):
         self.nodes = {n['id']: n for n in nodes}
         self._ensure_bidirectional()
 
     def _ensure_bidirectional(self):
-        # Make connections two-way if not already present
         for nid, node in self.nodes.items():
-            conns = node.get('connections', [])
-            for c in conns:
+            for c in node.get('connections', []):
                 other = c['to']
                 if other not in self.nodes:
                     continue
@@ -125,8 +100,7 @@ class World:
 
     def find_node(self, key):
         key_l = key.strip().lower()
-        if key_l in self.nodes:
-            return key_l
+        if key_l in self.nodes: return key_l
         for nid, n in self.nodes.items():
             if n.get('name','').lower() == key_l:
                 return nid
@@ -135,59 +109,32 @@ class World:
                 return nid
         return None
 
-# ---- Time of day windows & signal heuristics ----
+# ---- Time windows & weather helpers ----
 def current_time_windows(total_minutes, node):
-    """Return a set of window tags for right now at this node."""
     m = total_minutes % DAY_MINUTES
     w = derive_weather(node, total_minutes)
     tags = set()
-    if 330 <= m <= 450:      # 05:30–07:30
-        tags.add("sunrise")
+    if 330 <= m <= 450:
+        tags.add("sunrise"); tags.add("golden_hour")
+    if 360 <= m <= 480:
         tags.add("golden_hour")
-    if 360 <= m <= 480:      # 06:00–08:00
-        tags.add("golden_hour")
-    if 420 <= m <= 660:      # 07:00–11:00
-        tags.add("morning")
+    if 420 <= m <= 660:
+        tags.add("morning"); tags.add("daylight")
+    if 660 < m < 1110:
         tags.add("daylight")
-    if 660 < m < 1110:       # 11:00–18:30
-        tags.add("daylight")
-    if 1110 <= m <= 1200:    # 18:30–20:00
-        tags.add("golden_hour")
-        tags.add("daylight")
+    if 1110 <= m <= 1200:
+        tags.add("golden_hour"); tags.add("daylight")
     if not (360 <= m < 1200):
         tags.add("night")
         if (not w['monsoon']) and (w['wind'] != 'high') and (not w['flood_watch']):
             tags.add("night_clear")
     return tags, w
 
-def window_multiplier(window_tag, windows):
-    """Production multiplier if a requested window is 'open'."""
-    if window_tag not in windows: return 0.6   # workable but off-peak
-    mults = {
-        "sunrise": 1.6,
-        "golden_hour": 1.5,
-        "morning": 1.15,
-        "daylight": 1.0,
-        "night": 0.9,
-        "night_clear": 1.4,
-    }
-    return mults.get(window_tag, 1.0)
-
-def has_signal_here(node, total_minutes):
-    """Crude cell-signal model by biome + a daily roll."""
-    biome = (node.get('biome') or '').lower()
-    base = 0.6
-    if 'town' in biome: base = 0.95
-    elif 'alpine' in biome: base = 0.65
-    elif 'salt' in biome: base = 0.55
-    elif any(k in biome for k in ['desert_canyon','canyon','mesa','high_desert','desert']):
-        base = 0.5
-    rng = seeded_rng(node['id'], total_minutes // DAY_MINUTES, 'signal_work')
-    return rng.random() < base
-
+def window_multiplier(tag, windows):
+    if tag not in windows: return 0.6
+    return {"sunrise":1.6,"golden_hour":1.5,"morning":1.15,"daylight":1.0,"night":0.9,"night_clear":1.4}.get(tag,1.0)
 
 # ---------------------------- Weather ---------------------------------
-
 def derive_weather(node, total_minutes):
     day = total_minutes // DAY_MINUTES + 1
     rng = seeded_rng(node['id'], day)
@@ -221,16 +168,8 @@ def describe_weather(w):
     return ", ".join(parts)
 
 # ---------------------------- Travel ----------------------------------
-
-BASE_SPEED = {
-    'interstate': 65.0,
-    'highway': 55.0,
-    'scenic': 45.0,
-    'mixed': 40.0,
-    'gravel': 30.0,
-    'trail': 10.0,
-}
-GRADE_MOD = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
+BASE_SPEED = {'interstate':65.0,'highway':55.0,'scenic':45.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
+GRADE_MOD  = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
 
 def edge_drive_turns(world, start_node_id, conn, total_minutes):
     node = world.nodes[start_node_id]
@@ -254,8 +193,7 @@ def dijkstra_route(world, src, dst, total_minutes):
         for nid, d in dist.items():
             if nid in visited: continue
             if d < cur_dist: cur, cur_dist = nid, d
-        if cur is None or cur == dst:
-            break
+        if cur is None or cur == dst: break
         visited.add(cur)
         for c in world.nodes[cur].get('connections', []):
             turns, _w = edge_drive_turns(world, cur, c, total_minutes + dist[cur]*TURN_MINUTES)
@@ -263,8 +201,7 @@ def dijkstra_route(world, src, dst, total_minutes):
             if nd < dist[c['to']]:
                 dist[c['to']] = nd
                 prev[c['to']] = (cur, c)
-    if dist[dst] == math.inf:
-        return None, None
+    if dist[dst] == math.inf: return None, None
     path = []
     nid = dst
     while nid != src:
@@ -276,7 +213,6 @@ def dijkstra_route(world, src, dst, total_minutes):
     return path, dist[dst]
 
 # ---------------------------- Game State ------------------------------
-
 class Pet:
     def __init__(self, name):
         self.name = name
@@ -286,7 +222,6 @@ class Pet:
         self.paw = 100
         self.alert = 50
         self.guard_mode = False
-
     def tick(self, minutes):
         self.energy = clamp(self.energy - (minutes/60)*2, 0, 100)
 
@@ -310,23 +245,19 @@ class Game:
         self.food_cap_rations = v["base_food_cap"]
         self.max_water_cap    = v["max_water_cap"]
         self.max_food_cap     = v["max_food_cap"]
-        self.house_cap        = v["house_cap_factor"]  # dimensionless, scales % changes
+        self.house_cap        = v["house_cap_factor"]
         self.solar_cap_watts  = v["solar_cap_watts"]
         self.wind_cap_watts   = v["wind_cap_watts"]
 
-        # Upgrades (house systems)
+        # Upgrades / stores
         self.solar_watts = 0
         self.wind_watts  = 0
         self.has_tent    = False
+        self.battery = 62.0  # house %
+        self.water  = min(8.0, self.water_cap_liters)
+        self.food   = min(6,   self.food_cap_rations)
 
-        # House battery (0–100%)
-        self.battery = 62.0
-
-        # Stores (respect caps)
-        self.water = min(8.0, self.water_cap_liters)   # liters
-        self.food  = min(6,   self.food_cap_rations)   # rations
-
-        # Cash & morale/energy
+        # Cash & needs
         self.cash   = float(config.get("start_cash", 120.0))
         self.morale = 60.0
         self.energy = 80.0
@@ -339,38 +270,146 @@ class Game:
         self.route_idx = 0
 
         # EV / Fuel systems
-        self.ev_battery   = 80.0  # traction battery %
+        self.ev_battery   = 80.0
         self.ev_range_mi  = v["ev_range"]
         self.fuel_gal     = 0.0
         self.mpg          = v["mpg"]
         self.fuel_tank_gal= v["fuel_tank_gal"]
         if self.mode == 'fuel':
-            self.fuel_gal = 0.6 * self.fuel_tank_gal  # start with some fuel
+            self.fuel_gal = 0.6 * self.fuel_tank_gal
 
         # Dispersed stay tracking
         self.last_camp_node = None
         self.camp_nights_here = 0
 
-        # Work tracking (fatigue & per-day throttles)
+        # Work tracking
         self.work_hours_day = -1
         self.work_hours_today = {}
-        self.gig_cooldowns = {}  # key: gig_id@node -> day_index last done
+        self.gig_cooldowns = {}
 
+        # House loads & devices
+        self.base_draw_amps = 0.8
+        self.devices = {
+            'fridge':        {'owned': False, 'on': False, 'amps': 4.0},
+            'starlink':      {'owned': False, 'on': False, 'amps': 6.0},
+            'diesel_heater': {'owned': False, 'on': False, 'amps': 1.2},
+            'propane_stove': {'owned': False},
+            'jetboil':       {'owned': False}
+        }
+        self.diesel_can_gal = 0.0
+        self.propane_lb     = 0.0
+        self.butane_can     = 0.0
+
+    # ---------- Devices ----------
+    def devices_panel(self):
+        print("Devices:")
+        for k in ('fridge','starlink','diesel_heater','propane_stove','jetboil'):
+            d = self.devices[k]
+            owned = d.get('owned', False)
+            on    = d.get('on', False)
+            amps  = d.get('amps', 0)
+            if not owned:
+                print(f"  - {k}: not installed")
+            else:
+                if 'on' in d:
+                    print(f"  - {k}: {'ON ' if on else 'off'}  (~{amps}A when on)")
+                else:
+                    print(f"  - {k}: installed (uses fuel when cooking)")
+        print(f"Fuels — diesel_can: {self.diesel_can_gal:.2f} gal | propane: {self.propane_lb:.1f} lb | butane: {self.butane_can:.1f} can")
+
+    def toggle_device(self, name, state):
+        name = (name or '').lower()
+        if name not in self.devices:
+            print("Unknown device. Try: fridge, starlink, diesel_heater, propane_stove, jetboil"); return
+        d = self.devices[name]
+        if not d.get('owned', False):
+            print("You don't own that device."); return
+        if 'on' not in d:
+            print(f"{name} has no on/off; it only consumes fuel when cooking."); return
+        on = True if state.lower() in ('on','true','1') else False
+        if name == 'diesel_heater' and on and self.diesel_can_gal <= 0:
+            print("No diesel in the can. BUY diesel_can <gallons> first."); return
+        d['on'] = on
+        print(f"{name} set to {'ON' if on else 'off'}.")
+
+    # ---------- Power math ----------
+    def _solar_input_watts_now(self):
+        node = self.node()
+        sol = (node.get('resources', {}) or {}).get('solar', 'fair')
+        site = {'excellent':1.0,'good':0.75,'fair':0.5,'poor':0.25}.get(sol, 0.5)
+        m = self.minutes % DAY_MINUTES
+        if m < 360 or m > 1200 or self.solar_watts <= 0:
+            return 0.0
+        t = (m-360) / (1200-360)
+        sun = max(0.0, math.sin(math.pi * t))
+        return self.solar_watts * site * sun
+
+    def _wind_input_watts_now(self):
+        if self.wind_watts <= 0: return 0.0
+        w = derive_weather(self.node(), self.minutes)
+        frac = {'low':0.2,'medium':0.6,'high':1.0}[w['wind']]
+        return self.wind_watts * frac
+
+    def _load_amps_now(self):
+        amps = self.base_draw_amps
+        if self.devices['fridge']['owned'] and self.devices['fridge']['on']:
+            amps += self.devices['fridge']['amps']
+        if self.devices['starlink']['owned'] and self.devices['starlink']['on']:
+            amps += self.devices['starlink']['amps']
+        if self.devices['diesel_heater']['owned'] and self.devices['diesel_heater']['on']:
+            if self.diesel_can_gal > 0:
+                amps += self.devices['diesel_heater']['amps']
+            else:
+                self.devices['diesel_heater']['on'] = False
+        return amps
+
+    def compute_current(self):
+        solar_w = self._solar_input_watts_now()
+        wind_w  = self._wind_input_watts_now()
+        solar_a = solar_w / SYSTEM_VOLTAGE
+        wind_a  = wind_w  / SYSTEM_VOLTAGE
+        load_a  = self._load_amps_now()
+        net_a   = (solar_a + wind_a) - load_a
+        return (net_a, solar_a, wind_a, load_a)
+
+    def rig_level(self):
+        score = (self.solar_watts/100.0) + (self.wind_watts/100.0)
+        score += (self.water_cap_liters - 50)/10.0 if hasattr(self, 'water_cap_liters') else 0
+        score += (self.food_cap_rations - 12)/5.0   if hasattr(self, 'food_cap_rations') else 0
+        score += 2 if self.has_tent else 0
+        return max(1, min(10, int(1 + score/3)))
+
+    def print_hud(self):
+        netA, pvA, windA, loadA = self.compute_current()
+        bar = draw_bar(self.battery/100.0, width=22)
+        mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric' else f"Fuel {self.fuel_gal:.1f} gal")
+        print(f"Power {bar} {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}")
+        print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}")
+
+    # ---------- Signal (method so it can see starlink) ----------
+    def has_signal_here(self, node, total_minutes):
+        if self.devices['starlink']['owned'] and self.devices['starlink']['on']:
+            return True
+        biome = (node.get('biome') or '').lower()
+        base = 0.6
+        if 'town' in biome: base = 0.95
+        elif 'alpine' in biome: base = 0.65
+        elif 'salt' in biome: base = 0.55
+        elif any(k in biome for k in ['desert_canyon','canyon','mesa','high_desert','desert']):
+            base = 0.5
+        rng = seeded_rng(node['id'], total_minutes // DAY_MINUTES, 'signal_work')
+        return rng.random() < base
+
+    # ---------- Work & gigs ----------
     def _work_gig(self, hours):
         node = self.node()
         gigs = node.get('gigs') or []
         if not gigs:
             print("No listed gigs here. Try a job-type WORK instead."); return
         windows, _w = current_time_windows(self.minutes, node)
+        viable = [g for g in gigs if g.get('window') in windows] or gigs[:]
+        gig = random.choice(viable); gid = gig.get('id', 'gig')
 
-        # Pick a gig whose window fits now (fall back to any)
-        viable = [g for g in gigs if g.get('window') in windows]
-        if not viable:
-            viable = gigs[:]
-        gig = random.choice(viable)
-        gid = gig.get('id', 'gig')
-
-        # one-per-day throttle per location/gig
         today = self.minutes // DAY_MINUTES
         key = f"{self.location}:{gid}"
         if self.gig_cooldowns.get(key) == today:
@@ -380,17 +419,13 @@ class Game:
         rng = seeded_rng(self.location, today, gid)
         pay = rng.randint(int(lo), int(hi))
 
-        # Job perks that plausibly help gigs
         if self.job in ('photographer','artist') and gig.get('window') in ('golden_hour','sunrise','night_clear'):
             pay = int(pay * (1.0 + self.job_perks.get('epic_bonus', 0.0)))
         if self.job == 'mechanic' and gid and 'washout' not in gid:
             pay = int(pay * 1.1)
 
-        # Duration: ignore requested hours; gigs are compact 1.5–3h
         ghours = rng.uniform(1.5, 3.0)
         ticks = int((ghours*60)//TURN_MINUTES) or 1
-
-        # Passive charging during gig work, same as generic work
         for _ in range(ticks):
             if self.mode == 'electric' and self.solar_watts > 0 and is_daylight(self.minutes):
                 sol = (node.get('resources', {}) or {}).get('solar', 'fair')
@@ -405,47 +440,32 @@ class Game:
                     self.ev_battery = clamp(self.ev_battery + (self.wind_watts/300.0)*ev_level/4.0, 0, 100)
             self.advance(TURN_MINUTES)
 
-        # costs
         self.energy = clamp(self.energy - int(2.0 * ghours), 0, 100)
         self.water  = clamp(self.water  - round(0.05 * ghours, 2), 0, self.water_cap_liters)
-
         self.cash += pay
         self.gig_cooldowns[key] = today
         print(f"You complete gig '{gid}' (~{ghours:.1f}h) and earn ${pay}. Cash ${self.cash:.0f}.")
 
     def work(self, kind='', hours=None):
-        """
-        WORK [photo|dev|mechanic|guide|artist|gig] [hours]
-        - If kind omitted: uses your chosen job.
-        - Hours default: random 1–4, clamped to 1–6.
-        - Time advances in 15m ticks; solar/wind trickle (house & EV) apply.
-        """
         node = self.node()
         kind = (kind or '').lower().strip()
-        # Default to player's job
         if not kind or kind == 'job':
             jk = self.job
-            kind = {'photographer':'photo','remote_dev':'dev','mechanic':'mechanic',
-                    'trail_guide':'guide','artist':'artist'}.get(jk, 'photo')
+            kind = {'photographer':'photo','remote_dev':'dev','mechanic':'mechanic','trail_guide':'guide','artist':'artist'}.get(jk, 'photo')
 
-        # Hours
         if hours is None:
             hours = random.randint(1,4)
-        try:
-            hours = float(hours)
-        except Exception:
-            hours = 2.0
+        try: hours = float(hours)
+        except Exception: hours = 2.0
         hours = max(1.0, min(6.0, hours))
         ticks = int((hours*60) // TURN_MINUTES) or 1
 
-        # Daily fatigue ledger
         today = self.minutes // DAY_MINUTES
         if self.work_hours_day != today:
             self.work_hours_day = today
             self.work_hours_today = {}
 
-        # Economics presets
-        windows, cur_weather = current_time_windows(self.minutes, node)
+        windows, _curw = current_time_windows(self.minutes, node)
         biome = (node.get('biome') or '').lower()
         photogenic = 1.0
         if any(k in biome for k in ['arches','canyon']): photogenic = 1.35
@@ -454,21 +474,16 @@ class Game:
         if 'alpine' in biome: photogenic = max(photogenic, 1.15)
         in_moab = (self.location == 'moab')
 
-        # Base $/h by kind + window bonus logic
         base = 18.0
         tip_mult = 1.0
-        label = kind
         fail_prereq = None
 
         if kind == 'photo':
             base = 22.0 * photogenic
-            # Best during golden_hour / sunrise / night_clear
-            peak = max(window_multiplier("golden_hour", windows),
-                       window_multiplier("sunrise", windows),
-                       window_multiplier("night_clear", windows))
+            peak = max(window_multiplier("golden_hour", windows), window_multiplier("sunrise", windows), window_multiplier("night_clear", windows))
             tip_mult *= peak
         elif kind == 'dev':
-            if not has_signal_here(node, self.minutes):
+            if not self.has_signal_here(node, self.minutes):
                 fail_prereq = "No usable signal here; try Moab or move for coverage."
             base = 28.0 * (1.2 if in_moab else 1.0)
         elif kind == 'mechanic':
@@ -476,61 +491,45 @@ class Game:
         elif kind == 'guide':
             near_park = self.location in {'zion','bryce','arches','canyonlands','capitol_reef'}
             base = 24.0 if near_park or in_moab else 18.0
-            tip_mult *= max(window_multiplier("morning", windows),
-                            window_multiplier("golden_hour", windows))
+            tip_mult *= max(window_multiplier("morning", windows), window_multiplier("golden_hour", windows))
         elif kind == 'artist':
-            base = 18.0 * (1.1 if 'dispersed' else 1.0)
+            base = 18.0
             tip_mult *= max(1.0, window_multiplier("golden_hour", windows))
         elif kind == 'gig':
-            return self._work_gig(hours)  # separate handler uses node.gigs
+            return self._work_gig(hours)
         else:
-            print("Unknown work type. Try: WORK photo|dev|mechanic|guide|artist|gig [hours]")
-            return
+            print("Unknown work type. Try: WORK photo|dev|mechanic|guide|artist|gig [hours]"); return
 
         if fail_prereq:
             print(fail_prereq); return
 
-        # Fatigue: diminishing returns after 4h of same kind in a day
         prev = self.work_hours_today.get(kind, 0.0)
         fatigue_mult = 1.0 if prev < 4 else 0.85 if prev < 6 else 0.7 if prev < 8 else 0.55
 
-        # Job perks
         perk_mult = 1.0
-        if kind == 'photo':
-            perk_mult *= (1.0 + self.job_perks.get('epic_bonus', 0.0) * 0.5)
-        if kind == 'artist':
-            perk_mult *= (1.0 + self.job_perks.get('epic_bonus', 0.0) * 0.25)
-        if kind == 'dev' and self.job == 'remote_dev':
-            perk_mult *= 1.10
-        if kind == 'mechanic' and self.job == 'mechanic':
-            perk_mult *= 1.10
-        if kind == 'guide' and self.job == 'trail_guide':
-            perk_mult *= 1.10
+        if kind == 'photo':  perk_mult *= (1.0 + self.job_perks.get('epic_bonus', 0.0) * 0.5)
+        if kind == 'artist': perk_mult *= (1.0 + self.job_perks.get('epic_bonus', 0.0) * 0.25)
+        if kind == 'dev' and self.job == 'remote_dev': perk_mult *= 1.10
+        if kind == 'mechanic' and self.job == 'mechanic': perk_mult *= 1.10
+        if kind == 'guide' and self.job == 'trail_guide': perk_mult *= 1.10
 
-        # Stochastic spice
         rng = seeded_rng(self.location, today, kind)
         variance = rng.uniform(0.9, 1.15)
 
-        # Final hourly rate & gross
         hourly = base * tip_mult * perk_mult * fatigue_mult * variance
         gross = hourly * hours
 
-        # Epic chance for creatives
-        if kind in ('photo','artist'):
-            if rng.random() < (0.15 + 0.05 * (1 if 'golden_hour' in windows else 0)):
-                bonus = rng.randint(40, 140)
-                bonus = int(bonus * (1.0 + self.job_perks.get('epic_bonus', 0.0)))
-                gross += bonus
-                print(f"A client bites on a shot/print (+${bonus}).")
+        if kind in ('photo','artist') and rng.random() < (0.15 + 0.05 * (1 if 'golden_hour' in windows else 0)):
+            bonus = rng.randint(40, 140)
+            bonus = int(bonus * (1.0 + self.job_perks.get('epic_bonus', 0.0)))
+            gross += bonus
+            print(f"A client bites on a shot/print (+${bonus}).")
 
-        # Tick forward in 15m slices; trickle HOUSE & EV from wind/solar while you work.
         for _ in range(ticks):
-            # EV solar (daylight) trickle
             if self.mode == 'electric' and self.solar_watts > 0 and is_daylight(self.minutes):
                 sol = (node.get('resources', {}) or {}).get('solar', 'fair')
                 site = {'excellent':1.0,'good':0.75,'fair':0.5,'poor':0.25}.get(sol,0.5)
                 self.ev_battery = clamp(self.ev_battery + (self.solar_watts/1000.0)*4.0*site/4.0, 0, 100)
-            # Wind trickle
             if self.wind_watts > 0:
                 w = derive_weather(node, self.minutes)
                 house_level = {'low':0.0,'medium':0.8,'high':1.5}[w['wind']]
@@ -538,134 +537,143 @@ class Game:
                 self.battery    = clamp(self.battery + (self.wind_watts/300.0)*house_level/4.0 / self.house_cap, 0, 100)
                 if self.mode=='electric':
                     self.ev_battery = clamp(self.ev_battery + (self.wind_watts/300.0)*ev_level/4.0, 0, 100)
-            # Advance world (applies house solar + normal drift)
             self.advance(TURN_MINUTES)
 
-        # Costs of working
-        extra_energy = int(2.5 * hours) if kind != 'dev' else int(1.5 * hours)
-        extra_water  = round(0.06 * hours, 2)
-        self.energy = clamp(self.energy - extra_energy, 0, 100)
-        self.water  = clamp(self.water - extra_water, 0, self.water_cap_liters)
+        self.energy = clamp(self.energy - (int(2.5*hours) if kind != 'dev' else int(1.5*hours)), 0, 100)
+        self.water  = clamp(self.water - round(0.06 * hours, 2), 0, self.water_cap_liters)
 
-        # Get paid
         gross = int(round(gross))
         self.cash += gross
         self.work_hours_today[kind] = self.work_hours_today.get(kind, 0.0) + hours
-
         print(f"You work {kind} for ~{hours:.1f}h at ~${hourly:.0f}/h. Paid ${gross}.")
         print(f"Now: Cash ${self.cash:.0f} | House {int(self.battery)}% | "
               f"{('EV '+str(int(self.ev_battery))+'%') if self.mode=='electric' else ('Fuel '+f'{self.fuel_gal:.1f} gal')} | "
               f"Water {self.water:.1f}L | Energy {int(self.energy)}.")
 
+    # ---------- Hike (daylight-only, dusk truncation) ----------
     def hike(self, direction):
-        """Go on a hike in a compass direction.
-        Duration = random 1–5 hours scaled by per-node hike_map for that direction.
-        While hiking, time advances; house battery gets passive solar (via advance()),
-        and we also trickle both HOUSE and EV batteries from wind/solar each tick.
-        """
         dir_clean = (direction or '').lower()
         valid = {'n','s','e','w','ne','nw','se','sw'}
         if dir_clean not in valid:
             print("HIKE which way? Use: HIKE n|s|e|w|ne|nw|se|sw"); return
 
+        # Daylight gate
+        m = self.minutes % DAY_MINUTES
+        if m < 360 or m >= 1200:
+            print("It's dark. Hiking is limited to daylight (06:00–20:00). Try CAMP or wait for sunrise."); return
+
+        # If too close to dusk to fit even one tick, refuse
+        remaining_daylight = 1200 - m
+        if remaining_daylight < TURN_MINUTES:
+            print("Too close to dusk for a safe hike. Try again at sunrise."); return
+
         node = self.node()
         hmap = (node.get('hike_map') or {})
-        seg = hmap.get(dir_clean, 3)  # relative length; 3 ~ neutral
-        seg = max(1, min(5, int(seg)))
+        seg = max(1, min(5, int(hmap.get(dir_clean, 3))))
         base_hours = random.randint(1,5)
-        factor = max(0.5, min(2.0, seg / 3.0))
+        factor = clamp(seg / 3.0, 0.5, 2.0)
         hours = max(1.0, round(base_hours * factor, 1))
-        ticks = int((hours * 60) // TURN_MINUTES)
-        if ticks <= 0: ticks = 1
 
-        # Site quality for solar
+        # Trim to dusk if needed
+        intended_minutes = int(hours * 60)
+        if intended_minutes > remaining_daylight:
+            # Round down to ticks
+            minutes_to_hike = (remaining_daylight // TURN_MINUTES) * TURN_MINUTES
+            if minutes_to_hike < TURN_MINUTES:
+                print("Too close to dusk for a safe hike. Try again at sunrise."); return
+            hours = round(minutes_to_hike / 60.0, 1)
+            ticks = max(1, minutes_to_hike // TURN_MINUTES)
+            dusk_truncated = True
+        else:
+            ticks = int((hours * 60) // TURN_MINUTES) or 1
+            dusk_truncated = False
+
         sol_quality = (node.get('resources', {}) or {}).get('solar', 'fair')
         site = {'excellent':1.0, 'good':0.75, 'fair':0.5, 'poor':0.25}.get(sol_quality, 0.5)
 
-        # Narration
         print(f"You set out {dir_clean.upper()} for a ~{hours:.1f}h hike.")
         found = False
-
         for _ in range(ticks):
-            # Passive EV charging: solar (daylight only)
             if self.mode == 'electric' and self.solar_watts > 0 and is_daylight(self.minutes):
-                # ~4% per h per kW at good site; scale by site; per tick (15m) is /4
-                ev_solar_per_tick = (self.solar_watts / 1000.0) * 4.0 * site / 4.0
-                self.ev_battery = clamp(self.ev_battery + ev_solar_per_tick, 0, 100)
-
-            # Passive wind to HOUSE & EV during the hike
+                self.ev_battery = clamp(self.ev_battery + (self.solar_watts/1000.0)*4.0*site/4.0, 0, 100)
             if self.wind_watts > 0:
                 w = derive_weather(node, self.minutes)
-                house_level = {'low':0.0, 'medium':0.8, 'high':1.5}[w['wind']]       # %/h baseline for house
-                ev_level    = {'low':0.2, 'medium':0.6, 'high':1.0}[w['wind']]       # %/h baseline for EV
-                house_wind_per_tick = (self.wind_watts / 300.0) * house_level / 4.0
-                ev_wind_per_tick    = (self.wind_watts / 300.0) * ev_level    / 4.0 if self.mode=='electric' else 0.0
-                self.battery   = clamp(self.battery   + house_wind_per_tick / self.house_cap, 0, 100)
-                self.ev_battery = clamp(self.ev_battery + ev_wind_per_tick,   0, 100)
-
-            # Advance time & apply passive solar to HOUSE battery, water/energy drift, pet ticks
+                house_level = {'low':0.0, 'medium':0.8, 'high':1.5}[w['wind']]
+                ev_level    = {'low':0.2, 'medium':0.6, 'high':1.0}[w['wind']]
+                self.battery   = clamp(self.battery + (self.wind_watts/300.0)*house_level/4.0 / self.house_cap, 0, 100)
+                if self.mode=='electric':
+                    self.ev_battery = clamp(self.ev_battery + (self.wind_watts/300.0)*ev_level/4.0, 0, 100)
             self.advance(TURN_MINUTES)
-
-            # Little chance of a scenic find
-            if not found and random.random() < 0.08:
+            if not found and random.random() < (0.08 + self.job_perks.get('hike_find_bonus',0.0)):
                 found = True
                 self.morale = clamp(self.morale + 4, 0, 100)
                 print("You crest a ridge to a ridiculous view. Morale soars.")
 
-        # Extra exertion cost for hiking beyond normal drift
-        extra_energy = min(12, int(hours * 3))  # ~3 energy per hour
-        extra_water  = round(0.12 * hours, 2)   # +0.12 L per hour
+        extra_energy = min(12, int(hours * 3))
+        extra_water  = round(0.12 * hours, 2)
         mult = self.job_perks.get('hike_energy_mult', 1.0)
         self.energy = clamp(self.energy - int(extra_energy * mult), 0, 100)
         self.water  = clamp(self.water  - extra_water, 0, self.water_cap_liters)
-
-        # Pet comes along if present
         if self.pet:
             self.pet.energy = clamp(self.pet.energy - max(6, int(hours * 2)), 0, 100)
             self.pet.bond   = clamp(self.pet.bond + 2, 0, 100)
 
+        tail = " You turn back at dusk." if dusk_truncated else ""
         print(f"You return after ~{hours:.1f}h. House {int(self.battery)}% | "
               f"{'EV ' + str(int(self.ev_battery)) + '%' if self.mode=='electric' else 'Fuel ' + f'{self.fuel_gal:.1f} gal'} | "
-              f"Water {self.water:.1f}L | Energy {int(self.energy)}.")
+              f"Water {self.water:.1f}L | Energy {int(self.energy)}.{tail}")
 
-    # ---------- Moab Shop ----------
+    # ---------- Shop ----------
     def shop(self):
         if self.location != 'moab':
-            print("No outfitter here. Try Moab.")
-            return
-        print("Moab Outfitters — items (BUY <item> [qty])")
-        print("  food     $5 each (rations)             → +1 food (cap {})".format(self.food_cap_rations))
-        print("  water    $1 / L (jugs)                 → +1.0 L water (cap {:.0f} L)".format(self.water_cap_liters))
-        print("  solar    $400 per 200W panel           → +200W solar (cap {}W)".format(self.solar_cap_watts))
-        print("  wind     $600 per 300W turbine         → +300W wind  (cap {}W)".format(self.wind_cap_watts))
-        print("  battery  $1200 per module              → +40 mi EV range (electric)")
-        print("  storage  $300 per module               → +10L water cap & +5 rations (to max caps)")
-        print("  tent     $150                          → improves dispersed camping")
+            print("No outfitter here. Try Moab."); return
         disc = int(self.job_perks.get('shop_discount', 0)*100)
-        if disc: print(f"  * {disc}% job discount (Mechanic) applies to upgrades.")
-        print(f"Cash: ${self.cash:.0f} | Installed: {self.solar_watts}W solar, {self.wind_watts}W wind, Tent: {'yes' if self.has_tent else 'no'}")
-        print(f"Caps: Solar {self.solar_cap_watts}W | Wind {self.wind_cap_watts}W | Water {self.water_cap_liters:.0f}L | Food {self.food_cap_rations}")
+        print("Moab Outfitters — items (BUY <item> [qty])")
+        print("  food          $5 each         → +1 ration (cap {})".format(self.food_cap_rations))
+        print("  water         $1 / L          → +1.0 L (cap {:.0f}L)".format(self.water_cap_liters))
+        print("  solar         $400 per 200W   → +200W (cap {}W)".format(self.solar_cap_watts))
+        print("  wind          $600 per 300W   → +300W (cap {}W)".format(self.wind_cap_watts))
+        print("  battery       $1200/module    → +40 mi EV range")
+        print("  storage       $300/module     → +10L water cap & +5 rations (to max)")
+        print("  tent          $150            → dispersed comfort")
+        print("  fridge        $800            → ~4A draw when ON")
+        print("  starlink      $500            → ~6A draw when ON; enables remote work anywhere with sky")
+        print("  diesel_heater $200            → ~1.2A when ON; burns diesel_can")
+        print("  propane_stove $80             → uses propane_lb when cooking")
+        print("  jetboil       $120            → uses butane_can when cooking")
+        print("  diesel_can    $5/gal          → fuel for diesel_heater")
+        print("  propane_lb    $3/lb           → fuel for propane_stove")
+        print("  butane_can    $6/can          → fuel for jetboil")
+        if disc: print(f"  * {disc}% job discount applies to upgrades/devices.")
+        print(f"Cash: ${self.cash:.0f}")
 
     def buy(self, item, qty=1):
         if self.location != 'moab':
             print("You need to be in Moab to buy gear."); return
-        item = item.lower()
+        item = (item or '').lower()
+        try: qty = int(qty)
+        except Exception: qty = 1
         if qty <= 0: qty = 1
 
-        base_prices = {'food':5, 'water':1, 'solar':400, 'wind':600, 'battery':1200, 'storage':300, 'tent':150}
+        base_prices = {
+            'food':5, 'water':1, 'solar':400, 'wind':600,
+            'battery':1200, 'storage':300, 'tent':150,
+            'fridge':800, 'starlink':500, 'diesel_heater':200,
+            'propane_stove':80, 'jetboil':120,
+            'diesel_can':5, 'propane_lb':3, 'butane_can':6
+        }
         if item not in base_prices:
-            print("Unknown item. Try: food, water, solar, wind, battery, storage, tent."); return
+            print("Unknown item. Try: food, water, solar, wind, battery, storage, tent, fridge, starlink, diesel_heater, propane_stove, jetboil, diesel_can, propane_lb, butane_can.")
+            return
 
-        # Job discount on upgrade-y items
-        discountable = {'solar','wind','battery','storage','tent'}
+        discountable = {'solar','wind','battery','storage','tent','fridge','starlink','diesel_heater','propane_stove','jetboil'}
         price = base_prices[item] * qty
         if item in discountable:
             price *= (1.0 - self.job_perks.get('shop_discount', 0.0))
-
         if self.cash < price:
             print(f"Not enough cash (${self.cash:.0f}). This costs ${price:.0f}."); return
 
-        # Apply effects with caps
+        purchased = None
         if item == 'food':
             before = self.food
             self.food = min(self.food + qty, self.food_cap_rations)
@@ -683,23 +691,29 @@ class Game:
             self.wind_watts = min(self.wind_watts + 300*qty, self.wind_cap_watts)
             purchased = self.wind_watts - before
         elif item == 'battery':
+            before = self.ev_range_mi
             if self.mode != 'electric':
                 print("Battery modules affect EV range (MODE electric).")
-            before = self.ev_range_mi
             self.ev_range_mi = min(self.ev_range_mi + 40*qty, 360)
             purchased = self.ev_range_mi - before
         elif item == 'storage':
             before_w = self.water_cap_liters
             before_f = self.food_cap_rations
-            # Each module: +10L water cap and +5 rations, respecting vehicle max caps
             self.water_cap_liters = min(self.water_cap_liters + 10*qty, self.max_water_cap)
             self.food_cap_rations = min(self.food_cap_rations + 5*qty,  self.max_food_cap)
             purchased = (self.water_cap_liters - before_w, self.food_cap_rations - before_f)
-        else:  # tent
-            if self.has_tent:
-                print("You already own a tent."); return
-            self.has_tent = True
-            purchased = 1
+        elif item == 'tent':
+            if self.has_tent: print("You already own a tent."); return
+            self.has_tent = True; purchased = "installed"
+        elif item in ('fridge','starlink','diesel_heater','propane_stove','jetboil'):
+            if self.devices[item]['owned']: print(f"You already own {item}."); return
+            self.devices[item]['owned'] = True; purchased = "installed"
+        elif item == 'diesel_can':
+            self.diesel_can_gal = max(0.0, self.diesel_can_gal + qty); purchased = f"{qty} gal"
+        elif item == 'propane_lb':
+            self.propane_lb = max(0.0, self.propane_lb + qty); purchased = f"{qty} lb"
+        elif item == 'butane_can':
+            self.butane_can = max(0.0, self.butane_can + qty); purchased = f"{qty} can"
 
         self.cash -= price
         print(f"Purchased {qty} × {item} for ${price:.0f}. Cash left: ${self.cash:.0f}. Gained: {purchased}")
@@ -710,18 +724,16 @@ class Game:
     def charge(self, method):
         method = (method or '').lower()
         if self.mode != 'electric':
-            print("You're not in electric mode. Switch with: MODE electric")
-            return
+            print("You're not in electric mode. Switch with: MODE electric"); return
         if method not in ('station','solar','wind'):
             print("CHARGE how? Options: station | solar | wind"); return
 
         if method == 'station':
             if self.location != 'moab':
-                print("Fast charger unavailable here. Try Moab.")
-                return
+                print("Fast charger unavailable here. Try Moab."); return
             hours = 1.0
-            add_pct = 40.0  # ~one-hour fast charge
-            cost = add_pct * 0.5  # $0.50 per %
+            add_pct = 40.0
+            cost = add_pct * 0.5
             if self.cash < cost:
                 print(f"Charging costs ${cost:.0f}. You have ${self.cash:.0f}."); return
             self.cash -= cost
@@ -729,37 +741,32 @@ class Game:
             self.advance(int(hours*60))
             print(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:.0f}.")
         elif method == 'solar':
-            # Off-grid solar session — slower, weather/site dependent
             hours = 2.0
             sol = (self.node().get('resources', {}) or {}).get('solar', 'fair')
-            site = {'excellent':1.0, 'good':0.75, 'fair':0.5, 'poor':0.25}.get(sol, 0.5)
-            add_pct = (self.solar_watts / 1000.0) * 8.0 * site  # 2h @ ~4%/h per kW w/ site factor
-            if add_pct <= 0.1:
-                print("You need solar panels installed to gain meaningful charge.")
+            site = {'excellent':1.0,'good':0.75,'fair':0.5,'poor':0.25}.get(sol, 0.5)
+            add_pct = (self.solar_watts / 1000.0) * 8.0 * site
+            if add_pct <= 0.1: print("You need solar panels installed to gain meaningful charge.")
             self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100)
-            self.battery = clamp(self.battery + add_pct, 0, 100)
+            self.battery    = clamp(self.battery    + add_pct, 0, 100)
             self.advance(int(hours*60))
             print(f"Solar charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%.")
-        else:  # wind
+        else:
             hours = 2.0
             w = derive_weather(self.node(), self.minutes)
             wind_factor = {'low':0.2,'medium':0.6,'high':1.0}[w['wind']]
-            add_pct = (self.wind_watts / 300.0) * 2.0 * wind_factor  # 2h session baseline
-            if add_pct <= 0.1:
-                print("You need a wind turbine (and some wind) to gain meaningful charge.")
+            add_pct = (self.wind_watts / 300.0) * 2.0 * wind_factor
+            if add_pct <= 0.1: print("You need a wind turbine (and some wind) to gain meaningful charge.")
             self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100)
-            self.battery = clamp(self.battery + add_pct, 0, 100)
+            self.battery    = clamp(self.battery    + add_pct, 0, 100)
             self.advance(int(hours*60))
             print(f"Wind charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%.")
 
     def refuel(self, gallons):
         if self.mode != 'fuel':
-            print("You're not in fuel mode. Switch with: MODE fuel")
-            return
+            print("You're not in fuel mode. Switch with: MODE fuel"); return
         if self.location != 'moab':
             print("No reliable fuel here. Try Moab."); return
-        try:
-            g = float(gallons)
+        try: g = float(gallons)
         except Exception:
             print("REFUEL <gallons>"); return
         if g <= 0: print("That’s not how fuel works."); return
@@ -769,10 +776,10 @@ class Game:
             print(f"Need ${cost:.0f}; you have ${self.cash:.0f}."); return
         self.cash -= cost
         self.fuel_gal += g
-        self.advance(10)  # quick stop
+        self.advance(10)
         print(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:.0f}.")
 
-    # ---------- Mode switch ----------
+    # ---------- Mode & accessors ----------
     def set_mode(self, mode):
         m = (mode or '').lower()
         if m not in ('electric','fuel'):
@@ -780,66 +787,65 @@ class Game:
         self.mode = m
         print(f"Drivetrain set to {self.mode.upper()}.")
 
-    def node(self):
-        return self.world.nodes[self.location]
+    def node(self): return self.world.nodes[self.location]
 
+    # ---------- Time advance (net-current) ----------
     def advance(self, minutes):
-        # Advance time in 15-min ticks so passive systems apply
         for _ in range(minutes // TURN_MINUTES):
-            self.minutes += TURN_MINUTES
+            net_a, _, _, _ = self.compute_current()
+            delta_ah  = net_a * (TURN_MINUTES/60.0)
+            cap_ah    = 100.0 * getattr(self, 'house_cap', 1.0)
+            delta_pct = (delta_ah / cap_ah) * 100.0
+            self.battery = clamp(self.battery + delta_pct, 0, 100)
 
-            # Passive drains (scale by house capacity: bigger packs drift slower)
+            if self.devices['diesel_heater']['owned'] and self.devices['diesel_heater']['on']:
+                burn = 0.15 * (TURN_MINUTES/60.0)
+                if self.diesel_can_gal >= burn:
+                    self.diesel_can_gal -= burn
+                else:
+                    self.diesel_can_gal = 0.0
+                    self.devices['diesel_heater']['on'] = False
+
+            self.minutes += TURN_MINUTES
             self.water  = clamp(self.water - 0.03, 0, self.water_cap_liters)
             self.energy = clamp(self.energy - 0.8, 0, 100)
-            self.battery = clamp(self.battery - (0.2 / self.house_cap), 0, 100)
             if self.pet: self.pet.tick(TURN_MINUTES)
 
-            # Daylight solar → HOUSE battery (site quality)
-            if is_daylight(self.minutes) and self.solar_watts > 0:
-                n = self.node()
-                sol = (n.get('resources', {}) or {}).get('solar', 'fair')
-                site = {'excellent':1.0, 'good':0.75, 'fair':0.5, 'poor':0.25}.get(sol, 0.5)
-                per_hour = (self.solar_watts / 1000.0) * 6.0 * site / self.house_cap
-                self.battery = clamp(self.battery + per_hour / 4.0, 0, 100)
+            if self.mode == 'electric':
+                if is_daylight(self.minutes) and self.solar_watts > 0:
+                    node = self.node()
+                    sol = (node.get('resources', {}) or {}).get('solar','fair')
+                    site = {'excellent':1.0,'good':0.75,'fair':0.5,'poor':0.25}.get(sol,0.5)
+                    self.ev_battery = clamp(self.ev_battery + (self.solar_watts/1000.0)*4.0*site/4.0, 0, 100)
+                if self.wind_watts > 0:
+                    w = derive_weather(self.node(), self.minutes)
+                    ev_level = {'low':0.2,'medium':0.6,'high':1.0}[w['wind']]
+                    self.ev_battery = clamp(self.ev_battery + (self.wind_watts/300.0)*ev_level/4.0, 0, 100)
 
-    # ----- Actions -----
+    # ---------- Actions & UI ----------
     def look(self):
         n = self.node()
         w = derive_weather(n, self.minutes)
         biome = n.get('biome','').replace('_',' ')
         elev = n.get('elevation_ft','?')
-    
         print(f"You are at {n['name']}. {biome} at {elev} ft.")
-    
+        self.print_hud()
         desc = n.get('description')
-        if desc:
-            print(desc)
-    
+        if desc: print(desc)
         print(f"Time: {minutes_to_hhmm(self.minutes)} | Weather: {describe_weather(w)}.")
-        print(f"Resources — water: {n['resources'].get('water','?')}, "
-              f"food: {n['resources'].get('food','?')}, "
-              f"solar: {n['resources'].get('solar','?')}, "
-              f"wind: {n['resources'].get('wind','?')}.")
-    
+        print(f"Resources — water: {n['resources'].get('water','?')}, food: {n['resources'].get('food','?')}, solar: {n['resources'].get('solar','?')}, wind: {n['resources'].get('wind','?')}.")
         if n.get('pet_adoption'):
             print("You spot a rescue meetup. You could ADOPT PET here.")
         if self.pet:
-            print(f"Your companion {self.pet.name} watches the horizon. "
-                  f"Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
+            print(f"Your companion {self.pet.name} watches the horizon. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
 
     def status(self):
         print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
         print(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)}")
-        print(f"House Battery: {int(self.battery)}%  (cap x{self.house_cap})")
-        print(f"Stores: Water {self.water:.1f}/{self.water_cap_liters:.0f} L | Food {self.food}/{self.food_cap_rations} rations | Cash ${self.cash:.0f}")
-        print(f"Upgrades: Solar {self.solar_watts}/{self.solar_cap_watts} W | Wind {self.wind_watts}/{self.wind_cap_watts} W | Tent: {'yes' if self.has_tent else 'no'}")
-        if self.mode == 'electric':
-            print(f"Mode: ELECTRIC | EV Battery: {self.ev_battery:.0f}% | Range(full): {self.ev_range_mi} mi")
-        else:
-            print(f"Mode: FUEL | Fuel: {self.fuel_gal:.1f}/{self.fuel_tank_gal} gal | MPG: {self.mpg}")
+        self.print_hud()
         if self.pet:
             p = self.pet
-            print(f"Pet {p.name}: Bond {int(p.bond)} | Energy {int(p.energy)} | Paw {int(p.paw)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}")
+            print(f"Pet {p.name}: Bond {int(p.bond)} | Energy {int(p.energy)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}")
 
     def show_map(self):
         n = self.node()
@@ -851,32 +857,23 @@ class Game:
 
     def route_to(self, dest_key):
         nid = self.world.find_node(dest_key)
-        if not nid:
-            print("I don't recognize that destination."); return
-        if nid == self.location:
-            print("You're already here."); return
+        if not nid: print("I don't recognize that destination."); return
+        if nid == self.location: print("You're already here."); return
         path, total_turns = dijkstra_route(self.world, self.location, nid, self.minutes)
-        if not path:
-            print("No route found."); return
-        self.route = path
-        self.route_idx = 0
+        if not path: print("No route found."); return
+        self.route = path; self.route_idx = 0
         hours = total_turns * TURN_MINUTES / 60
         names = " → ".join(self.world.nodes[a]['name'] for a,_,_ in path) + f" → {self.world.nodes[nid]['name']}"
         print(f"Route plotted ({hours:.1f}h est): {names}")
         print("Use: DRIVE to set off.")
 
     def drive(self):
-        if not self.route:
-            print("No route plotted. Use: ROUTE TO <place>"); return
-        if self.route_idx >= len(self.route):
-            print("Route already complete."); return
-
+        if not self.route: print("No route plotted. Use: ROUTE TO <place>"); return
+        if self.route_idx >= len(self.route): print("Route already complete."); return
         frm, to, conn = self.route[self.route_idx]
         turns, w = edge_drive_turns(self.world, frm, conn, self.minutes)
         hours = turns * TURN_MINUTES / 60.0
         miles = float(conn.get('miles', 10))
-
-        # Energy check
         if self.mode == 'electric':
             needed_pct = (miles / max(1.0, self.ev_range_mi)) * 100.0
             if self.ev_battery < needed_pct:
@@ -889,17 +886,14 @@ class Game:
                 print(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}.")
                 print("Try: REFUEL in Moab or adjust your route."); return
             self.fuel_gal = max(0.0, self.fuel_gal - needed_gal)
-            # Alternator tops up HOUSE battery on fuel rigs
             self.battery = clamp(self.battery + (2.0*hours)/self.house_cap, 0, 100)
 
-        # Travel drains
         self.water  = clamp(self.water - 0.1*hours, 0, self.water_cap_liters)
         self.energy = clamp(self.energy - 6.0*hours, 0, 100)
         if self.pet:
             self.pet.energy = clamp(self.pet.energy - 4.0*hours, 0, 100)
             self.pet.alert  = clamp(self.pet.alert + 5.0, 0, 100)
 
-        # Occasional detour
         rng = seeded_rng(frm, to, int(self.minutes/60))
         if rng.random() < 0.06:
             delay = rng.randint(1,3)
@@ -924,20 +918,19 @@ class Game:
         if style not in ('stealth','paid','dispersed'):
             print("CAMP how? Options: stealth | paid | dispersed"); return
 
-        # Sleep to 06:00
+        # Sleep until the next 06:00 — but if we're before 06:00 today, only sleep up to *today's* 06:00.
         now = self.minutes % DAY_MINUTES
-        sleep_minutes = ((24*60) - now) + 6*60
+        if now <= 6*60:
+            sleep_minutes = 6*60 - now            # e.g., 02:00 -> 4h
+        else:
+            sleep_minutes = (24*60 - now) + 6*60  # e.g., 22:00 -> 8h + 6h = 14h
         hours = sleep_minutes / 60.0
 
-        # Local weather (for wind)
         w = derive_weather(self.node(), self.minutes)
         wind_level = {'low':0.0,'medium':0.8,'high':1.5}[w['wind']]
+        wind_scale = (self.wind_watts / 300.0) if self.wind_watts > 0 else 0.2
+        wind_bonus = wind_level * wind_scale  # (hook for future flavor)
 
-        # Scale by installed wind capacity (300W baseline)
-        wind_scale = (self.wind_watts / 300.0) if self.wind_watts > 0 else 0.2  # tiny incidental if no turbine
-        wind_bonus = wind_level * wind_scale  # % per hour to HOUSE battery
-
-        # Base gains/risks
         if style == 'paid':
             energy_gain, morale_gain, pet_energy, pet_bond = 20, 10, 18, 2
             ranger_knock = 0.01
@@ -948,20 +941,16 @@ class Game:
             if self.node().get('pet_rules') == 'strict': ranger_knock += 0.06
             if self.pet and self.pet.alert > 60:         ranger_knock += 0.04
             note = "Stealth spot: close to town, but keep it low-key."
-        else:  # dispersed
+        else:
             energy_gain, morale_gain, pet_energy, pet_bond = 23, 12, 20, 3
             if self.has_tent:
-                energy_gain += 4
-                morale_gain += 3
-                pet_energy  += 3
+                energy_gain += 4; morale_gain += 3; pet_energy += 3
                 note = "Dispersed with tent: free, solitary, and cozy under the stars."
             else:
                 note = "Dispersed site: free, solitary, sky for days."
             in_park = self.location in {'zion','bryce','arches','canyonlands','capitol_reef'}
             ranger_knock = 0.04 if in_park else 0.005
 
-        # Apply overnight effects
-        self.battery = clamp(self.battery + (wind_bonus*hours)/self.house_cap - (0.5*hours)/self.house_cap, 0, 100)
         self.water   = clamp(self.water - 0.1*hours, 0, self.water_cap_liters)
         self.food    = max(0, self.food - 1)
         self.energy  = clamp(self.energy + energy_gain, 0, 100)
@@ -970,7 +959,6 @@ class Game:
             self.pet.energy = clamp(self.pet.energy + pet_energy, 0, 100)
             self.pet.bond   = clamp(self.pet.bond   + pet_bond, 0, 100)
 
-        # Gentle dispersed flavor: signal & epic photo chance
         has_signal = True
         if style == 'dispersed':
             biome = (self.node().get('biome') or '').lower()
@@ -979,23 +967,19 @@ class Game:
             has_signal = not (maybe_remote and rng_sig.random() < 0.6)
             if not has_signal:
                 print("No bars out here. Your phone becomes a very expensive paperweight tonight.")
-
             inc = self.job_perks.get('remote_camp_income', 0)
             if inc and has_signal:
                 self.cash += inc
                 print(f"You push a little code under the stars (+${inc}).")
-
             rng_shot = seeded_rng(self.location, int(self.minutes/60), 'epic_shot')
             if rng_shot.random() < 0.35:
                 payout = rng_shot.randint(30, 80)
                 bonus = 1.0 + self.job_perks.get('epic_bonus', 0.0)
                 payout = int(payout * bonus)
                 self.cash = max(0, self.cash + payout)
-                self.morale = clamp(self.morale + 4, 0, 100)
-                self.morale = clamp(self.morale + self.job_perks.get('morale_bonus_dispersed', 0), 0, 100)
+                self.morale = clamp(self.morale + 4 + self.job_perks.get('morale_bonus_dispersed', 0), 0, 100)
                 print(f"You capture an epic scene. Future print sales net about ${payout} and your soul hums.")
 
-        # Ranger event?
         rng = seeded_rng(self.location, int(self.minutes/60), style)
         if rng.random() < ranger_knock:
             print("A flashlight sweeps your curtains. A ranger checks on you.")
@@ -1015,13 +999,21 @@ class Game:
     def cook(self):
         if self.food <= 0:
             print("You rummage for crumbs. No food to cook."); return
+        used = "cold"
+        if self.devices['propane_stove']['owned'] and self.propane_lb >= 0.2:
+            self.propane_lb -= 0.2; used = "propane stove"
+        elif self.devices['jetboil']['owned'] and self.butane_can >= 0.25:
+            self.butane_can -= 0.25; used = "jetboil"
+        else:
+            used = "pan + inverter"
         use_water = 0.5 if self.water >= 0.5 else 0.0
         self.food -= 1
         self.water = clamp(self.water - use_water, 0, self.water_cap_liters)
-        self.morale = clamp(self.morale + (8 if use_water>0 else 5), 0, 100)
+        morale_boost = 9 if used in ("propane stove","jetboil") else 6
+        self.morale = clamp(self.morale + morale_boost, 0, 100)
         self.energy = clamp(self.energy + 6, 0, 100)
         self.advance(TURN_MINUTES)
-        print(f"You cook a simple meal (+morale, +energy). Water used: {use_water:.1f}L.")
+        print(f"You cook with {used} (+morale, +energy). Water used: {use_water:.1f}L.")
 
     def sleep(self):
         self.advance(120)
@@ -1099,22 +1091,21 @@ class Game:
             print("Available: HEEL, SEARCH, GUARD, CALM, FETCH.")
 
 # ---------------------------- IO & Loop -------------------------------
-
 HELP_TEXT = """Commands:
   LOOK | STATUS | MAP
   ROUTE TO <place> | DRIVE
   CHECK WEATHER
   CAMP [stealth|paid|dispersed]
   COOK | SLEEP
-  HIKE <n|s|e|w|ne|nw|se|sw>
+  HIKE <n|s|e|w|ne|nw|se|sw>   (daylight only; auto-turns back at dusk)
   WORK [photo|dev|mechanic|guide|artist|gig] [hours]
-  SHOP | BUY <food|water|solar|wind|battery|storage|tent> [qty]
+  SHOP | BUY <food|water|solar|wind|battery|storage|tent|fridge|starlink|diesel_heater|propane_stove|jetboil|diesel_can|propane_lb|butane_can> [qty]
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
   COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
+  DEVICES | TOGGLE <fridge|starlink|diesel_heater> <on|off>
   HELP | QUIT
 """
-
 
 def load_world():
     here = os.path.dirname(os.path.abspath(__file__))
@@ -1146,74 +1137,52 @@ def pick_from_dict(title, dct):
         ans = input("> ").strip().lower()
         if ans.isdigit():
             idx = int(ans)-1
-            if 0 <= idx < len(keys):
-                return keys[idx]
-        if ans in dct:
-            return ans
+            if 0 <= idx < len(keys): return keys[idx]
+        if ans in dct: return ans
         print("Pick by number or key from the list above.")
 
 def character_creation():
     print("=== Character & Vehicle Setup ===")
     name = input("Name (enter to randomize): ").strip()
-    if not name:
-        name = random.choice(["River", "Juniper", "Sky", "Ash", "Indigo", "Cedar", "Rook"])
+    if not name: name = random.choice(["River","Juniper","Sky","Ash","Indigo","Cedar","Rook"])
     color = input("Vehicle color (e.g., white/sand/forest/red): ").strip() or "white"
-
     vkey = pick_from_dict("Pick a vehicle type:", VEHICLES)
     jkey = pick_from_dict("Pick a job:", JOBS)
-
-    # Drivetrain
     mode = ""
     while mode not in ("electric", "fuel"):
         mode = input("Drivetrain [electric|fuel]: ").strip().lower() or "electric"
-
-    # Randomized starting cash (seeded so same choices = same roll)
     rng = seeded_rng(name, color, vkey, jkey, mode)
-    start_cash = rng.randint(500, 2000)
-
-    cfg = {
-        "name": name, "color": color,
-        "vehicle_key": vkey, "job_key": jkey,
-        "mode": mode,
-        "start_cash": float(start_cash)
-    }
+    start_cash = rng.randint(500, 20000)
+    cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
     print(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: ${start_cash}")
     return cfg
 
 def prelude_shopping(game):
-    """Let players spend starting cash in Moab before heading out."""
     print("\n=== Moab Outfitters — Prelude ===")
     print("You can buy initial supplies/upgrades within your starting budget.")
     print("Type SHOP to view items, BUY <item> [qty] to purchase, or DONE to begin your journey.")
     while True:
         line = input("\n> ").strip()
         up = line.upper()
-        if up == "DONE" or up == "START":
-            break
-        elif up == "SHOP":
-            game.shop()
+        if up in ("DONE","START"): break
+        elif up == "SHOP": game.shop()
         elif up.startswith("BUY "):
             parts = line.split()
             item = parts[1] if len(parts) > 1 else ""
-            qty = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
+            qty  = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
             game.buy(item, qty)
-        elif up in ("HELP","?"):
-            print("Commands: SHOP | BUY <item> [qty] | DONE")
-        elif up == "":
-            continue
-        else:
-            print("Use SHOP, BUY ..., or DONE.")
+        elif up in ("HELP","?"): print("Commands: SHOP | BUY <item> [qty] | DONE")
+        elif up == "": continue
+        else: print("Use SHOP, BUY ..., or DONE.")
 
 def main():
     world = load_world()
     cfg = character_creation()
     game = Game(world, cfg)
     prelude_shopping(game)
-
     print("\nNomad IF — Utah slice")
     print("Type HELP for commands. You’re in Moab and the road is yours.\n")
     game.look()
-
     while True:
         try:
             line = input("\n> ").strip()
@@ -1221,72 +1190,54 @@ def main():
             print("\nGood roads and tailwinds."); break
         if not line: continue
         u = line.upper()
-
-        if u == 'HELP':
-            print(HELP_TEXT)
-        elif u in ('LOOK','L'):
-            game.look()
-        elif u in ('STATUS','STATS'):
-            game.status()
-        elif u == 'MAP':
-            game.show_map()
-        elif u.startswith('ROUTE TO '):
-            game.route_to(line.split(' ', 2)[2])
-        elif u == 'DRIVE':
-            game.drive()
-        elif u == 'CHECK WEATHER':
-            game.check_weather()
+        if u == 'HELP': print(HELP_TEXT)
+        elif u in ('LOOK','L'): game.look()
+        elif u in ('STATUS','STATS'): game.status()
+        elif u == 'MAP': game.show_map()
+        elif u.startswith('ROUTE TO '): game.route_to(line.split(' ', 2)[2])
+        elif u == 'DRIVE': game.drive()
+        elif u == 'CHECK WEATHER': game.check_weather()
         elif u.startswith('CAMP'):
-            parts = line.split()
-            style = parts[1] if len(parts)>1 else ''
+            parts = line.split(); style = parts[1] if len(parts)>1 else ''
             game.camp(style)
-        elif u == 'COOK':
-            game.cook()
-        elif u == 'SLEEP':
-            game.sleep()
+        elif u == 'COOK': game.cook()
+        elif u == 'SLEEP': game.sleep()
         elif u.startswith('HIKE'):
-            parts = line.split()
-            d = parts[1] if len(parts) > 1 else ''
+            parts = line.split(); d = parts[1] if len(parts) > 1 else ''
             game.hike(d)
-        elif u == 'SHOP':
-            game.shop()
+        elif u == 'SHOP': game.shop()
         elif u.startswith('BUY '):
-            parts = line.split()
-            item = parts[1] if len(parts) > 1 else ''
+            parts = line.split(); item = parts[1] if len(parts) > 1 else ''
             qty  = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
             game.buy(item, qty)
-        elif u.startswith('MODE '):
-            game.set_mode(line.split(' ', 1)[1])
+        elif u.startswith('MODE '): game.set_mode(line.split(' ', 1)[1])
         elif u.startswith('CHARGE'):
-            parts = line.split()
-            method = parts[1] if len(parts) > 1 else ''
+            parts = line.split(); method = parts[1] if len(parts) > 1 else ''
             game.charge(method)
         elif u.startswith('REFUEL'):
-            parts = line.split()
-            gallons = parts[1] if len(parts) > 1 else ''
+            parts = line.split(); gallons = parts[1] if len(parts) > 1 else ''
             game.refuel(gallons)
-        elif u == 'ADOPT PET':
-            game.adopt_pet()
-        elif u == 'FEED PET':
-            game.feed_pet()
-        elif u == 'WATER PET':
-            game.water_pet()
-        elif u == 'WALK PET':
-            game.walk_pet()
-        elif u == 'PLAY WITH PET':
-            game.play_with_pet()
+        elif u == 'ADOPT PET': game.adopt_pet()
+        elif u == 'FEED PET': game.feed_pet()
+        elif u == 'WATER PET': game.water_pet()
+        elif u == 'WALK PET': game.walk_pet()
+        elif u == 'PLAY WITH PET': game.play_with_pet()
         elif u.startswith('COMMAND PET'):
             verb = line.split(' ', 2)[2] if len(line.split(' ', 2))>2 else ''
             game.command_pet(verb)
-        elif u in ('QUIT','EXIT'):
-            print("You turn the key, and the road beckons. Bye."); break
         elif u.startswith('WORK'):
             parts = line.split()
             kind  = parts[1] if len(parts)>1 and parts[1].lower() not in ('1','2','3','4','5','6') else ''
             hours = parts[2] if len(parts)>2 else (parts[1] if len(parts)>1 and parts[1].isdigit() else None)
             game.work(kind, hours)
-        else:
-            print("Unknown command. Type HELP.")
+        elif u == 'DEVICES': game.devices_panel()
+        elif u.startswith('TOGGLE'):
+            parts = line.split()
+            if len(parts) >= 3: game.toggle_device(parts[1], parts[2])
+            else: print("TOGGLE <device> <on|off>")
+        elif u in ('QUIT','EXIT'):
+            print("You turn the key, and the road beckons. Bye."); break
+        else: print("Unknown command. Type HELP.")
 
 if __name__ == "__main__":
     main()
