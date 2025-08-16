@@ -1,8 +1,24 @@
 #!/usr/bin/env python3
 # Nomad IF prototype — Utah slice (seasons + UV + temp/humidity; items via YAML)
+# Quality-of-life: calm ANSI colors, green prompt; WEATHER command; leaner LOOK/STATUS UI
 
 import os, sys, math, json, random
 from collections import defaultdict, deque
+
+# ---------------------------- ANSI Colors -----------------------------
+USE_COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+class COL:
+    RESET="\033[0m"; BOLD="\033[1m"
+    FG_GREEN="\033[32m"; FG_CYAN="\033[36m"; FG_GREY="\033[90m"
+    def _wrap(s, code): return f"{code}{s}{COL.RESET}" if USE_COLOR else str(s)
+    @staticmethod
+    def green(s):  return COL._wrap(s, COL.FG_GREEN)
+    @staticmethod
+    def cyan(s):   return COL._wrap(s, COL.FG_CYAN)
+    @staticmethod
+    def dim(s):    return COL._wrap(s, COL.FG_GREY)
+    @staticmethod
+    def prompt(s): return COL._wrap(s, COL.FG_GREEN)
 
 TURN_MINUTES = 15
 DAY_MINUTES  = 24 * 60
@@ -63,161 +79,163 @@ SEASONS = [
 REF_ELEV_FT = 4000.0
 LAPSE_F_PER_KFT = -3.5   # ~ -3.5°F per 1000 ft elevation vs reference
 
+def make_cli_prompt(game):
+    # Time (e.g., "Day 2 14:45")
+    t = minutes_to_hhmm(game.minutes)
+    # Net current (positive = charging, negative = drawing)
+    netA, _, _, _ = game.compute_current()
+    # Batteries
+    battery = game.battery
+    ev_battery = game.ev_battery
+    fuel = game.fuel_gal
+    # Cash
+    cash = game.cash
+    # Color the whole prompt green (falls back to plain text if NO_COLOR or not a TTY)
+    if game.mode == "electric":
+        return COL.prompt(f"[{t} | B:{netA:+.1f}A/{battery:.1f}% | EV:{ev_battery:.1f} | ${cash:.0f}] > ")
+    if game.mode == "fuel":
+        return COL.prompt(f"[{t} | B:{netA:+.1f}A/{battery:.1f}% | F:{fuel:.1f} | ${cash:.0f}] > ")
+
 def clamp(v, lo, hi): return max(lo, min(hi, v))
 
-                      def draw_bar(pct, width=20):
+def draw_bar(pct, width=20):
     pct = clamp(pct, 0, 1)
     full = int(round(pct*width))
     return "[" + "█"*full + "·"*(width-full) + "]"
 
-    def minutes_to_hhmm(total_minutes):
-        d = total_minutes // DAY_MINUTES + 1
-        m = total_minutes % DAY_MINUTES
-        hh = m // 60
-        mm = m % 60
-        return f"Day {d} {hh:02d}:{mm:02d}"
+def minutes_to_hhmm(total_minutes):
+    d = total_minutes // DAY_MINUTES + 1
+    m = total_minutes % DAY_MINUTES
+    hh = m // 60
+    mm = m % 60
+    return f"Day {d} {hh:02d}:{mm:02d}"
 
-        def is_daylight(total_minutes):
-            m = total_minutes % DAY_MINUTES
-            return 6*60 <= m < 20*60  # 06:00–20:00
+def is_daylight(total_minutes):
+    m = total_minutes % DAY_MINUTES
+    return 6*60 <= m < 20*60  # 06:00–20:00
 
-            def daylight_sine(total_minutes):
-                """0..1 bell centered midday, 0 at night; window 06:00..20:00 mapped to sin(pi*t)"""
-                    m = total_minutes % DAY_MINUTES
-                    if m < 360 or m > 1200:
-    return 0.0
-              t = (m - 360) / (1200 - 360)
-                    return max(0.0, math.sin(math.pi * t))  # 0..1
+def daylight_sine(total_minutes):
+    """0..1 bell centered midday, 0 at night; 06:00..20:00 mapped to sin(pi*t)"""
+    m = total_minutes % DAY_MINUTES
+    if m < 360 or m > 1200: return 0.0
+    t = (m - 360) / (1200 - 360)
+    return max(0.0, math.sin(math.pi * t))
 
-                    def seeded_rng(*parts):
-                        seed = 0xABCDEF
-                        for p in parts:
-                        seed ^= hash(p) & 0xFFFFFFFF
-    seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
-                        return random.Random(seed)
+def seeded_rng(*parts):
+    seed = 0xABCDEF
+    for p in parts:
+        seed ^= hash(p) & 0xFFFFFFFF
+        seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
+    return random.Random(seed)
 
-                        def get_season(total_minutes):
-                            """Return (season_name, season_meta) cycling every 360 days. Day 1 starts in Spring."""
-                                day = (total_minutes // DAY_MINUTES) % 360
-                                idx = day
-                                acc = 0
-                                for name, span, meta in SEASONS:
-                                if idx < acc + span:
-                                return name, meta
-                                acc += span
-                                return "winter", SEASONS[-1][2]  # fallback
+def get_season(total_minutes):
+    """Return (season_name, season_meta) cycling every 360 days. Day 1 starts in Spring."""
+    day = (total_minutes // DAY_MINUTES) % 360
+    idx = day
+    acc = 0
+    for name, span, meta in SEASONS:
+        if idx < acc + span:
+            return name, meta
+        acc += span
+    return "winter", SEASONS[-1][2]  # fallback
 
 # ---------------------------- World -----------------------------------
-                                class World:
-                                    def __init__(self, nodes):
-                                        self.nodes = {n['id']: n for n in nodes}
-self._ensure_bidirectional()
+class World:
+    def __init__(self, nodes):
+        self.nodes = {n['id']: n for n in nodes}
+        self._ensure_bidirectional()
 
     def _ensure_bidirectional(self):
         for nid, node in self.nodes.items():
             for c in node.get('connections', []):
                 other = c['to']
                 if other not in self.nodes:
-                continue
+                    continue
                 back = None
                 for bc in self.nodes[other].get('connections', []):
-                    if bc['to'] == nid:
-                    back = bc; break
-                    if not back:
+                    if bc['to'] == nid: back = bc; break
+                if not back:
                     rev = dict(c); rev['to'] = nid
                     self.nodes[other].setdefault('connections', []).append(rev)
 
-                    def find_node(self, key):
-                        key_l = key.strip().lower()
-                        if key_l in self.nodes: return key_l
-                        for nid, n in self.nodes.items():
-                            if n.get('name','').lower() == key_l:
-                            return nid
-                            for nid, n in self.nodes.items():
-                                if key_l in nid or key_l in n.get('name','').lower():
-                                    return nid
-                                    return None
+    def find_node(self, key):
+        key_l = key.strip().lower()
+        if key_l in self.nodes: return key_l
+        for nid, n in self.nodes.items():
+            if n.get('name','').lower() == key_l: return nid
+        for nid, n in self.nodes.items():
+            if key_l in nid or key_l in n.get('name','').lower():
+                return nid
+        return None
 
 # ---- Time windows & weather helpers ----
-                                    def current_time_windows(total_minutes, node):
+def current_time_windows(total_minutes, node):
     m = total_minutes % DAY_MINUTES
     w = derive_weather(node, total_minutes)
     tags = set()
-    if 330 <= m <= 450:
-    tags.add("sunrise"); tags.add("golden_hour")
-    if 360 <= m <= 480:
-    tags.add("golden_hour")
-    if 420 <= m <= 660:
-    tags.add("morning"); tags.add("daylight")
-    if 660 < m < 1110:
-    tags.add("daylight")
-    if 1110 <= m <= 1200:
-    tags.add("golden_hour"); tags.add("daylight")
+    if 330 <= m <= 450: tags.add("sunrise"); tags.add("golden_hour")
+    if 360 <= m <= 480: tags.add("golden_hour")
+    if 420 <= m <= 660: tags.add("morning"); tags.add("daylight")
+    if 660 < m < 1110: tags.add("daylight")
+    if 1110 <= m <= 1200: tags.add("golden_hour"); tags.add("daylight")
     if not (360 <= m < 1200):
         tags.add("night")
         if (not w['monsoon']) and (w['wind'] != 'high') and (not w['flood_watch']):
             tags.add("night_clear")
-            return tags, w
+    return tags, w
 
-            def window_multiplier(tag, windows):
-                if tag not in windows: return 0.6
-                return {"sunrise":1.6,"golden_hour":1.5,"morning":1.15,"daylight":1.0,"night":0.9,"night_clear":1.4}.get(tag,1.0)
+def window_multiplier(tag, windows):
+    if tag not in windows: return 0.6
+    return {"sunrise":1.6,"golden_hour":1.5,"morning":1.15,"daylight":1.0,"night":0.9,"night_clear":1.4}.get(tag,1.0)
 
 # ---------------------------- Environment & Weather -------------------
-                def derive_weather(node, total_minutes):
-                    """Stochastic-but-seasonal weather with numeric temp/humidity/UV."""
-                        day = total_minutes // DAY_MINUTES + 1
-                        rng = seeded_rng(node['id'], day)
+def derive_weather(node, total_minutes):
+    """Stochastic-but-seasonal weather with numeric temp/humidity/UV."""
+    day = total_minutes // DAY_MINUTES + 1
+    rng = seeded_rng(node['id'], day)
 
-# Base categories
-                        wind = rng.choices(['low','medium','high'], weights=[4,3,2])[0]
+    # Base categories
+    wind = rng.choices(['low','medium','high'], weights=[4,3,2])[0]
 
-# Season & diurnal
-season_name, meta = get_season(total_minutes)
+    # Season & diurnal
+    season_name, meta = get_season(total_minutes)
     uv_peak = meta["uv_peak"]
     temp_base = meta["temp_base"]
     diurnal_amp = meta["diurnal_amp"]
     humidity_base = meta["humidity_base"]
 
-# Node context
+    # Node context
     elev = float(node.get('elevation_ft', REF_ELEV_FT))
     biome = (node.get('biome') or '').lower()
 
-# Diurnal shape (peaks mid-afternoon-ish; overnight cool)
-sun = daylight_sine(total_minutes)
-# Skew temperature peak a bit later than solar: flatter rise AM, slower decay PM
-    temp_diurnal = (sun ** 0.8)  # 0..1
-    temp = temp_base + diurnal_amp * (temp_diurnal - 0.4)  # center near base
+    # Diurnal shape
+    sun = daylight_sine(total_minutes)
+    temp_diurnal = (sun ** 0.8)
+    temp = temp_base + diurnal_amp * (temp_diurnal - 0.4)
+    temp += LAPSE_F_PER_KFT * ((elev - REF_ELEV_FT) / 1000.0)
 
-# Elevation lapse
-temp += LAPSE_F_PER_KFT * ((elev - REF_ELEV_FT) / 1000.0)
-
-# Seasonal/monsoon-ish toggles from node tags
+    # Seasonal/monsoon-ish toggles from node tags
     srules = node.get('season_rules', [])
     monsoon_flag = ('monsoon' in ''.join(srules)) and (season_name == 'summer')
 
     monsoon = monsoon_flag and rng.random() < 0.20
     flood_watch = (monsoon_flag or 'flash_flood' in ''.join(srules)) and rng.random() < 0.15
 
-# Humidity: season baseline, biome tweak, monsoon bump
+    # Humidity
     humidity = humidity_base
     if any(k in biome for k in ['desert','swell','mesa','canyon','high_desert','salt']): humidity -= 8
-                                                                                         if 'alpine' in biome: humidity += 8
+    if 'alpine' in biome: humidity += 8
     if monsoon: humidity += 10
-                              humidity = clamp(round(humidity + rng.uniform(-5, 5), 1), 5, 95)
+    humidity = clamp(round(humidity + rng.uniform(-5, 5), 1), 5, 95)
 
-# UV index model: season peak * time-of-day * altitude * weather attenuation
-                                                                                         uv_time = sun ** 1.2  # punchier midday
-                                                                                         uv = uv_peak * uv_time
-# altitude: ~ +4% per 1000 ft vs 4000 ft reference
-uv *= (1.0 + 0.04 * ((elev - REF_ELEV_FT) / 1000.0))
-# clouds/monsoon attenuation
+    # UV index model
+    uv_time = sun ** 1.2
+    uv = uv_peak * uv_time
+    uv *= (1.0 + 0.04 * ((elev - REF_ELEV_FT) / 1000.0))  # altitude factor
     if monsoon: uv *= 0.6
-    if wind == 'high': uv *= 0.95  # dust/sand haze
+    if wind == 'high': uv *= 0.95
+    uv = clamp(round(uv, 1), 0.0, 12.0)
 
-uv = clamp(round(uv, 1), 0.0, 12.0)
-
-# Back-derive a simple "heat" category for legacy logic
     heat = 'cold' if temp < 45 else 'mild' if temp < 70 else 'hot' if temp < 90 else 'very_hot'
 
     return {
@@ -234,27 +252,27 @@ uv = clamp(round(uv, 1), 0.0, 12.0)
 def weather_speed_mod(w):
     mod = 1.0
     if w['heat'] in ('hot','very_hot'): mod *= 0.95
-                                        if w['wind'] == 'high': mod *= 0.92
-                                        if w['flood_watch']: mod *= 0.90
-                                        return mod
+    if w['wind'] == 'high': mod *= 0.92
+    if w['flood_watch']: mod *= 0.90
+    return mod
 
-                                        def describe_weather(w):
-                                            parts = [
-{'cold':"cold",'mild':"mild",'hot':"hot",'very_hot':"very hot"}[w['heat']],
-{'low':"light winds",'medium':"breezy",'high':"windy"}[w['wind']]
-                                            ]
-                                            if w['monsoon']: parts.append("monsoon cells around")
-                                            if w['flood_watch']: parts.append("flash-flood watch")
-                                            parts.append(f"Temp {w['temp_f']:.0f}°F")
-                                            parts.append(f"Humidity {w['humidity']:.0f}%")
-                                            parts.append(f"UV {w['uv']:.1f}")
-                                            return ", ".join(parts)
+def describe_weather(w):
+    parts = [
+        {'cold':"cold",'mild':"mild",'hot':"hot",'very_hot':"very hot"}[w['heat']],
+        {'low':"light winds",'medium':"breezy",'high':"windy"}[w['wind']]
+    ]
+    if w['monsoon']: parts.append("monsoon cells around")
+    if w['flood_watch']: parts.append("flash-flood watch")
+    parts.append(f"Temp {w['temp_f']:.0f}°F")
+    parts.append(f"Humidity {w['humidity']:.0f}%")
+    parts.append(f"UV {w['uv']:.1f}")
+    return ", ".join(parts)
 
 # ---------------------------- Travel ----------------------------------
-                                            BASE_SPEED = {'interstate':65.0,'highway':55.0,'scenic':45.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
-                                            GRADE_MOD  = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
+BASE_SPEED = {'interstate':65.0,'highway':55.0,'scenic':45.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
+GRADE_MOD  = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
 
-                                            def edge_drive_turns(world, start_node_id, conn, total_minutes):
+def edge_drive_turns(world, start_node_id, conn, total_minutes):
     node = world.nodes[start_node_id]
     w = derive_weather(node, total_minutes)
     speed = BASE_SPEED.get(conn.get('road','mixed'), 40.0)
@@ -266,165 +284,165 @@ def weather_speed_mod(w):
     turns = max(1, math.ceil(hours * 60 / TURN_MINUTES))
     return turns, w
 
-    def dijkstra_route(world, src, dst, total_minutes):
-        dist = {nid: math.inf for nid in world.nodes}
-        prev = {nid: None for nid in world.nodes}
+def dijkstra_route(world, src, dst, total_minutes):
+    dist = {nid: math.inf for nid in world.nodes}
+    prev = {nid: None for nid in world.nodes}
     dist[src] = 0
-visited = set()
+    visited = set()
     while True:
-    cur, cur_dist = None, math.inf
-    for nid, d in dist.items():
-        if nid in visited: continue
-        if d < cur_dist: cur, cur_dist = nid, d
-    if cur is None or cur == dst: break
+        cur, cur_dist = None, math.inf
+        for nid, d in dist.items():
+            if nid in visited: continue
+            if d < cur_dist: cur, cur_dist = nid, d
+        if cur is None or cur == dst: break
         visited.add(cur)
         for c in world.nodes[cur].get('connections', []):
             turns, _w = edge_drive_turns(world, cur, c, total_minutes + dist[cur]*TURN_MINUTES)
             nd = dist[cur] + turns
             if nd < dist[c['to']]:
-            dist[c['to']] = nd
-            prev[c['to']] = (cur, c)
-            if dist[dst] == math.inf: return None, None
-            path = []
-            nid = dst
-            while nid != src:
-            p = prev[nid]
-    if not p: break
-            path.append((p[0], nid, p[1]))
-    nid = p[0]
-            path.reverse()
-            return path, dist[dst]
+                dist[c['to']] = nd
+                prev[c['to']] = (cur, c)
+    if dist[dst] == math.inf: return None, None
+    path = []
+    nid = dst
+    while nid != src:
+        p = prev[nid]
+        if not p: break
+        path.append((p[0], nid, p[1]))
+        nid = p[0]
+    path.reverse()
+    return path, dist[dst]
 
 # ---------------------------- Items Catalog ---------------------------
-            def load_items_catalog():
-                here = os.path.dirname(os.path.abspath(__file__))
-                cand_yaml = os.path.join(here, "items.yaml")
-                catalog = {"order": [], "by_id": {}, "discountable_categories": set()}
-                if not os.path.exists(cand_yaml):
-    print("Missing items.yaml. Place it next to this script.")
-    sys.exit(1)
+def load_items_catalog():
+    here = os.path.dirname(os.path.abspath(__file__))
+    cand_yaml = os.path.join(here, "items.yaml")
+    catalog = {"order": [], "by_id": {}, "discountable_categories": set()}
+    if not os.path.exists(cand_yaml):
+        print("Missing items.yaml. Place it next to this script.")
+        sys.exit(1)
     try:
         import yaml
-        except Exception:
+    except Exception:
         print("PyYAML is required (pip install pyyaml)."); sys.exit(1)
-        with open(cand_yaml, "r", encoding="utf-8") as f:
-data = yaml.safe_load(f)
+    with open(cand_yaml, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
     discountable = set(data.get("discountable_categories", []))
     catalog["discountable_categories"] = discountable
     for item in data.get("items", []):
         iid = item["id"]
         catalog["order"].append(iid)
         catalog["by_id"][iid] = item
-        return catalog
+    return catalog
 
 # ---------------------------- Game State ------------------------------
-        class Pet:
-            def __init__(self, name):
-                self.name = name
-                self.bond = 30
-                self.energy = 70
-                self.obedience = 60
-                self.paw = 100
-                self.alert = 50
-                self.guard_mode = False
-                def tick(self, minutes):
-                    self.energy = clamp(self.energy - (minutes/60)*2, 0, 100)
+class Pet:
+    def __init__(self, name):
+        self.name = name
+        self.bond = 30
+        self.energy = 70
+        self.obedience = 60
+        self.paw = 100
+        self.alert = 50
+        self.guard_mode = False
+    def tick(self, minutes):
+        self.energy = clamp(self.energy - (minutes/60)*2, 0, 100)
 
-                    class Game:
-                        def __init__(self, world, config, catalog):
-                            self.world = world
-                            self.catalog = catalog
-                            self.location = 'moab' if 'moab' in world.nodes else next(iter(world.nodes.keys()))
-                            self.minutes = 8*60  # start Day 1 morning
+class Game:
+    def __init__(self, world, config, catalog):
+        self.world = world
+        self.catalog = catalog
+        self.location = 'moab' if 'moab' in world.nodes else next(iter(world.nodes.keys()))
+        self.minutes = 8*60  # start Day 1 morning
 
-# Player & role
-                            self.player_name   = config.get("name", "Traveler")
-                            self.vehicle_type  = config.get("vehicle_key", "van")
-                            self.vehicle_color = config.get("color", "white")
-    self.job           = config.get("job_key", "photographer")
-self.job_perks     = JOBS.get(self.job, {})
-    self.mode          = config.get("mode", "electric")
+        # Player & role
+        self.player_name   = config.get("name", "Traveler")
+        self.vehicle_type  = config.get("vehicle_key", "van")
+        self.vehicle_color = config.get("color", "white")
+        self.job           = config.get("job_key", "photographer")
+        self.job_perks     = JOBS.get(self.job, {})
+        self.mode          = config.get("mode", "electric")
 
-# Vehicle archetype
-    v = VEHICLES[self.vehicle_type]
-    self.water_cap_liters = v["base_water_cap"]
-    self.food_cap_rations = v["base_food_cap"]
-    self.max_water_cap    = v["max_water_cap"]
-    self.max_food_cap     = v["max_food_cap"]
-    self.house_cap        = v["house_cap_factor"]
-    self.solar_cap_watts  = v["solar_cap_watts"]
-    self.wind_cap_watts   = v["wind_cap_watts"]
+        # Vehicle archetype
+        v = VEHICLES[self.vehicle_type]
+        self.water_cap_liters = v["base_water_cap"]
+        self.food_cap_rations = v["base_food_cap"]
+        self.max_water_cap    = v["max_water_cap"]
+        self.max_food_cap     = v["max_food_cap"]
+        self.house_cap        = v["house_cap_factor"]
+        self.solar_cap_watts  = v["solar_cap_watts"]
+        self.wind_cap_watts   = v["wind_cap_watts"]
 
-# Upgrades / stores
-    self.solar_watts = 0
-    self.wind_watts  = 0
-    self.has_tent    = False
-    self.battery = 62.0  # house %
-    self.water  = min(8.0, self.water_cap_liters)
-self.food   = min(6,   self.food_cap_rations)
+        # Upgrades / stores
+        self.solar_watts = 0
+        self.wind_watts  = 0
+        self.has_tent    = False
+        self.battery = 75.0  # house %
+        self.water  = min(8.0, self.water_cap_liters)
+        self.food   = min(6,   self.food_cap_rations)
 
-# Cash & needs
-    self.cash   = float(config.get("start_cash", 120.0))
-    self.morale = 60.0
-    self.energy = 80.0
+        # Cash & needs
+        self.cash   = float(config.get("start_cash", 120.0))
+        self.morale = 60.0
+        self.energy = 80.0
 
-# Pet
-    self.pet = None
+        # Pet
+        self.pet = None
 
-# Routing
-    self.route = None
-    self.route_idx = 0
+        # Routing
+        self.route = None
+        self.route_idx = 0
 
-# EV / Fuel systems
-    self.ev_battery   = 80.0
-    self.ev_range_mi  = v["ev_range"]
-    self.fuel_gal     = 0.0
-    self.mpg          = v["mpg"]
-    self.fuel_tank_gal= v["fuel_tank_gal"]
-    if self.mode == 'fuel':
-    self.fuel_gal = 0.6 * self.fuel_tank_gal
+        # EV / Fuel systems
+        self.ev_battery   = 80.0
+        self.ev_range_mi  = v["ev_range"]
+        self.fuel_gal     = 0.0
+        self.mpg          = v["mpg"]
+        self.fuel_tank_gal= v["fuel_tank_gal"]
+        if self.mode == 'fuel':
+            self.fuel_gal = 0.6 * self.fuel_tank_gal
 
-# Work tracking
-    self.work_hours_day = -1
-    self.work_hours_today = {}
-    self.gig_cooldowns = {}
+        # Work tracking
+        self.work_hours_day = -1
+        self.work_hours_today = {}
+        self.gig_cooldowns = {}
 
-# Fuels (not propulsion fuel)
-    self.diesel_can_gal = 0.0
-    self.propane_lb     = 0.0
-    self.butane_can     = 0.0
+        # Fuels (not propulsion fuel)
+        self.diesel_can_gal = 0.0
+        self.propane_lb     = 0.0
+        self.butane_can     = 0.0
 
-# Devices: build from catalog items of type device_install
-    self.devices = {}
-    for iid in self.catalog["order"]:
-    it = self.catalog["by_id"][iid]
-    p = it.get("purchase", {})
-    if p.get("type") == "device_install":
-    key = p["device_key"]
-    amps = float(p.get("amps", 0.0))
-    toggle = bool(p.get("toggle", False))
-    d = {'owned': False, 'amps': amps}
-    if toggle: d['on'] = False
-    self.devices[key] = d
+        # Devices: build from catalog items of type device_install
+        self.devices = {}
+        for iid in self.catalog["order"]:
+            it = self.catalog["by_id"][iid]
+            p = it.get("purchase", {})
+            if p.get("type") == "device_install":
+                key = p["device_key"]
+                amps = float(p.get("amps", 0.0))
+                toggle = bool(p.get("toggle", False))
+                d = {'owned': False, 'amps': amps}
+                if toggle: d['on'] = False
+                self.devices[key] = d
 
-# Base idle draw
-    self.base_draw_amps = 0.8
+        # Base idle draw
+        self.base_draw_amps = 0.8
 
-# ---------- Helpers ----------
+    # ---------- Helpers ----------
     def _discount_applies(self, item_obj):
         cat = (item_obj.get("category") or "").lower()
         return cat in self.catalog["discountable_categories"]
 
-# ---------- Devices & Power ----------
-        def devices_panel(self):
-            print("Devices:")
-            if not self.devices:
+    # ---------- Devices & Power ----------
+    def devices_panel(self):
+        print(COL.cyan("Devices:"))
+        if not self.devices:
             print("  (none installed)")
-            for name, d in self.devices.items():
-                owned = d.get('owned', False)
-                amps  = d.get('amps', 0.0)
-                has_toggle = 'on' in d
-                if not owned:
+        for name, d in self.devices.items():
+            owned = d.get('owned', False)
+            amps  = d.get('amps', 0.0)
+            has_toggle = 'on' in d
+            if not owned:
                 print(f"  - {name}: not installed")
             else:
                 if has_toggle:
@@ -435,7 +453,7 @@ self.food   = min(6,   self.food_cap_rations)
                         print(f"  - {name}: {'ON ' if on else 'off'}")
                 else:
                     print(f"  - {name}: installed")
-        print(f"Fuels — diesel_can: {self.diesel_can_gal:.2f} gal | propane: {self.propane_lb:.1f} lb | butane: {self.butane_can:.1f} can")
+        print(COL.dim(f"Fuels — diesel_can: {self.diesel_can_gal:.2f} gal | propane: {self.propane_lb:.1f} lb | butane: {self.butane_can:.1f} can"))
 
     def toggle_device(self, name, state):
         name = (name or '').lower()
@@ -462,7 +480,7 @@ self.food   = min(6,   self.food_cap_rations)
             return 0.0
         # UV coupling: soften impact (extend slightly, not overhaul)
         w = derive_weather(node, self.minutes)
-        uv_norm = min(w['uv'], 11.0) / 11.0  # 0..1 (11 ≈ "extreme")
+        uv_norm = min(w['uv'], 11.0) / 11.0  # 0..1
         uv_factor = 0.5 + 0.5 * uv_norm     # 0.5..1.0
         return self.solar_watts * site * sun * uv_factor
 
@@ -504,11 +522,11 @@ self.food   = min(6,   self.food_cap_rations)
         return max(1, min(10, int(1 + score/3)))
 
     def print_hud(self):
+        # Kept for other uses, but STATUS won't call this anymore.
         netA, pvA, windA, loadA = self.compute_current()
         w = derive_weather(self.node(), self.minutes)
         bar = draw_bar(self.battery/100.0, width=22)
         mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric' else f"Fuel {self.fuel_gal:.1f} gal")
-        # include UV here as requested
         print(f"Power {bar} {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  UV {w['uv']:.1f}  {mode_line}")
         print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}")
 
@@ -526,7 +544,7 @@ self.food   = min(6,   self.food_cap_rations)
         rng = seeded_rng(node['id'], total_minutes // DAY_MINUTES, 'signal_work')
         return rng.random() < base
 
-    # ---------- Work & gigs (unchanged economics core) ----------
+    # ---------- Work & gigs ----------
     def _work_gig(self, hours):
         node = self.node()
         gigs = node.get('gigs') or []
@@ -723,7 +741,7 @@ self.food   = min(6,   self.food_cap_rations)
         inv = node.get('shop_inventory')  # if None at Moab, treat as all
         if self.location != 'moab' and inv is None:
             print("No outfitter here."); return
-        print("Outfitter — items (BUY <item_id> [qty])")
+        print(COL.cyan("Outfitter — items (BUY <item_id> [qty])"))
         disc = int(self.job_perks.get('shop_discount', 0)*100)
         if disc: print(f"* {disc}% job discount applies to: {', '.join(sorted(self.catalog['discountable_categories']))}")
         def allowed(iid): return (inv is None) or (iid in inv)
@@ -737,7 +755,7 @@ self.food   = min(6,   self.food_cap_rations)
             if p.get("type") == "device_install" and float(p.get("amps", 0.0)) > 0 and "~" not in info:
                 info = (info + f" ~{p.get('amps')}A when ON").strip()
             print(f"  {iid:<13} ${price:<4}  {info}")
-        print(f"Cash: ${self.cash:.0f}")
+        print(f"Cash: {COL.green(f'${self.cash:.0f}')}")
 
     def _apply_effect(self, effect, qty):
         etype = effect.get("type")
@@ -870,7 +888,7 @@ self.food   = min(6,   self.food_cap_rations)
 
         self.cash -= price
         info_tail = f" Gained: {purchased_msg}" if purchased_msg else ""
-        print(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}.{info_tail}")
+        print(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: {COL.green(f'${self.cash:.0f}')}.{info_tail}")
 
         if it.get("purchase", {}).get("type") in ('stat_inc','multi_inc','device_install'):
             print(f"Upgrades — solar: {self.solar_watts}W | wind: {self.wind_watts}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_liters:.0f}L/{self.food_cap_rations} rations")
@@ -977,12 +995,12 @@ self.food   = min(6,   self.food_cap_rations)
         w = derive_weather(n, self.minutes)
         biome = n.get('biome','').replace('_',' ')
         elev = n.get('elevation_ft','?')
-        print(f"You are at {n['name']}. {biome} at {elev} ft. Season: {w['season'].title()}.")
-        self.print_hud()
+        print(COL.cyan(f"You are at {n['name']}") + f". {biome} at {elev} ft. Season: {w['season'].title()}.")
+        # (HUD removed from LOOK)
         desc = n.get('description')
         if desc: print(desc)
         print(f"Time: {minutes_to_hhmm(self.minutes)} | Weather: {describe_weather(w)}.")
-        print(f"Resources — water: {n['resources'].get('water','?')}, food: {n['resources'].get('food','?')}, solar: {n['resources'].get('solar','?')}, wind: {n['resources'].get('wind','?')}.")
+        print(COL.dim(f"Resources — water: {n['resources'].get('water','?')}, food: {n['resources'].get('food','?')}, solar: {n['resources'].get('solar','?')}, wind: {n['resources'].get('wind','?')}."))
         if n.get('pet_adoption'):
             print("You spot a rescue meetup. You could ADOPT PET here.")
         if self.pet:
@@ -990,9 +1008,14 @@ self.food   = min(6,   self.food_cap_rations)
 
     def status(self):
         w = derive_weather(self.node(), self.minutes)
-        print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
-        print(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)} | Season: {w['season'].title()}")
-        self.print_hud()
+        title_line = f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}"
+        print(COL.cyan(title_line))
+        print(COL.dim(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)} | Season: {w['season'].title()}"))
+        # Compact power line (no bar)
+        netA, pvA, windA, loadA = self.compute_current()
+        mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric' else f"Fuel {self.fuel_gal:.1f} gal")
+        print(f"Power {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  UV {w['uv']:.1f}  {mode_line}")
+        print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash {COL.green(f'${self.cash:.0f}')}")
         print(f"Env  Temp {w['temp_f']:.0f}°F | Humidity {w['humidity']:.0f}% | UV {w['uv']:.1f}")
         if self.pet:
             p = self.pet
@@ -1238,7 +1261,7 @@ self.food   = min(6,   self.food_cap_rations)
 HELP_TEXT = """Commands:
   LOOK | STATUS | MAP
   ROUTE TO <place> | DRIVE
-  CHECK WEATHER
+  WEATHER
   CAMP [stealth|paid|dispersed]
   COOK | SLEEP
   HIKE <n|s|e|w|ne|nw|se|sw>   (daylight only; auto-turns back at dusk)
@@ -1247,8 +1270,7 @@ HELP_TEXT = """Commands:
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
   COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
-  DEVICES | TOGGLE <device_key> <on|off>
-  HELP | QUIT
+  DEVICES | TOGGLE <device> <on|off>
 """
 
 def load_world():
@@ -1272,13 +1294,13 @@ def load_world():
     return World(nodes)
 
 def pick_from_dict(title, dct):
-    print(title)
+    print(COL.cyan(title))
     keys = list(dct.keys())
     for i, k in enumerate(keys, 1):
         lab = dct[k].get("label", k)
         print(f"  {i}) {lab} [{k}]")
     while True:
-        ans = input("> ").strip().lower()
+        ans = input(COL.prompt("> ")).strip().lower()
         if ans.isdigit():
             idx = int(ans)-1
             if 0 <= idx < len(keys): return keys[idx]
@@ -1286,38 +1308,57 @@ def pick_from_dict(title, dct):
         print("Pick by number or key from the list above.")
 
 def character_creation():
-    print("=== Character & Vehicle Setup ===")
-    name = input("Name (enter to randomize): ").strip()
-    if not name: name = random.choice(["River","Juniper","Sky","Ash","Indigo","Cedar","Rook"])
-    color = input("Vehicle color (e.g., white/sand/forest/red): ").strip() or "white"
+    print(COL.cyan("=== Character & Vehicle Setup ==="))
+    name = input(COL.prompt("Name (enter to randomize): ")).strip()
+    if not name:
+        name = random.choice(["River", "Juniper", "Sky", "Ash", "Indigo", "Cedar", "Rook"])
+    color = input(COL.prompt("Vehicle color (e.g., white/sand/forest/red): ")).strip() or "white"
+
     vkey = pick_from_dict("Pick a vehicle type:", VEHICLES)
     jkey = pick_from_dict("Pick a job:", JOBS)
+
+    # Drivetrain
     mode = ""
     while mode not in ("electric", "fuel"):
-        mode = input("Drivetrain [electric|fuel]: ").strip().lower() or "electric"
+        mode = input(COL.prompt("Drivetrain [electric|fuel]: ")).strip().lower() or "electric"
+
+    # Randomized starting cash (seeded so same choices = same roll)
     rng = seeded_rng(name, color, vkey, jkey, mode)
     start_cash = rng.randint(500, 2000)
-    cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
-    print(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: ${start_cash}")
+
+    cfg = {
+        "name": name, "color": color,
+        "vehicle_key": vkey, "job_key": jkey,
+        "mode": mode,
+        "start_cash": float(start_cash)
+    }
+    print(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash}')}") 
     return cfg
 
 def prelude_shopping(game):
-    print("\n=== Moab Outfitters — Prelude ===")
+    """Let players spend starting cash in Moab before heading out."""
+    print("\n" + COL.cyan("=== Moab Outfitters — Prelude ==="))
     print("You can buy initial supplies/upgrades within your starting budget.")
     print("Type SHOP to view items, BUY <item_id> [qty] to purchase, or DONE to begin your journey.")
     while True:
-        line = input("\n> ").strip()
+        line = input("\n" + make_cli_prompt(game)).strip()
+
         up = line.upper()
-        if up in ("DONE","START"): break
-        elif up == "SHOP": game.shop()
+        if up in ("DONE","START"):
+            break
+        elif up == "SHOP":
+            game.shop()
         elif up.startswith("BUY "):
             parts = line.split()
             item = parts[1] if len(parts) > 1 else ""
-            qty  = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
+            qty = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
             game.buy(item, qty)
-        elif up in ("HELP","?"): print("Commands: SHOP | BUY <item_id> [qty] | DONE")
-        elif up == "": continue
-        else: print("Use SHOP, BUY ..., or DONE.")
+        elif up in ("HELP","?"):
+            print("Commands: SHOP | BUY <item_id> [qty] | DONE")
+        elif up == "":
+            continue
+        else:
+            print("Use SHOP, BUY ..., or DONE.")
 
 def main():
     world = load_world()
@@ -1325,64 +1366,92 @@ def main():
     cfg = character_creation()
     game = Game(world, cfg, catalog)
     prelude_shopping(game)
-    print("\nNomad IF — Utah slice")
+
+    print("\n" + COL.cyan("Nomad IF — Utah slice"))
     print("Type HELP for commands. You’re in Moab and the road is yours.\n")
     game.look()
+
     while True:
         try:
-            line = input("\n> ").strip()
+            line = input("\n" + make_cli_prompt(game)).strip()
         except (EOFError, KeyboardInterrupt):
             print("\nGood roads and tailwinds."); break
         if not line: continue
         u = line.upper()
-        if u == 'HELP': print(HELP_TEXT)
-        elif u in ('LOOK','L'): game.look()
-        elif u in ('STATUS','STATS'): game.status()
-        elif u == 'MAP': game.show_map()
-        elif u.startswith('ROUTE TO '): game.route_to(line.split(' ', 2)[2])
-        elif u == 'DRIVE': game.drive()
-        elif u == 'CHECK WEATHER': game.check_weather()
+
+        if u == 'HELP':
+            print(HELP_TEXT)
+        elif u in ('LOOK','L'):
+            game.look()
+        elif u in ('STATUS','STATS'):
+            game.status()
+        elif u == 'MAP':
+            game.show_map()
+        elif u.startswith('ROUTE TO '):
+            game.route_to(line.split(' ', 2)[2])
+        elif u == 'DRIVE':
+            game.drive()
+        elif u == 'WEATHER':
+            game.check_weather()
         elif u.startswith('CAMP'):
-            parts = line.split(); style = parts[1] if len(parts)>1 else ''
+            parts = line.split()
+            style = parts[1] if len(parts)>1 else ''
             game.camp(style)
-        elif u == 'COOK': game.cook()
-        elif u == 'SLEEP': game.sleep()
+        elif u == 'COOK':
+            game.cook()
+        elif u == 'SLEEP':
+            game.sleep()
         elif u.startswith('HIKE'):
-            parts = line.split(); d = parts[1] if len(parts) > 1 else ''
+            parts = line.split()
+            d = parts[1] if len(parts) > 1 else ''
             game.hike(d)
-        elif u == 'SHOP': game.shop()
+        elif u == 'SHOP':
+            game.shop()
         elif u.startswith('BUY '):
-            parts = line.split(); item = parts[1] if len(parts) > 1 else ''
+            parts = line.split()
+            item = parts[1] if len(parts) > 1 else ''
             qty  = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
             game.buy(item, qty)
-        elif u.startswith('MODE '): game.set_mode(line.split(' ', 1)[1])
+        elif u.startswith('MODE '):
+            game.set_mode(line.split(' ', 1)[1])
         elif u.startswith('CHARGE'):
-            parts = line.split(); method = parts[1] if len(parts) > 1 else ''
+            parts = line.split()
+            method = parts[1] if len(parts) > 1 else ''
             game.charge(method)
         elif u.startswith('REFUEL'):
-            parts = line.split(); gallons = parts[1] if len(parts) > 1 else ''
+            parts = line.split()
+            gallons = parts[1] if len(parts) > 1 else ''
             game.refuel(gallons)
-        elif u == 'ADOPT PET': game.adopt_pet()
-        elif u == 'FEED PET': game.feed_pet()
-        elif u == 'WATER PET': game.water_pet()
-        elif u == 'WALK PET': game.walk_pet()
-        elif u == 'PLAY WITH PET': game.play_with_pet()
+        elif u == 'ADOPT PET':
+            game.adopt_pet()
+        elif u == 'FEED PET':
+            game.feed_pet()
+        elif u == 'WATER PET':
+            game.water_pet()
+        elif u == 'WALK PET':
+            game.walk_pet()
+        elif u == 'PLAY WITH PET':
+            game.play_with_pet()
         elif u.startswith('COMMAND PET'):
             verb = line.split(' ', 2)[2] if len(line.split(' ', 2))>2 else ''
             game.command_pet(verb)
+        elif u in ('QUIT','EXIT'):
+            print("You turn the key, and the road beckons. Bye."); break
         elif u.startswith('WORK'):
             parts = line.split()
             kind  = parts[1] if len(parts)>1 and parts[1].lower() not in ('1','2','3','4','5','6') else ''
             hours = parts[2] if len(parts)>2 else (parts[1] if len(parts)>1 and parts[1].isdigit() else None)
             game.work(kind, hours)
-        elif u == 'DEVICES': game.devices_panel()
+        elif u == 'DEVICES':
+            game.devices_panel()
         elif u.startswith('TOGGLE'):
             parts = line.split()
-            if len(parts) >= 3: game.toggle_device(parts[1], parts[2])
-            else: print("TOGGLE <device_key> <on|off>")
-        elif u in ('QUIT','EXIT'):
-            print("You turn the key, and the road beckons. Bye."); break
-        else: print("Unknown command. Type HELP.")
+            if len(parts) >= 3:
+                game.toggle_device(parts[1], parts[2])
+            else:
+                print("TOGGLE <device> <on|off>")
+        else:
+            print("Unknown command. Type HELP.")
 
 if __name__ == "__main__":
     main()

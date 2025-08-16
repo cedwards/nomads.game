@@ -94,6 +94,7 @@ nodes:
     hike_map: { n: 4, s: 5, e: 4, w: 5, ne: 4, nw: 5, se: 5, sw: 4 }
     biome: mesa_desert
     elevation_ft: 6000
+    shop_inventory: ["water"]
     season_rules: ["heat_exposure", "wind_mesas"]
     resources: { water: "scarce", food: "pack_in", solar: "excellent", wind: "good" }
     pet_rules: "strict"
