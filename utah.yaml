@@ -1,0 +1,214 @@
+# world/utah.yaml
+# Ten-location Utah scaffold for the Nomad IF prototype.
+# Distances and some attributes are approximate and for gameplay, not navigation.
+
+nodes:
+  - id: zion
+    description: |
+      Sandstone cathedrals glow creamsicle and rust while the Virgin River threads cottonwoods below.
+      Slot canyons breathe cool shade; shuttles and steep grades keep you honest. Cell’s fine near
+      Springdale, then the walls swallow signal and sound alike.
+    name: "Zion National Park"
+    hike_map: { n: 3, s: 2, e: 5, w: 2, ne: 4, nw: 3, se: 5, sw: 2 }
+    biome: canyon
+    elevation_ft: 4000
+    season_rules: ["monsoon_flash_flood", "summer_heat"]
+    resources: { water: "moderate", food: "nearby_town", solar: "poor", wind: "fair" }
+    pet_rules: "strict"
+    gigs:
+      - { id: angels_flight, window: "golden_hour", payout: [120, 240], rep: { locals: 1, rangers: 1 } }
+    events:
+      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
+      - { id: flash_flood_watch, chance: 0.06, tags: ["monsoon"] }
+    connections:
+      - { to: bryce, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
+      - { to: valley_of_gods, road: "highway", miles: 155, grade: "mixed", wind_exposure: "medium" }
+
+  - id: bryce
+    description: >
+      A high-cold amphitheater of hoodoos—orange organ pipes cut by frost and time. Air runs thin,
+      nights run star-heavy, and sunrise paints the rim with molten gold. Beauty taxes your lungs,
+      rewards your patience.
+    name: "Bryce Canyon"
+    hike_map: { n: 2, s: 2, e: 3, w: 3, ne: 3, nw: 3, se: 4, sw: 4 }
+    biome: high_plateau
+    elevation_ft: 8000
+    season_rules: ["cold_nights", "snow_shoulders"]
+    resources: { water: "campground", food: "nearby_town", solar: "good", wind: "good" }
+    pet_rules: "moderate"
+    gigs:
+      - { id: star_party, window: "night_clear", payout: [90, 180], rep: { rangers: 1 } }
+    events:
+      - { id: altitude_fatigue, chance: 0.10, tags: ["cold","energy"] }
+    connections:
+      - { to: zion, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
+      - { to: capitol_reef, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
+      - { to: mirror_lake_highway, road: "highway", miles: 250, grade: "mixed", wind_exposure: "medium" }
+
+  - id: capitol_reef
+    description: >
+      The Waterpocket Fold kinks the desert like a rug pushed against a wall. Orchards, spigots,
+      pies, and a river ribbon lend mercy; backroads wander to views that feel unclaimed. Flash floods
+      redraw the map without asking.
+    name: "Capitol Reef"
+    hike_map: { n: 3, s: 3, e: 4, w: 4, ne: 3, nw: 3, se: 5, sw: 5 }
+    biome: desert_canyon
+    elevation_ft: 5500
+    season_rules: ["flash_floods", "shoulder_season_best"]
+    resources: { water: "spigots", food: "bakery", solar: "good", wind: "fair" }
+    pet_rules: "moderate"
+    gigs:
+      - { id: orchard_stories, window: "daylight", payout: [60, 130], rep: { locals: 1 } }
+    events:
+      - { id: washout_detour, chance: 0.08, tags: ["monsoon","detour"] }
+    connections:
+      - { to: bryce, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
+      - { to: san_rafael_swell, road: "scenic", miles: 65, grade: "moderate", wind_exposure: "medium" }
+      - { to: moab, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
+
+  - id: arches
+    description: >
+      Stone windows, fins, and gravity tricks—earth doing yoga at sunrise. Crowds ebb before dawn,
+      heat rises by noon, and cryptobiotic soil begs for a wide step. Timed entry turns time itself
+      into a puzzle.
+    name: "Arches"
+    hike_map: { n: 2, s: 3, e: 3, w: 2, ne: 4, nw: 3, se: 3, sw: 2 }
+    biome: desert_canyon
+    elevation_ft: 4100
+    season_rules: ["timed_entry", "summer_heat"]
+    resources: { water: "visitor_center", food: "moab", solar: "good", wind: "fair" }
+    pet_rules: "strict"
+    gigs:
+      - { id: delicate_dawn, window: "sunrise", payout: [140, 260], rep: { tourists: 1 } }
+    events:
+      - { id: permit_lottery, chance: 0.10, tags: ["access","timing"] }
+    connections:
+      - { to: moab, road: "highway", miles: 5, grade: "flat", wind_exposure: "low" }
+      - { to: canyonlands, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
+
+  - id: canyonlands
+    description: >
+      A continent of canyons stacked to the horizon. Island in the Sky drops off the edge of thought,
+      The Needles maze your compass, and the Maze whispers “come prepared.” Water is rumor; wind is fact.
+    name: "Canyonlands"
+    hike_map: { n: 4, s: 5, e: 4, w: 5, ne: 4, nw: 5, se: 5, sw: 4 }
+    biome: mesa_desert
+    elevation_ft: 6000
+    season_rules: ["heat_exposure", "wind_mesas"]
+    resources: { water: "scarce", food: "pack_in", solar: "excellent", wind: "good" }
+    pet_rules: "strict"
+    gigs:
+      - { id: island_sky_set, window: "golden_hour", payout: [120, 220], rep: { nomads: 1 } }
+    events:
+      - { id: water_scarcity, chance: 0.12, tags: ["water","logistics"] }
+    connections:
+      - { to: moab, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
+      - { to: arches, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
+      - { to: valley_of_gods, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
+      - { to: san_rafael_swell, road: "scenic", miles: 100, grade: "mix"}
+
+  - id: moab
+    description: >
+      Red-rock boomtown and gearhead bazaar: welders, espresso, river showers, trail gossip. Vans line
+      the back streets, dogs nap under patio tables, and upgrades happen between burritos. If the desert
+      is your circuit board, Moab is the soldering iron.
+    name: "Moab"
+    hike_map: { n: 3, s: 3, e: 3, w: 3, ne: 4, nw: 4, se: 4, sw: 4 }
+    biome: town_desert
+    elevation_ft: 4000
+    season_rules: ["summer_heat"]
+    resources: { water: "abundant", food: "abundant", solar: "good", wind: "fair", parts: "shops" }
+    pet_rules: "friendly"
+    pet_adoption: true
+    gigs:
+      - { id: shop_day, window: "daylight", payout: [40, 120], rep: { locals: 1 } }
+    events:
+      - { id: rescue_event, chance: 0.12, tags: ["pets","community"] }
+    connections:
+      - { to: arches, road: "highway", miles: 5, grade: "flat", wind_exposure: "low" }
+      - { to: canyonlands, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
+      - { to: san_rafael_swell, road: "mixed", miles: 110, grade: "light", wind_exposure: "high" }
+      - { to: valley_of_gods, road: "highway", miles: 120, grade: "mixed", wind_exposure: "high" }
+      - { to: capitol_reef, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
+
+  - id: san_rafael_swell
+    description: >
+      Empty horizons and reefed stone, sinuous slots that taste like wind. Nights turn pitch and galaxies
+      show off; turbines purr while the van hums itself warm. Solitude sharpens listening and batteries.
+    name: "San Rafael Swell"
+    hike_map: { n: 4, s: 4, e: 5, w: 5, ne: 4, nw: 4, se: 5, sw: 5 }
+    biome: high_desert
+    elevation_ft: 6000
+    season_rules: ["windy_spring", "cold_winter_nights"]
+    resources: { water: "scarce", food: "pack_in", solar: "excellent", wind: "excellent" }
+    pet_rules: "friendly"
+    gigs:
+      - { id: milky_way_commission, window: "night_clear", payout: [180, 320], rep: { nomads: 1 } }
+    events:
+      - { id: wind_watch, chance: 0.22, tags: ["wind","power_boon"] }
+      - { id: paw_cactus, chance: 0.08, req: ["pet"], effect: "pet_paw_health--" }
+    connections:
+      - { to: moab, road: "mixed", miles: 110, grade: "light", wind_exposure: "high" }
+      - { to: capitol_reef, road: "scenic", miles: 65, grade: "moderate", wind_exposure: "medium" }
+      - { to: bonneville_salt_flats, road: "highway", miles: 160, grade: "mixed", wind_exposure: "high" }
+      - { to: canyonlands, road: "scenic", miles: 100, grade: "mixed", wind_exposure: "high" }
+
+  - id: bonneville_salt_flats
+    description: >
+      A white so bright it hums; after rain the world becomes mirror and myth. Mirage highways point
+      everywhere at once, corrosion licks at metal, and shade is a fairy tale. Speed-record ghosts
+      pace the horizon.
+    name: "Bonneville Salt Flats"
+    hike_map: { n: 3, s: 3, e: 4, w: 4, ne: 4, nw: 4, se: 3, sw: 3 }
+    biome: salt_pan
+    elevation_ft: 4225
+    season_rules: ["spring_flooding", "summer_glare"]
+    resources: { water: "bring_lots", food: "scarce", solar: "excellent", wind: "fair" }
+    pet_rules: "moderate"
+    gigs:
+      - { id: salt_and_stars, window: "night_clear", payout: [150, 260], rep: { tourists: 1 } }
+    events:
+      - { id: corrosion_check, chance: 0.10, tags: ["maintenance"] }
+    connections:
+      - { to: san_rafael_swell, road: "highway", miles: 160, grade: "mixed", wind_exposure: "high" }
+      - { to: mirror_lake_highway, road: "highway", miles: 150, grade: "mixed", wind_exposure: "medium" }
+
+  - id: mirror_lake_highway
+    description: >
+      Spruce and lodgepole ladder up to glassy tarns under quick weather. Gates close with snow, mosquitoes
+      conduct summer choirs, and moose write their own right-of-way. Solar sulks in the trees; wind doesn’t.
+    name: "Mirror Lake Highway (Uintas)"
+    hike_map: { n: 4, s: 3, e: 4, w: 3, ne: 5, nw: 5, se: 4, sw: 3 }
+    biome: alpine
+    elevation_ft: 8500
+    season_rules: ["snow_closure", "mosquito_summer"]
+    resources: { water: "lakes_streams", food: "limited", solar: "poor", wind: "good" }
+    pet_rules: "friendly"
+    gigs:
+      - { id: high_lake_morning, window: "morning", payout: [80, 150], rep: { locals: 1 } }
+    events:
+      - { id: bear_check, chance: 0.06, tags: ["wildlife","storage"] }
+    connections:
+      - { to: bonneville_salt_flats, road: "highway", miles: 150, grade: "mixed", wind_exposure: "medium" }
+      - { to: bryce, road: "highway", miles: 250, grade: "mixed", wind_exposure: "medium" }
+
+  - id: valley_of_gods
+    description: >
+      Monoliths stand like patient giants along crimson washboard. Piñon and juniper dot the silence,
+      thunderheads parade at dusk, and camps sprawl with a thousand-mile view. Dispersed is king; the night
+      is loud with quiet.
+    name: "Valley of the Gods / Four Corners"
+    hike_map: { n: 3, s: 4, e: 4, w: 3, ne: 5, nw: 4, se: 4, sw: 5 }
+    biome: desert
+    elevation_ft: 5200
+    season_rules: ["monsoon_cells", "desert_extremes"]
+    resources: { water: "haul", food: "sparse", solar: "excellent", wind: "good" }
+    pet_rules: "friendly"
+    gigs:
+      - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
+    events:
+      - { id: dust_storm, chance: 0.10, tags: ["wind","visibility"] }
+    connections:
+      - { to: zion, road: "highway", miles: 155, grade: "mixed", wind_exposure: "medium" }
+      - { to: moab, road: "highway", miles: 120, grade: "mixed", wind_exposure: "high" }
+      - { to: canyonlands, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
