@@ -448,7 +448,7 @@ class Game:
         self.base_draw_amps = 0.8  # standby draw
         self.devices = {
             'camera':        {'owned': False, 'on': False, 'amps': 1.0},
-            'diesel_heater': {'owned': False, 'on': False, 'amps': 1.2},
+            'heater':        {'owned': False, 'on': False, 'amps': 1.2},
             'fridge':        {'owned': False, 'on': False, 'amps': 2.0},
             'laptop':        {'owned': False, 'on': False, 'amps': 3.0},
             'starlink':      {'owned': False, 'on': False, 'amps': 4.0},
@@ -467,6 +467,15 @@ class Game:
             self.adopt_pet()
         else:
             return
+
+    def fuel_status(self):
+        print(f"Fuel Status:{self.fuel_gal}G")
+        print(f"Fuel MPG:   {self.mpg} mpg")
+        print(f"Fuel Tank:  {self.fuel_tank_gal} gallons")
+
+    def ev_status(self):
+        print(f"EV Battery: {self.ev_battery}%")
+        print(f"EV Range: {self.ev_range_mi} miles")
 
     def solar_power_status(self):
         print(f"{self.solar_watts}")
@@ -565,11 +574,11 @@ class Game:
             amps += self.devices['starlink']['amps']
         if self.devices['laptop']['owned'] and self.devices['laptop']['on']:
             amps += self.devices['laptop']['amps']
-        if self.devices['diesel_heater']['owned'] and self.devices['diesel_heater']['on']:
+        if self.devices['heater']['owned'] and self.devices['heater']['on']:
             if self.diesel_can_gal > 0:
-                amps += self.devices['diesel_heater']['amps']
+                amps += self.devices['heater']['amps']
             else:
-                self.devices['diesel_heater']['on'] = False
+                self.devices['heater']['on'] = False
         return amps
 
     def node(self):
@@ -592,7 +601,7 @@ class Game:
     # ------------------ Devices ------------------
     def devices_panel(self):
         print("Devices:")
-        for k in ('fridge','starlink','diesel_heater','stove','jetboil', 'laptop'):
+        for k in ('fridge','starlink','heater','stove','jetboil', 'laptop'):
             d = self.devices[k]
             owned = d.get('owned', False)
             on    = d.get('on', False)
@@ -608,14 +617,14 @@ class Game:
     def toggle_device(self, name, state):
         name = (name or '').lower()
         if name not in self.devices:
-            print("Unknown device. Try: fridge, starlink, diesel_heater, stove, jetboil"); return
+            print("Unknown device. Try: fridge, starlink, heater, stove, jetboil"); return
         d = self.devices[name]
         if not d.get('owned', False):
             print("You don't own that device."); return
         if 'on' not in d:
             print(f"{name} has no on/off; it only consumes fuel when cooking."); return
         on = True if state.lower() in ('on','true','1') else False
-        if name == 'diesel_heater' and on and self.diesel_can_gal <= 0:
+        if name == 'heater' and on and self.diesel_can_gal <= 0:
             print("No diesel in the can. BUY diesel_can <gallons> first."); return
         d['on'] = on
         print(f"{name} set to {'ON' if on else 'off'}.")
@@ -630,10 +639,10 @@ class Game:
             self.battery = clamp(self.battery + delta_pct, 0, 100)
 
             # Diesel heater fuel
-            if self.devices['diesel_heater']['owned'] and self.devices['diesel_heater']['on']:
+            if self.devices['heater']['owned'] and self.devices['heater']['on']:
                 burn = 0.15 * (TURN_MINUTES/60.0)
                 if self.diesel_can_gal >= burn: self.diesel_can_gal -= burn
-                else: self.diesel_can_gal = 0.0; self.devices['diesel_heater']['on'] = False
+                else: self.diesel_can_gal = 0.0; self.devices['heater']['on'] = False
 
             self.minutes += TURN_MINUTES
             self.water  = clamp(self.water - 0.03, 0, self.water_cap_gallons)
@@ -1034,9 +1043,13 @@ class Game:
         elif key == "water_gallons":
             before = self.water; self.water = clamp(self.water + 1.0*qty, 0, self.water_cap_gallons); purchased = round(self.water - before, 1)
         elif key == "solar_watts":
-            before = self.solar_watts; self.solar_watts = min(self.solar_watts + 200*qty, self.solar_cap_watts); purchased = self.solar_watts - before
+            before = self.solar_watts
+            self.solar_watts = min(self.solar_watts + qty, self.solar_cap_watts)
+            purchased = self.solar_watts - before
         elif key == "wind_watts":
-            before = self.wind_watts; self.wind_watts = min(self.wind_watts + 300*qty, self.wind_cap_watts); purchased = self.wind_watts - before
+            before = self.wind_watts
+            self.wind_watts = min(self.wind_watts + qty, self.wind_cap_watts)
+            purchased = self.wind_watts - before
         elif key == "ev_range_mi":
             before = self.ev_range_mi; self.ev_range_mi = min(self.ev_range_mi + 40*qty, 400); purchased = self.ev_range_mi - before
         elif key == "water_cap_gallons":
@@ -1280,18 +1293,22 @@ class Game:
 # ---------------------------- IO & Loop -------------------------------
 
 HELP_TEXT = """Commands:
-  LOOK | STATUS | MAP
-  ROUTE TO <place> | DRIVE
-  WEATHER
-  CAMP [stealth|paid|dispersed]
-  COOK | SLEEP
-  HIKE daylight only; turns back at dusk
-  WORK [photo|dev|mechanic|guide|artist|gig] [hours]
-  SHOP | BUY <item_id> [qty]
-  MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
+  CAMP [stealth|paid|dispersed]
   COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
+  COOK | SLEEP
   DEVICES | TURN <device> <on|off>
+  HIKE daylight only; turns back at dusk
+  INVENTORY | INV | I
+  LOOK | STATUS | MAP
+  MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
+  POWER | ELECTRICAL
+  ROUTE TO <place> | DRIVE
+  SHOP | BUY <item_id> [qty]
+  SOLAR
+  WEATHER
+  WIND
+  WORK [photo|dev|mechanic|guide|artist|gig] [hours]
   HELP | QUIT
 """
 
@@ -1435,13 +1452,15 @@ def main():
             parts = line.split()
             if len(parts) >= 3: game.toggle_device(parts[1], parts[2])
             else: print("TURN <device> <on|off>")
-        elif u == 'ELECTRICAL': game.electrical_panel()
+        elif u in ('ELECTRICAL','POWER'): game.electrical_panel()
         elif u == 'EXP': game.exp()
         elif u == 'ELEVATION': game.elevation()
         elif u in ('INVENTORY','INV','I'): game.inventory()
         elif u in ('CASH','BANK','MONEY'): game.bank()
         elif u == "SOLAR": game.solar_power_status()
         elif u == "WIND": game.wind_power_status()
+        elif u == "EV": game.ev_status()
+        elif u == "FUEL": game.fuel_status()
         else:
             print("Unknown command. Type HELP.")
 
