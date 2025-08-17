@@ -372,8 +372,9 @@ def level_from_xp(xp):
 # ---------------------------- Pets ------------------------------------
 
 class Pet:
-    def __init__(self, name):
+    def __init__(self, name, breed):
         self.name = name
+        self.breed = breed
         self.bond = 30
         self.energy = 70
         self.obedience = 60
@@ -434,6 +435,8 @@ class Game:
 
         # Pet
         self.pet = None
+        self.pet_name = None
+        self.pet_type = None
 
         # Routing
         self.route = None
@@ -475,6 +478,7 @@ class Game:
         self.catalog = catalog
 
     def _check_for_truck_camper(self):
+        print(f"{self.vehicle_type}")
         if self.vehicle_type == 'truck_camper':
             self.adopt_pet()
         else:
@@ -666,7 +670,7 @@ class Game:
               f"solar: {n['resources'].get('solar','?')}, "
               f"wind: {n['resources'].get('wind','?')}.")
         if n.get('pet_adoption'): print("You spot a rescue meetup. You could ADOPT PET here.")
-        if self.pet: print(f"Your companion {self.pet.name} watches the horizon. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
+        if self.pet: print(f"Your companion {self.pet.name}, a {self.pet.breed}, watches the horizon. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
 
     def status(self):
         print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
@@ -1153,10 +1157,35 @@ class Game:
     def adopt_pet(self):
         if not self.node().get('pet_adoption'): print("No adoption event here. Try a larger town/rescue hub."); return
         if self.pet: print("You already travel with a loyal companion."); return
-        name = random.choice(["Oreo","Mesa","Juniper","Pixel","Bowie","Zion","Havasu"])
-        self.pet = Pet(name); self.morale = clamp(self.morale + 10, 0, 100)
-        print(f"You meet {name}, who promptly claims the passenger seat. Bond +10.")
-        xp = 30
+
+        print(f"{self.vehicle_type}")
+
+        if self.vehicle_type == "subaru":
+            self.pet_type = "cat"
+            print("Detected Subaru")
+            print(f"{self.pet_type}")
+        elif self.vehicle_type == "truck_camper":
+            self.pet_type = "dog"
+            print("Detected Truck")
+            print(f"{self.pet_type}")
+        else:
+            self.pet_type = random.choice(["dog","cat"])
+
+        if self.pet_type == "dog":
+            breed = random.choice(["French Bulldog","Golden Retriever","Labrador Retriever","Rottweiler","Beagle","Bulldog","Poodle","Dachsund","German Shorthair Pointer","German Shepherd","Shih Tzu","Terrier","Golden Doodle","Australian Sheepdog"])
+            name = random.choice(["Oreo","Mesa","Juniper","Pixel","Bowie","Zion","Havasu","Spot","Flash","The Dude","Max","Scooter"])
+            spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
+            action = random.choice(["licks your face","claims the passenger seat","looks at you with big brown eyes","wags their tail","barks excitedly"])
+            self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
+            print(f"You meet {name}, a {spirit} {breed}, who promptly {action}. Bond +10.")
+        if self.pet_type == "cat":
+            breed = random.choice(["Siamese","Persian","Maine Coon","Ragdoll","Sphynx","American Shorthair","Burmese","British Shorthair","Longhair","Bobtail cat"])
+            name = random.choice(["Swazi","Whiskers","Patches","Satan","Grouchy Pants","Moo","Olaf","Chandler","Joey","Monica","Ross","Phoebe","Rachael"])
+            spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
+            action = random.choice(["disappears into the back","makes their way onto the dash","winds between your legs","meows hungrily"])
+            self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
+            print(f"You meet {name}, a {spirit} {breed} cat, who promptly {action}. Bond +6.")
+        xp = clamp(10, 0, 30)
         self.add_xp(int(xp), "pet adoption")
 
     def feed_pet(self):
@@ -1316,8 +1345,8 @@ def main():
     prelude_shopping(game)
 
     print(COL.cyan("Welcome to Nomads!"))
-    game._check_for_truck_camper()
     game.look()
+    game._check_for_truck_camper()
     print("Type HELP for commands.\n")
 
     while True:
