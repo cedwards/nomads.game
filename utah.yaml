@@ -109,9 +109,24 @@ nodes:
 
   - id: moab
     description: |
-      Red-rock boomtown and gearhead bazaar: welders, espresso, river showers, trail gossip. Vans line
-      the back streets, dogs nap under patio tables, and upgrades happen between burritos. If the desert
-      is your circuit board, Moab is the soldering iron.
+      You are in Moab. The main drag is a bustle of gear shops, coffee houses,
+      outfitters, and diners catering to a mix of dusty mountain bikers, sunburnt
+      river rats, and families gawking at the scale of it all. Pickup trucks with
+      bike racks outnumber sedans ten to one, and the smell of sunscreen mixes with
+      burgers and espresso. Moab feels transient—not in the sense that it’s empty,
+      but that everyone there is *going somewhere*—into the canyons, up the trails,
+      or down the river. There’s a restless energy, a sense that staying indoors is
+      almost a sin when the land outside calls so loudly.
+
+      To the north, **Arches National Park** rises with its improbable sandstone
+      gateways—delicate spans of red rock against cobalt skies. These arches feel
+      sculpted by time with the patience of a god, every one a monument to erosion as
+      art.
+
+      To the south and east, **Canyonlands** spreads out like a cracked mosaic,
+      carved by the Colorado and Green Rivers into an endless labyrinth of mesas,
+      buttes, and slot canyons. Standing at the Island in the Sky, you feel suspended
+      above a broken world, each canyon a wound in the earth.
     name: "Moab"
     hike_map: { n: 3, s: 3, e: 3, w: 3, ne: 4, nw: 4, se: 4, sw: 4 }
     biome: town_desert

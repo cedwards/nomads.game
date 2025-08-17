@@ -10,6 +10,7 @@
 # - Safer shop.buy handling (purchased always defined); tent enables dispersed
 # - Device toggles and fuel consumption
 
+import yaml
 import os, sys, math, json, random
 from collections import defaultdict
 
@@ -63,48 +64,11 @@ def seeded_rng(*parts):
 
 # ---------------------------- Archetypes ------------------------------
 
-VEHICLES = {
-    "sedan": {
-        "label": "Sedan (stealthy, light)",
-        "base_water_cap": 25, "max_water_cap": 40,
-        "base_food_cap": 8,   "max_food_cap": 14,
-        "house_cap_factor": 0.7,
-        "solar_cap_watts": 400, "wind_cap_watts": 300,
-        "ev_range": 300, "mpg": 30, "fuel_tank_gal": 14
-    },
-    "van": {
-        "label": "Van (classic nomad rig)",
-        "base_water_cap": 50, "max_water_cap": 90,
-        "base_food_cap": 12,  "max_food_cap": 20,
-        "house_cap_factor": 1.0,
-        "solar_cap_watts": 800, "wind_cap_watts": 300,
-        "ev_range": 260, "mpg": 22, "fuel_tank_gal": 24
-    },
-    "truck_camper": {
-        "label": "Truck + Camper (capable, off-grid)",
-        "base_water_cap": 60, "max_water_cap": 110,
-        "base_food_cap": 14,  "max_food_cap": 22,
-        "house_cap_factor": 1.2,
-        "solar_cap_watts": 1000, "wind_cap_watts": 600,
-        "ev_range": 240, "mpg": 15, "fuel_tank_gal": 26
-    },
-    "skoolie": {
-        "label": "Skoolie (roomy bus, slow)",
-        "base_water_cap": 120, "max_water_cap": 200,
-        "base_food_cap": 24,   "max_food_cap": 40,
-        "house_cap_factor": 2.0,
-        "solar_cap_watts": 1800, "wind_cap_watts": 900,
-        "ev_range": 180, "mpg": 8, "fuel_tank_gal": 55
-    }
-}
+with open("vehicles.yaml", "r", encoding="utf-8") as f:
+    VEHICLES = yaml.safe_load(f)
 
-JOBS = {
-    "photographer": {"label": "Photographer (eye for light)", "epic_bonus": 0.25},
-    "mechanic": {"label": "Mechanic (handy with tools)", "shop_discount": 0.15},
-    "remote_dev": {"label": "Remote Dev (wifi wizard)", "remote_camp_income": 30},
-    "trail_guide": {"label": "Trail Guide (path whisperer)", "hike_energy_mult": 0.8, "hike_find_bonus": 0.10},
-    "artist": {"label": "Artist (muse on wheels)", "morale_bonus_dispersed": 3, "epic_bonus": 0.10},
-}
+with open("jobs.yaml", "r", encoding="utf-8") as f:
+    JOBS = yaml.safe_load(f)
 
 # ---------------------------- Seasons (YAML) --------------------------
 
@@ -374,11 +338,12 @@ def load_items_catalog():
         # Minimal fallback
         catalog = {
             "food": {"name":"Food ration", "price":5, "effects":{"food_rations":"+1"}},
-            "water": {"name":"Water (L)", "price":1, "effects":{"water_liters":"+1"}},
+            "water": {"name":"Water (L)", "price":1, "effects":{"water_gallons":"+1"}},
             "solar": {"name":"Solar 200W", "price":400, "effects":{"solar_watts":"+200"}},
             "wind":  {"name":"Wind 300W", "price":600, "effects":{"wind_watts":"+300"}},
             "battery":{"name":"EV module", "price":1200, "effects":{"ev_range_mi":"+40"}},
-            "storage":{"name":"Storage kit", "price":300, "effects":{"water_cap_liters":"+10","food_cap_rations":"+5"}},
+            "storage":{"name":"Storage kit", "price":300,
+"effects":{"water_cap_gallons":"+10","food_cap_rations":"+5"}},
             "tent":  {"name":"Tent", "price":150, "effects":{"has_tent":"install"}},
             "fridge":{"name":"Fridge", "price":800, "effects":{"device:fridge":"install","device_amps:fridge":"4"}},
             "starlink":{"name":"Starlink", "price":500, "effects":{"device:starlink":"install","device_amps:starlink":"6"}},
@@ -437,7 +402,7 @@ class Game:
 
         # Vehicle archetype
         v = VEHICLES[self.vehicle_type]
-        self.water_cap_liters = v["base_water_cap"]
+        self.water_cap_gallons = v["base_water_cap"]
         self.food_cap_rations = v["base_food_cap"]
         self.max_water_cap    = v["max_water_cap"]
         self.max_food_cap     = v["max_food_cap"]
@@ -455,7 +420,7 @@ class Game:
         self.battery = 75.0
 
         # Stores
-        self.water = min(8.0, self.water_cap_liters)   # liters
+        self.water = min(8.0, self.water_cap_gallons)   # gallons
         self.food  = min(6,   self.food_cap_rations)   # rations
 
         # Cash & morale/energy
@@ -509,6 +474,17 @@ class Game:
         # Items catalog
         self.catalog = catalog
 
+    def _check_for_truck_camper(self):
+        if self.vehicle_type == 'truck_camper':
+            self.adopt_pet()
+        else:
+            return
+
+    def elevation(self):
+        elev_ft = self.node().get('elevation_ft','?')
+        elev_m  = elev_ft / 3.281
+        print(f"Elevation: {elev_ft:.0f} ft / {elev_m:.0f} meters above sea level")
+
     def exp(self):
         print(f"Level: {self.level} | Experience: {self.xp} | Needed: {xp_needed_for_level(self.level+1)-self.xp}")
 
@@ -519,7 +495,7 @@ class Game:
     # ------------------ UI helpers ------------------
     def rig_level(self):
         score = (self.solar_watts/100.0) + (self.wind_watts/100.0)
-        score += (self.water_cap_liters - 50)/10.0
+        score += (self.water_cap_gallons - 50)/10.0
         score += (self.food_cap_rations - 12)/5.0
         score += 2 if self.has_tent else 0
         return max(1, min(10, int(1 + score/3)))
@@ -652,7 +628,7 @@ class Game:
                 else: self.diesel_can_gal = 0.0; self.devices['diesel_heater']['on'] = False
 
             self.minutes += TURN_MINUTES
-            self.water  = clamp(self.water - 0.03, 0, self.water_cap_liters)
+            self.water  = clamp(self.water - 0.03, 0, self.water_cap_gallons)
             self.energy = clamp(self.energy - 0.8, 0, 100)
             if self.pet: self.pet.tick(TURN_MINUTES)
 
@@ -673,7 +649,7 @@ class Game:
         mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric'
                      else f"Fuel {self.fuel_gal:.1f} gal")
         print(f"Power Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}")
-        print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}  Lv{self.level} ({self.xp} XP)")
+        print(f"Stores H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}  Lv{self.level} ({self.xp} XP)")
 
     def look(self):
         n = self.node()
@@ -739,7 +715,7 @@ class Game:
             self.fuel_gal = max(0.0, self.fuel_gal - needed_gal)
             self.battery = clamp(self.battery + (2.0*hours)/self._pct_per_ah(), 0, 100)
         # Travel drains
-        self.water  = clamp(self.water - 0.1*hours, 0, self.water_cap_liters)
+        self.water  = clamp(self.water - 0.1*hours, 0, self.water_cap_gallons)
         self.energy = clamp(self.energy - 6.0*hours, 0, 100)
         if self.pet:
             self.pet.energy = clamp(self.pet.energy - 4.0*hours, 0, 100)
@@ -798,7 +774,7 @@ class Game:
             ranger_knock = 0.04 if in_park else 0.005
 
         # Apply overnight effects (before time advance)
-        self.water   = clamp(self.water - 0.08*hours, 0, self.water_cap_liters)
+        self.water   = clamp(self.water - 0.08*hours, 0, self.water_cap_gallons)
         self.food    = max(0, self.food - 1)
         self.energy  = clamp(self.energy + energy_gain, 0, 100)
         self.morale  = clamp(self.morale + morale_gain, 0, 100)
@@ -839,12 +815,12 @@ class Game:
             used = "pan + inverter"
         use_water = 0.5 if self.water >= 0.5 else 0.0
         self.food -= 1
-        self.water = clamp(self.water - use_water, 0, self.water_cap_liters)
+        self.water = clamp(self.water - use_water, 0, self.water_cap_gallons)
         morale_boost = 9 if used in ("propane stove","jetboil") else 6
         self.morale = clamp(self.morale + morale_boost, 0, 100)
         self.energy = clamp(self.energy + 6, 0, 100)
         self.advance(TURN_MINUTES)
-        print(f"You cook with {used} (+morale, +energy). Water used: {use_water:.1f}L.")
+        print(f"You cook with {used} (+morale, +energy). Water used: {use_water:.1f}G.")
         self.add_xp(5 if used != "cold" else 3, "cooking")
 
     def sleep(self):
@@ -894,13 +870,13 @@ class Game:
         extra_water  = round(0.12 * hours, 2)
         mult = self.job_perks.get('hike_energy_mult', 1.0)
         self.energy = clamp(self.energy - int(extra_energy * mult), 0, 100)
-        self.water  = clamp(self.water  - extra_water, 0, self.water_cap_liters)
+        self.water  = clamp(self.water  - extra_water, 0, self.water_cap_gallons)
         if self.pet:
             self.pet.energy = clamp(self.pet.energy - max(6, int(hours * 2)), 0, 100)
             self.pet.bond   = clamp(self.pet.bond + 2, 0, 100)
         print(f"You return after ~{hours:.1f}h. House {int(self.battery)}% | "
               f"{'EV ' + str(int(self.ev_battery)) + '%' if self.mode=='electric' else 'Fuel ' + f'{self.fuel_gal:.1f} gal'} | "
-              f"Water {self.water:.1f}L | Energy {int(self.energy)}.")
+              f"Water {self.water:.1f}G | Energy {int(self.energy)}.")
         # XP: hikes worth a solid chunk
         w_now = derive_weather(node, self.minutes)
         diff = 1.0 + (0.15 if w_now['wind']=='high' else 0) + (0.10 if w_now['heat']=='hot' else 0)
@@ -1009,12 +985,12 @@ class Game:
         extra_energy = int((2.5 if kind!='dev' else 1.5) * hours)
         extra_water  = round(0.06 * hours, 2)
         self.energy = clamp(self.energy - extra_energy, 0, 100)
-        self.water  = clamp(self.water - extra_water, 0, self.water_cap_liters)
+        self.water  = clamp(self.water - extra_water, 0, self.water_cap_gallons)
         gross = int(round(gross)); self.cash += gross; self.work_hours_today[kind] = self.work_hours_today.get(kind, 0.0) + hours
         print(f"You work {kind} for ~{hours:.1f}h at ~${hourly:.0f}/h. Paid ${gross}.")
         print(f"Now: Cash ${self.cash:.0f} | House {int(self.battery)}% | "
               f"{('EV '+str(int(self.ev_battery))+'%') if self.mode=='electric' else ('Fuel '+f'{self.fuel_gal:.1f} gal')} | "
-              f"Water {self.water:.1f}L | Energy {int(self.energy)}.")
+              f"Water {self.water:.1f}G | Energy {int(self.energy)}.")
         # XP: based on hours and difficulty (wind/heat add challenge)
         diff = 1.0 + (0.1 if cur_weather['wind']=='high' else 0) + (0.1 if cur_weather['heat']=='hot' else 0)
         self.add_xp(int(hours*12*diff), f"work:{kind}")
@@ -1034,16 +1010,16 @@ class Game:
         purchased = None
         if key == "food_rations":
             before = self.food; self.food = min(self.food + qty, self.food_cap_rations); purchased = self.food - before
-        elif key == "water_liters":
-            before = self.water; self.water = clamp(self.water + 1.0*qty, 0, self.water_cap_liters); purchased = round(self.water - before, 1)
+        elif key == "water_gallons":
+            before = self.water; self.water = clamp(self.water + 1.0*qty, 0, self.water_cap_gallons); purchased = round(self.water - before, 1)
         elif key == "solar_watts":
             before = self.solar_watts; self.solar_watts = min(self.solar_watts + 200*qty, self.solar_cap_watts); purchased = self.solar_watts - before
         elif key == "wind_watts":
             before = self.wind_watts; self.wind_watts = min(self.wind_watts + 300*qty, self.wind_cap_watts); purchased = self.wind_watts - before
         elif key == "ev_range_mi":
             before = self.ev_range_mi; self.ev_range_mi = min(self.ev_range_mi + 40*qty, 400); purchased = self.ev_range_mi - before
-        elif key == "water_cap_liters":
-            before = self.water_cap_liters; self.water_cap_liters = min(self.water_cap_liters + 10*qty, self.max_water_cap); purchased = self.water_cap_liters - before
+        elif key == "water_cap_gallons":
+            before = self.water_cap_gallons; self.water_cap_gallons = min(self.water_cap_gallons + 10*qty, self.max_water_cap); purchased = self.water_cap_gallons - before
         elif key == "food_cap_rations":
             before = self.food_cap_rations; self.food_cap_rations = min(self.food_cap_rations + 5*qty, self.max_food_cap); purchased = self.food_cap_rations - before
         elif key == "house_cap_ah":
@@ -1120,8 +1096,8 @@ class Game:
 
         self.cash -= price
         print(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}. Gained: {purchased}")
-        if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_liters','food_cap_rations')):
-            print(f"Upgrades — solar: {self.solar_watts:.0f}W | wind: {self.wind_watts:.0f}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_liters:.0f}L/{self.food_cap_rations} rations")
+        if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
+            print(f"Upgrades — solar: {self.solar_watts:.0f}W | wind: {self.wind_watts:.0f}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations")
 
     # ---------- Mode / Energy ----------
     def set_mode(self, mode):
@@ -1180,8 +1156,8 @@ class Game:
         name = random.choice(["Oreo","Mesa","Juniper","Pixel","Bowie","Zion","Havasu"])
         self.pet = Pet(name); self.morale = clamp(self.morale + 10, 0, 100)
         print(f"You meet {name}, who promptly claims the passenger seat. Bond +10.")
-        xp = 20
-        self.add_xp(int(xp), "Pet Adoption")
+        xp = 30
+        self.add_xp(int(xp), "pet adoption")
 
     def feed_pet(self):
         if not self.pet: print("You travel alone."); return
@@ -1189,29 +1165,29 @@ class Game:
         self.food -= 1; self.pet.bond = clamp(self.pet.bond + 6, 0, 100); self.advance(TURN_MINUTES)
         print(f"You feed {self.pet.name}. Bond warms.")
         xp = 5
-        self.add_xp(int(xp), "Pet care")
+        self.add_xp(int(xp), "pet care")
 
     def water_pet(self):
         if not self.pet: print("You travel alone."); return
         if self.water < 0.3: print("Water is too low."); return
-        self.water = clamp(self.water - 0.3, 0, self.water_cap_liters); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
+        self.water = clamp(self.water - 0.3, 0, self.water_cap_gallons); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
         print(f"{self.pet.name} drinks happily.")
         xp = 5
-        self.add_xp(int(xp), "Pet care")
+        self.add_xp(int(xp), "pet care")
 
     def walk_pet(self):
         if not self.pet: print("You travel alone."); return
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
         print(f"You walk {self.pet.name}. Spirits lift.")
         xp = 10
-        self.add_xp(int(xp), "Pet care")
+        self.add_xp(int(xp), "pet care")
 
     def play_with_pet(self):
         if not self.pet: print("You travel alone."); return
         self.pet.bond = clamp(self.pet.bond + 5, 0, 100); self.morale = clamp(self.morale + 4, 0, 100); self.advance(20)
         print(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the van.")
-        xp = 12
-        self.add_xp(int(xp), "Play")
+        xp = 15
+        self.add_xp(int(xp), "play")
 
     def command_pet(self, verb):
         if not self.pet: print("You travel alone."); return
@@ -1225,8 +1201,10 @@ class Game:
         elif v == 'SEARCH':
             rng = seeded_rng(self.location, int(self.minutes/60), 'search')
             if rng.random() < 0.4:
-                self.water = clamp(self.water + 1.0, 0, self.water_cap_liters)
-                print(f"{self.pet.name} finds a hose bib behind a building. +1.0L water.")
+                self.water = clamp(self.water + 1.0, 0, self.water_cap_gallons)
+                print(f"{self.pet.name} finds a hose bib behind a building. +1.0G water.")
+                xp = 20
+                self.add_xp(int(xp), "search")
             else:
                 print(f"{self.pet.name} sniffs around but finds nothing today.")
             self.advance(TURN_MINUTES)
@@ -1337,9 +1315,10 @@ def main():
     game = Game(world, cfg, catalog)
     prelude_shopping(game)
 
-    print("\n" + COL.cyan("Nomad IF — Utah slice"))
-    print("Type HELP for commands. You’re in Moab and the road is yours.\n")
+    print(COL.cyan("Welcome to Nomads!"))
+    game._check_for_truck_camper()
     game.look()
+    print("Type HELP for commands.\n")
 
     while True:
         try:
@@ -1398,6 +1377,7 @@ def main():
             else: print("TURN <device> <on|off>")
         elif u == 'ELECTRICAL': game.electrical_panel()
         elif u == 'EXP': game.exp()
+        elif u == 'ELEVATION': game.elevation()
         else:
             print("Unknown command. Type HELP.")
 

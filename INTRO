@@ -1,0 +1,48 @@
+This is my attempt to write copy for the game, beginning with the intro.
+---
+
+Welcome to Nomads! The only (known) text-based Nomad simulator, created by an
+actual nomad.
+
+This game simulates life living in a vehicle and traveling around the country.
+
+To begin you'll be presented with a handful of prompts to generate your vehicle
+and character. These decisions will affect the game difficulty level and
+available skills within the game.
+
+Feel free to experiment with different vehicles and job combinations to
+discover your style!
+
+----
+
+Welcome to Moab! You are standing in front of the most unique car dealership.
+The kind of dealership you'd only find in a place like this. It sells new and
+used Nomad vehicles. Converted vans, skoolies, truck campers and anything else
+you can live in! The lot is a covered in vehicles wildly ranging in size and
+shape.
+Also here: salesman
+Obvious exits: north, south
+
+greet salesman
+"Welcome to Crazy Eddie's Auto Empourium! Call me Eddie." The salesman flashes a
+grin before continuing, one gold tooth glistening in the sunlight. He then
+walks toward you and shakes your hand firmly. "Let me show you what we've got
+in our inventory LIST".
+
+look salesman
+The salesman looks exactly like you'd expect a used car salesman would look.
+Classic tan with a grin. He seems eager to sell you a vehicle from his lot.
+
+LIST
+
+Prius           $20k    dispersed- (no offroad),stealth camp+, limited storage, storage: 8/20
+Subaru          $25k    dispersed+ (with tent), stealth camp+, cat adoption,    storage: 12/25
+Truck Camper    $30K    dispersed+ (w/o tent),  stealth camp-, pet+,            storage: 15/40
+Van             $50K    dispersed+ (w/o tent),  stealth camp-, large storage,   storage: 20/50
+Skoolie         $75K    dispersed+ (w/o tent),  stealth camp-, fuel/ev-,        storage: 50/120 
+
+CASH
+You have random(25k-100k) dollars.
+
+BUY Subaru
+Congratulations! You bought the rugged AWD Subaru for $25,000 dollars!

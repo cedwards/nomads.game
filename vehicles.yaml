@@ -17,7 +17,7 @@ prius:
   ev_range: 300
   fuel_tank_gal: 14
   house_cap_factor: 0.7
-  label: Sedan (stealthy, light)
+  label: Prius (stealthy, light)
   max_food_cap: 14
   max_water_cap: 40
   mpg: 30
@@ -41,7 +41,7 @@ truck_camper:
   ev_range: 220
   fuel_tank_gal: 26
   house_cap_factor: 1.2
-  label: Truck + Camper (capable, off-grid)
+  label: Truck Camper (capable, off-grid)
   max_food_cap: 22
   max_water_cap: 110
   mpg: 15
