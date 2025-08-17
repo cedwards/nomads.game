@@ -1252,7 +1252,7 @@ HELP_TEXT = """Commands:
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
   COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
-  DEVICES | TOGGLE <device> <on|off>
+  DEVICES | TURN <device> <on|off>
   HELP | QUIT
 """
 
@@ -1298,7 +1298,7 @@ def pick_from_dict(title, dct):
 
 def character_creation():
     print(COL.cyan("=== Character & Vehicle Setup ==="))
-    name = input(COL.prompt("Name (enter to randomize): ")).strip()
+    name = input(COL.prompt("Vehicle Name (enter to randomize): ")).strip()
     if not name:
         name = random.choice(["River", "Juniper", "Sky", "Ash", "Indigo", "Cedar", "Rook"])
     color = input(COL.prompt("Vehicle color (e.g., white/sand/forest/red): ")).strip() or "white"
@@ -1392,10 +1392,10 @@ def main():
             hours = parts[2] if len(parts)>2 else (parts[1] if len(parts)>1 and parts[1].isdigit() else None)
             game.work(kind, hours)
         elif u == 'DEVICES': game.devices_panel()
-        elif u.startswith('TOGGLE'):
+        elif u.startswith('TURN'):
             parts = line.split()
             if len(parts) >= 3: game.toggle_device(parts[1], parts[2])
-            else: print("TOGGLE <device> <on|off>")
+            else: print("TURN <device> <on|off>")
         elif u == 'ELECTRICAL': game.electrical_panel()
         elif u == 'EXP': game.exp()
         else:

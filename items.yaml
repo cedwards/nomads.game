@@ -17,3 +17,4 @@ items:
   butane_can:      { name: "Butane can",  price: 6,     effects: { butane_can: "+1" } }
   extra_fuel:      { name: "Extra Fuel",  price: 3,     effects: { extra_fuel: "+1" } }
   laptop:          { name: "New Laptop",  price: 1500,  effects: { "device:laptop": "install", "device_amps:laptop": "3" } }
+  digital_camera:  { name: "Digital Camera", price: 700, effects: { } }
