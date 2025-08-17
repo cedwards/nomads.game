@@ -18,4 +18,4 @@ items:
   fridge:          { requires: { level: 1           }, name: "Fridge",        price: 300,  effects: { "device:fridge":   "install", "device_amps:fridge":   "2" } }
   laptop:          { requires: { level: 3           }, name: "New Laptop",    price: 1500, effects: { "device:laptop":   "install", "device_amps:laptop":   "3" } }
   weboost:         { requires: { level: 2           }, name: "WeBoost 4G/5G", price: 500,  effects: { "device:weboost":  "install", "device_amps:weboost":  "4" } }
-  starlink:        { requires: { level: 5, exp: 5000}, name: "Starlink",      price: 700,  effects: { "device:starlink": "install", "device_amps:starlink": "5" } }
+  starlink:        { requires: { level: 4, exp: 1000}, name: "Starlink",      price: 700,  effects: { "device:starlink": "install", "device_amps:starlink": "5" } }

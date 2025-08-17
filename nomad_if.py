@@ -468,34 +468,68 @@ class Game:
         else:
             return
 
+    def battery_status(self):
+        battery = self.battery
+        solar_w = self._solar_input_watts_now()
+        wind_w  = self._wind_input_watts_now()
+        solar_a = solar_w / SYSTEM_VOLTAGE
+        wind_a  = wind_w  / SYSTEM_VOLTAGE
+        load_a  = self._load_amps_now()
+        net_a   = (solar_a + wind_a) - load_a
+        print(f" Load: {load_a:.1f}A")
+        print(f" Battery: {battery:.0f}%")
+        print(f" Capacity: {self.house_cap_ah:.0f}Ah")
+        if battery == 0:
+            print(COL.red(f" Remaining: 0 hours"))
+        elif net_a < 0:
+            print(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours")
+        elif net_a > 0:
+            print(f" Remaining: infinite")
+
     def fuel_status(self):
-        print(f"Fuel Status:{self.fuel_gal}G")
-        print(f"Fuel MPG:   {self.mpg} mpg")
-        print(f"Fuel Tank:  {self.fuel_tank_gal} gallons")
+        if self.mode == 'electric':
+            print("You don't have a fuel-based vehicle")
+            return
+        else:
+            print(f"Fuel Status:{self.fuel_gal}G")
+            print(f"Fuel MPG:   {self.mpg} mpg")
+            print(f"Fuel Tank:  {self.fuel_tank_gal} gallons")
 
     def ev_status(self):
-        print(f"EV Battery: {self.ev_battery}%")
-        print(f"EV Range: {self.ev_range_mi} miles")
+        if self.mode == 'fuel':
+            print("You don't have an electric vehicle")
+            return
+        else:
+            print(f"EV Battery: {self.ev_battery}%")
+            print(f"EV Range: {self.ev_range_mi} miles")
 
     def solar_power_status(self):
-        print(f"{self.solar_watts}")
-        print(f"{self.solar_cap_watts}")
+        solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
+        print(f"Solar Input: {self._solar_input_watts_now():.0f}W")
+        print(f"Solar Current: {solar_current:.2f}A")
+        print(f"Current Capacity: {self.solar_watts:.0f}W")
+        print(f"Vehicle Capacity: {self.solar_cap_watts:.0f}W")
 
     def wind_power_status(self):
-        print(f"{self.wind_watts}")
-        print(f"{self.wind_cap_watts}")
+        wind_current = self._wind_input_watts_now() / SYSTEM_VOLTAGE
+        print(f"Wind Input: {self._wind_input_watts_now():.0f}W")
+        print(f"Wind Current: {wind_current:.2f}A")
+        print(f"Current Capacity: {self.wind_watts:.0f}W")
+        print(f"Vehicle Capacity: {self.wind_cap_watts:.0f}W")
 
     def bank(self):
         print(f"You have ${self.cash:.0f} dollars")
 
     def inventory(self):
-        if self.food > 0:
-            print(f"Food: {self.food:.0f} meals")
-        if self.water > 0:
-            print(f"Water: {self.water:.2f} gallons")
-        if self.propane_lb > 0:
+        water_cap = self.water_cap_gallons
+        food_cap = self.food_cap_rations
+        if self.food >= 0:
+            print(f"Food: {self.food:.0f}/{food_cap} meals")
+        if self.water >= 0:
+            print(f"Water: {self.water:.2f}/{water_cap} gallons")
+        if self.propane_lb >= 0:
             print(f"Propane: {self.propane_lb:.2f} lbs")
-        if self.butane_can > 0:
+        if self.butane_can >= 0:
             print(f"Butane: {self.butane_can:.2f} canisters")
 
     def elevation(self):
@@ -863,7 +897,7 @@ class Game:
         if dir_clean not in valid: print("HIKE which way? Use: HIKE n|s|e|w|ne|nw|se|sw"); return
         # Daylight-only hiking; auto-limit to dusk
         m = self.minutes % DAY_MINUTES
-        if not (6*60 <= m < 18*60):
+        if not (6*60 <= m < 18*60) and self.job != 'trail_guide':
             print("It’s not safe to start a hike right now. Try between 06:00 and 18:00."); return
         node = self.node()
         hmap = (node.get('hike_map') or {})
@@ -1223,7 +1257,7 @@ class Game:
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
             print(f"You meet {name}, a {spirit} {breed}, who promptly {action}. Bond +10.")
         if self.pet_type == "cat":
-            breed = random.choice(["Siamese","Persian","Maine Coon","Ragdoll","Sphynx","American Shorthair","Burmese","British Shorthair","Longhair","Bobtail cat"])
+            breed = random.choice(["Siamese","Persian","Maine Coon","Ragdoll","Sphynx","American Shorthair","Burmese","British Shorthair","Longhair","Bobtail"])
             name = random.choice(["Swazi","Whiskers","Patches","Satan","Grouchy Pants","Moo","Olaf","Chandler","Joey","Monica","Ross","Phoebe","Rachael"])
             spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
             action = random.choice(["disappears into the back","makes their way onto the dash","winds between your legs","meows hungrily"])
@@ -1238,7 +1272,7 @@ class Game:
         print(f"{self.pet.name}")
         self.food -= 1; self.pet.bond = clamp(self.pet.bond + 6, 0, 100); self.advance(TURN_MINUTES)
         print(f"You feed {self.pet.name}. Bond warms.")
-        xp = clamp(self.xp + 5, 0, 15)
+        xp = clamp(self.xp + 5, 0, 20)
         self.add_xp(int(xp), "pet care")
 
     def water_pet(self):
@@ -1246,14 +1280,14 @@ class Game:
         if self.water < 0.3: print(COL.red("Water is too low.")); return
         self.water = clamp(self.water - 0.3, 0, self.water_cap_gallons); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
         print(f"{self.pet.name} drinks happily.")
-        xp = clamp(self.xp + 5, 0, 15)
+        xp = clamp(self.xp + 5, 0, 20)
         self.add_xp(int(xp), "pet care")
 
     def walk_pet(self):
         if not self.pet: print("You travel alone."); return
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
         print(f"You walk {self.pet.name}. Spirits lift.")
-        xp = clamp(self.xp + 10, 0, 20)
+        xp = clamp(self.xp + 10, 0, 25)
         self.add_xp(int(xp), "pet care")
 
     def play_with_pet(self):
@@ -1296,13 +1330,16 @@ HELP_TEXT = """Commands:
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
   CAMP [stealth|paid|dispersed]
   COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
-  COOK | SLEEP
+  COOK | EAT
+  NAP
   DEVICES | TURN <device> <on|off>
-  HIKE daylight only; turns back at dusk
+  EV
+  FUEL
+  HIKE
   INVENTORY | INV | I
   LOOK | STATUS | MAP
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
-  POWER | ELECTRICAL
+  POWER | ELECTRICAL | BATTERY
   ROUTE TO <place> | DRIVE
   SHOP | BUY <item_id> [qty]
   SOLAR
@@ -1405,7 +1442,7 @@ def main():
         if not line: continue
         u = line.upper()
 
-        if u == 'HELP': print(HELP_TEXT)
+        if u in ('HELP','?'): print(HELP_TEXT)
         elif u in ('LOOK','L'): game.look()
         elif u in ('STATUS','STATS'): game.status()
         elif u == 'MAP': game.show_map()
@@ -1415,8 +1452,8 @@ def main():
         elif u.startswith('CAMP'):
             parts = line.split(); style = parts[1] if len(parts)>1 else ''
             game.camp(style)
-        elif u == 'COOK': game.cook()
-        elif u == 'SLEEP': game.sleep()
+        elif u in ('COOK','EAT'): game.cook()
+        elif u == 'NAP': game.sleep()
         elif u.startswith('HIKE'):
             parts = line.split(); d = parts[1] if len(parts) > 1 else ''
             game.hike(d)
@@ -1453,6 +1490,7 @@ def main():
             if len(parts) >= 3: game.toggle_device(parts[1], parts[2])
             else: print("TURN <device> <on|off>")
         elif u in ('ELECTRICAL','POWER'): game.electrical_panel()
+        elif u == 'BATTERY': game.battery_status()
         elif u == 'EXP': game.exp()
         elif u == 'ELEVATION': game.elevation()
         elif u in ('INVENTORY','INV','I'): game.inventory()
