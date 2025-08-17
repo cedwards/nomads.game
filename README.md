@@ -166,10 +166,10 @@ This game simulates life living in a vehicle and traveling around the country.
 
 ---
 
-| Job          | Role / Flavor             | Epic Bonus | Morale | Shop/Discount | Income | Survival/Trail | Energy Use | Key Traits                                |
-|--------------|---------------------------|------------|--------|---------------|--------|----------------|------------|--------------------------------------------|
-| **Artist**   | Bard (Muse on Wheels)     | ⭐⭐        | ⭐⭐⭐⭐   | ⭐             | ⭐      | ⭐              | ⭐⭐⭐        | 🎨 Creativity+ · 😊 Morale Aura+ · 🔧 Repairs– |
-| **Mechanic** | Engineer (Handy w/ Tools) | ⭐          | ⭐      | ⭐⭐⭐⭐          | ⭐⭐     | ⭐⭐⭐            | ⭐⭐⭐        | 🔧 Repairs++ · 🛠 Recovery+ · 😐 Morale–       |
-| **Photog.**  | Visionary (Eye for Light) | ⭐⭐⭐⭐⭐      | ⭐⭐⭐    | ⭐             | ⭐⭐     | ⭐              | ⭐⭐         | 📸 Epic Moments++ · 🎉 Festival+ · 😓 Weather– |
-| **Remote Dev** | Wizard (WiFi Caster)    | ⭐          | ⭐      | ⭐             | ⭐⭐⭐⭐   | ⭐⭐             | ⭐          | 💻 Camp Income++ · 📡 Signal Req · 🔋 Drain–  |
-| **Trail Guide** | Ranger (Path Whisperer)| ⭐⭐         | ⭐⭐     | ⭐             | ⭐      | ⭐⭐⭐⭐           | ⭐⭐⭐⭐       | 🥾 Survival++ · 🌲 Terrain+ · 💰 Low Income–   |
+| Job               | Role / Flavor   | Epic Bonus | Morale     | Shop/Discount | Income     | Survival/Trail | Energy Use | Key Traits                                        |
+|-------------------|-----------------|------------|------------|---------------|------------|----------------|------------|---------------------------------------------------|
+| **Artist**        | Muse on Wheels  | ⭐⭐⭐⭐   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐      | ⭐         | ⭐⭐           | ⭐⭐       | 🎨 Creativity+    · 😊 Morale+      · 🔧 Repairs– |
+| **Mechanic**      | Engineer        | ⭐         | ⭐⭐       | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐   | ⭐⭐⭐⭐       | ⭐⭐⭐⭐   | 🔧 Repairs++      · 🛠 Recovery+    · 😐 Morale–  |
+| **Photographer**  | Eye for Light   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐     | ⭐⭐          | ⭐⭐       | ⭐             | ⭐⭐⭐     | 📸 Epic Moments++ · 🎉 Festival+    · 😓 Weather– |
+| **Remote Dev**    | Wifi Wizard     | ⭐⭐       | ⭐         | ⭐            | ⭐⭐⭐⭐⭐ | ⭐⭐⭐         | ⭐⭐⭐⭐⭐ | 💻 Income++       · 📡 Signal Req   · 🪫 Drain+   |
+| **Guide**         | Trail Whisperer | ⭐⭐⭐     | ⭐⭐⭐⭐   | ⭐⭐⭐        | ⭐⭐⭐     | ⭐⭐⭐⭐⭐     | ⭐         | 🥾 Survival++     · 🌲 Terrain+     · 🔋 Drain–   |
