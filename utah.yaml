@@ -5,9 +5,24 @@
 nodes:
   - id: zion
     description: |
-      Sandstone cathedrals glow creamsicle and rust while the Virgin River threads cottonwoods below.
-      Slot canyons breathe cool shade; shuttles and steep grades keep you honest. Cell’s fine near
-      Springdale, then the walls swallow signal and sound alike.
+      Zion National Park is a cathedral carved by water and time, a place where sheer
+      sandstone walls rise thousands of feet like stained glass panels of red, cream,
+      and gold. The Virgin River snakes through the valley floor, a ribbon of green
+      cottonwoods and willows that glows against the towering cliffs. Light is
+      everything here—morning sun ignites the canyon walls in fire, while dusk
+      softens them to velvet shadows.
+      
+      The park is both intimate and immense. In the Narrows, the canyon closes in so
+      tightly you wade directly through the river, your footsteps echoing off smooth,
+      sculpted stone. On Angels Landing, you cling to chains bolted into the rock,
+      balanced between vertigo and transcendence. High above, the slickrock plateaus
+      open into quiet expanses where desert bighorn and peregrine falcons thrive.
+      
+      Zion feels alive with contrast—lush along the riverbanks, stark and dry on the
+      rim. It carries both the hush of a sanctuary and the pulse of pilgrimage, with
+      people from around the world drawn here to test themselves against stone,
+      water, and gravity. More than a park, it is a sacred canyon—its walls not just
+      scenery, but scripture written in geologic time.
     name: "Zion National Park"
     hike_map: { n: 3, s: 2, e: 5, w: 2, ne: 4, nw: 3, se: 5, sw: 2 }
     biome: canyon
@@ -26,9 +41,25 @@ nodes:
 
   - id: bryce
     description: |
-      A high-cold amphitheater of hoodoos—orange organ pipes cut by frost and time. Air runs thin,
-      nights run star-heavy, and sunrise paints the rim with molten gold. Beauty taxes your lungs,
-      rewards your patience.
+      Bryce Canyon is less a canyon than an amphitheater of stone dreams, a sprawling
+      bowl where the earth seems to have melted into spires, pinnacles, and delicate
+      hoodoos. These formations rise in countless ranks—thin towers of pink, red, and
+      orange limestone, eroded into shapes that look like frozen flames or ancient
+      statues. When the sun rises, the hoodoos catch fire with color, glowing as if
+      lit from within; at twilight, they fade to ghostly silhouettes, like a silent
+      army guarding the rim.
+      
+      Walking among them is otherworldly. Trails drop from the rim into labyrinthine
+      passages where the walls close in, then suddenly open to reveal groves of
+      impossibly slender towers. Each hoodoo is unique—some balanced precariously,
+      some crowned with resistant caps of stone—yet together they create a rhythm, a
+      geological choir of forms.
+      
+      At night, the illusion deepens. Bryce’s high elevation and dry air make it one
+      of the darkest skies in North America. The hoodoos stand beneath a vault of
+      stars so dense it feels as though the cosmos itself has poured into the canyon.
+      Bryce is a paradox: fragile yet enduring, whimsical yet solemn, a natural
+      sculpture garden where erosion doubles as artistry.
     name: "Bryce Canyon"
     hike_map: { n: 2, s: 2, e: 3, w: 3, ne: 3, nw: 3, se: 4, sw: 4 }
     biome: high_plateau
@@ -47,9 +78,26 @@ nodes:
 
   - id: capitol_reef
     description: |
-      The Waterpocket Fold kinks the desert like a rug pushed against a wall. Orchards, spigots,
-      pies, and a river ribbon lend mercy; backroads wander to views that feel unclaimed. Flash floods
-      redraw the map without asking.
+      Capitol Reef is a desert tapestry stretched along a 100-mile wrinkle in the
+      Earth’s crust, known as the Waterpocket Fold. Here, layers of sandstone, shale,
+      and limestone tilt and buckle like pages of an open book, each stratum a
+      chapter in deep time. The land ripples with domes of white Navajo
+      sandstone—soaring like the U.S. Capitol—flanked by crimson cliffs and narrow
+      slot canyons that twist like secret corridors.
+      
+      Unlike its famous siblings, Capitol Reef feels quieter, more contemplative.
+      Along the Fremont River, historic orchards planted by Mormon pioneers still
+      blossom each spring, a shock of green in the desert where visitors can pick
+      fruit beneath towering canyon walls. Petroglyphs etched by the Fremont people
+      watch over these groves, reminders that this fold in the Earth has been a human
+      crossroads for millennia.
+      
+      Beyond the settled heart, the backcountry opens into a rugged wilderness of
+      waterpockets, natural bridges, and hidden canyons where solitude reigns. Storms
+      sweep across the mesas, painting the cliffs with shadows; at night, stars blaze
+      unchallenged by city lights. Capitol Reef is less spectacle than story—its
+      beauty lies not only in what you see, but in the sense that you are walking
+      through time itself.
     name: "Capitol Reef"
     hike_map: { n: 3, s: 3, e: 4, w: 4, ne: 3, nw: 3, se: 5, sw: 5 }
     biome: desert_canyon
@@ -68,10 +116,28 @@ nodes:
 
   - id: arches
     description: |
-      Stone windows, fins, and gravity tricks—earth doing yoga at sunrise. Crowds ebb before dawn,
-      heat rises by noon, and cryptobiotic soil begs for a wide step. Timed entry turns time itself
-      into a puzzle.
+      Arches National Park is a landscape of improbable geometry, where stone has
+      been carved by wind and water into bridges, fins, and arches that look too
+      delicate to endure yet have stood for millennia. More than 2,000 natural arches
+      punctuate the desert, from the slender grace of Landscape Arch to the
+      freestanding monument of Delicate Arch, poised like a sentinel against the La
+      Sal Mountains.
+      
+      The park feels like an open-air gallery of erosion. Ribbons of Entrada
+      sandstone rise in tall fins, some cracked and hollowed into windows, others
+      balancing massive slabs on impossibly narrow supports. At dawn and dusk the
+      rock ignites—reds and oranges burning against cobalt skies—transforming stone
+      into fire. By midday, shadows sharpen, and the arches seem less like scenery
+      than portals, as though stepping through one might lead to another world.
+      
+      Between these giants, slickrock domes and sandy washes cradle junipers, prickly
+      pear, and cryptobiotic soil crust, life clinging where it can. The silence here
+      is vast, broken only by the gust of desert wind echoing through stone
+      corridors. Arches is both playful and solemn, a paradoxical landscape where
+      fragility becomes grandeur and where the land itself seems to be holding its
+      breath.
     name: "Arches"
+    ansi: "delicate_arch.ans"
     hike_map: { n: 2, s: 3, e: 3, w: 2, ne: 4, nw: 3, se: 3, sw: 2 }
     biome: desert_canyon
     elevation_ft: 4100
@@ -88,9 +154,28 @@ nodes:
 
   - id: canyonlands
     description: |
-      A continent of canyons stacked to the horizon. Island in the Sky drops off the edge of thought,
-      The Needles maze your compass, and the Maze whispers “come prepared.” Water is rumor; wind is fact.
+      Canyonlands is the desert laid bare on a colossal scale, a wilderness split by
+      rivers into vast, distinct realms. The Colorado and Green carve their way
+      through layers of sandstone, meeting at the confluence like twin chisels that
+      have sculpted an empire of mesas, buttes, and yawning chasms. From the
+      overlooks of **Island in the Sky**, the world seems to fall away beneath your
+      feet—canyons within canyons stretching to the horizon, shadows crawling across
+      labyrinths of stone.
+      
+      To the south lies **The Needles**, a wilderness of serrated spires and winding
+      trails where hikers thread through slot canyons and slickrock mazes. It feels
+      wilder, closer to the bone, where every turn reveals another hoodoo, arch, or
+      unexpected window into the Earth. Across the river, **The Maze** earns its
+      name: remote, forbidding, and nearly trackless, a true test of navigation where
+      solitude borders on myth.
+      
+      Yet Canyonlands is not just desolation—it is alive with contrast. Cottonwoods
+      line the rivers, desert bighorn move like ghosts among the cliffs, and the
+      night sky burns with a density of stars almost shocking in its clarity.
+      Canyonlands is vastness personified, a place that reminds you how small you are
+      and how endless the desert can be.
     name: "Canyonlands"
+    ansi: mesa_arch.ans
     hike_map: { n: 4, s: 5, e: 4, w: 5, ne: 4, nw: 5, se: 5, sw: 4 }
     biome: mesa_desert
     elevation_ft: 6000
@@ -148,8 +233,26 @@ nodes:
 
   - id: san_rafael_swell
     description: |
-      Empty horizons and reefed stone, sinuous slots that taste like wind. Nights turn pitch and galaxies
-      show off; turbines purr while the van hums itself warm. Solitude sharpens listening and batteries.
+      The San Rafael Swell is a land folded in on itself, a vast geologic wrinkle in
+      the heart of Utah that feels both alien and primordial. From above, it
+      resembles a colossal reef stranded in the desert—its tilted sandstone layers
+      rising, plunging, and curling into domes, fins, and jagged ridges. From the
+      ground, it’s a maze: slot canyons that pinch down to shoulder-width, hidden
+      arches, natural bridges, and walls painted with the handprints and pictographs
+      of ancient peoples.
+      
+      Unlike the national parks, the Swell is raw and mostly unregulated. Dirt roads
+      lead into empty horizons, where solitude is not an amenity but the default
+      condition. You can drive for hours without seeing another human, only herds of
+      wild horses, pronghorn weaving through sagebrush, and ravens tracing the
+      thermals above sheer cliffs. The silence here has weight—it presses in until
+      you hear only your own heartbeat and the occasional groan of wind against
+      stone.
+      
+      It is a place of extremes: scorching sun by day, cold stars by night, and
+      storms that can turn dry washes into raging rivers within minutes. The Swell
+      doesn’t welcome you—it tests you, strips you down, and leaves you with the
+      sense that you’ve wandered into Earth’s unfinished workshop.
     name: "San Rafael Swell"
     hike_map: { n: 4, s: 4, e: 5, w: 5, ne: 4, nw: 4, se: 5, sw: 5 }
     biome: high_desert
@@ -169,10 +272,27 @@ nodes:
 
   - id: bonneville_salt_flats
     description: |
-      A white so bright it hums; after rain the world becomes mirror and myth. Mirage highways point
-      everywhere at once, corrosion licks at metal, and shade is a fairy tale. Speed-record ghosts
-      pace the horizon.
+      The Bonneville Salt Flats feel less like a landscape and more like a blank page
+      written by the Earth itself. Stretching across western Utah, the flats are a
+      vast, white expanse so level and endless it seems to erase perspective. Sky and
+      ground blur together, and on hot days, mirages ripple across the horizon—ghost
+      lakes and phantom mountains floating in the heat.
+      
+      The surface is hard, crystalline salt laid down by an ancient inland sea.
+      Underfoot it crunches with a brittle crispness, as though you’re walking on the
+      bones of the ocean. In the dry season, the flats gleam with a blinding
+      whiteness; after rains, they transform into a giant mirror, perfectly
+      reflecting clouds and stars until you can’t tell where earth ends and sky
+      begins.
+      
+      The place is both sacred and extreme. For racers, it’s hallowed ground—the home
+      of land speed records, where cars and motorcycles blur into streaks of color
+      across the white void. For wanderers, it’s a stage for silence and solitude,
+      where even a whisper feels intrusive. The Bonneville Salt Flats strip life down
+      to the essentials: light, salt, sky, and the unsettling reminder that you are a
+      small figure moving across an infinite canvas.
     name: "Bonneville Salt Flats"
+    ansi: salt_flats.ans
     hike_map: { n: 3, s: 3, e: 4, w: 4, ne: 4, nw: 4, se: 3, sw: 3 }
     biome: salt_pan
     elevation_ft: 4225
@@ -190,8 +310,27 @@ nodes:
 
   - id: mirror_lake_highway
     description: |
-      Spruce and lodgepole ladder up to glassy tarns under quick weather. Gates close with snow, mosquitoes
-      conduct summer choirs, and moose write their own right-of-way. Solar sulks in the trees; wind doesn’t.
+      The Mirror Lake Highway is a ribbon of mountain road that feels like an escape
+      hatch from Utah’s desert heat into a world of alpine stillness. Winding out of
+      Kamas and climbing into the western Uintas, it threads through meadows thick
+      with wildflowers, forests of aspen and spruce, and ridgelines where the air
+      thins and sharpens.
+      
+      At its heart is **Mirror Lake** itself, a jewel of water so clear it lives up
+      to its name—reflecting Bald Mountain, drifting clouds, and the changing moods
+      of the sky. On calm mornings, the reflection is flawless, as if the world had
+      been folded in half; by afternoon, breezes scatter ripples and fishermen cast
+      lines into its cold depths.
+      
+      The highway is a journey of contrasts: one moment you’re enclosed in dense
+      forest, the next you crest a rise and see sweeping alpine basins dotted with
+      lakes. Wildlife abounds—moose wading in marshy shallows, deer stepping silently
+      from the trees, eagles circling above the ridges.
+      
+      At over 10,000 feet, the air is thin, the nights are cold even in midsummer,
+      and the stars blaze with a clarity few places can rival. The Mirror Lake
+      Highway isn’t just a drive—it’s a passage into Utah’s high-country sanctuary,
+      where silence, reflection, and wilderness meet.
     name: "Mirror Lake Highway (Uintas)"
     hike_map: { n: 4, s: 3, e: 4, w: 3, ne: 5, nw: 5, se: 4, sw: 3 }
     biome: alpine
@@ -209,9 +348,25 @@ nodes:
 
   - id: valley_of_gods
     description: |
-      Monoliths stand like patient giants along crimson washboard. Piñon and juniper dot the silence,
-      thunderheads parade at dusk, and camps sprawl with a thousand-mile view. Dispersed is king; the night
-      is loud with quiet.
+      Valley of the Gods is like a quiet cousin to Monument Valley—less visited, less
+      regulated, and all the more magical for it. Tucked into southeastern Utah near
+      the Four Corners, it’s a broad desert plain scattered with towering buttes,
+      spires, and mesas, each formation sculpted from red sandstone into shapes that
+      feel mythic: castles, sentinels, even slumbering giants.
+      
+      A single dirt road loops through the valley, winding past these monuments as if
+      through a natural sculpture garden. Unlike the tour buses and crowds of its
+      famous neighbor, here you’re more likely to meet silence, the occasional
+      pronghorn, or the shadow of a raven gliding across the cliffs. The sense of
+      scale is overwhelming—the formations rise hundreds of feet, yet the wide open
+      sky and empty horizon make them feel almost intimate, like you’ve stumbled into
+      a private audience with the desert itself.
+      
+      At sunrise and sunset the stone ignites in shades of copper and crimson, the
+      long shadows stretching across the valley floor like dark rivers. At night, the
+      isolation deepens, and the stars blanket the sky in glittering clarity. Valley
+      of the Gods is both humble and grand—a place where solitude itself feels like
+      the main attraction.
     name: "Valley of the Gods / Four Corners"
     hike_map: { n: 3, s: 4, e: 4, w: 3, ne: 5, nw: 4, se: 4, sw: 5 }
     biome: desert

@@ -1,21 +1,21 @@
 items:
-  food:            { name: "Food ration",    price: 5,      effects: { food_rations: "+1" } }
-  water:           { name: "Water (G)",      price: 0.50,    effects: { water_gallons: "+1" } }
-  tent:            { name: "Tent",           price: 150,    effects: { has_tent: "install" } }
-  solar:           { name: "Solar 200W",     price: 200,    effects: { solar_watts: "+200" } }
-  wind:            { name: "Wind 300W",      price: 300,    effects: { wind_watts: "+300" } }
-  storage:         { name: "Storage kit",    price: 300,    effects: { water_cap_gallons: "+10", food_cap_rations: "+5" } }
-  stove:           { name: "Propane Stove",  price: 100,    effects: { stove: "+1",  "device:stove":   "install" } }
-  jetboil:         { name: "Jetboil",        price: 60,     effects: { jetboil: "+1", "device:jetboil": "install" } }
-  diesel:          { name: "Diesel (gal)",   price: 3,      effects: { diesel_can_gal: "+1" } }
-  propane:         { name: "Propane (lb)",   price: 4,      effects: { propane_lb: "+1" } }
-  butane:          { name: "Butane can",     price: 3,      effects: { butane_can: "+1" } }
-  gasoline:        { name: "Extra Fuel",     price: 3.50,   effects: { extra_fuel: "+1" } }
-  battery:         { name: "House battery",  price: 1000,   effects: { house_cap_ah: "+100" } }
-  ev_battery:      { name: "EV battery",     price: 1200,   effects: { ev_range_mi: "+40" } }
-  camera:          { name: "Digital Camera", price: 700,    effects: { "device:camera":   "install", "device_amps:camera":   "1" } }
-  heater:          { name: "Diesel Heater",  price: 800,    effects: { "device:heater":   "install", "device_amps:heater": "1.2" } }
-  fridge:          { name: "Fridge",         price: 300,    effects: { "device:fridge":   "install", "device_amps:fridge":   "2" } }
-  laptop:          { name: "New Laptop",     price: 1500,   effects: { "device:laptop":   "install", "device_amps:laptop":   "3" } }
-  weboost:         { name: "WeBoost 4G/5G",  price: 500,    effects: { "device:weboost":  "install", "device_amps:weboost":  "4" } }
-  starlink:        { name: "Starlink",       price: 700,    effects: { "device:starlink": "install", "device_amps:starlink": "5" } }
+  food:            { requires: { level: 1           }, name: "Food ration",   price: 5,    effects: { food_rations: "+1" } }
+  water:           { requires: { level: 1           }, name: "Water (G)",     price: 0.50, effects: { water_gallons: "+1" } }
+  tent:            { requires: { level: 2           }, name: "Tent",          price: 150,  effects: { has_tent: "install" } }
+  solar:           { requires: { level: 2, exp: 50  }, name: "Solar 200W",    price: 200,  effects: { solar_watts: "+200" } }
+  wind:            { requires: { level: 3           }, name: "Wind 300W",     price: 300,  effects: { wind_watts: "+300" } }
+  storage:         { requires: { level: 3           }, name: "Storage kit",   price: 300,  effects: { water_cap_gallons: "+10", food_cap_rations: "+5" } }
+  stove:           { requires: { level: 1           }, name: "Propane Stove", price: 100,  effects: { stove: "+1",  "device:stove":   "install" } }
+  jetboil:         { requires: { level: 1           }, name: "Jetboil",       price: 60,   effects: { jetboil: "+1", "device:jetboil": "install" } }
+  diesel:          { requires: { level: 5           }, name: "Diesel (gal)",  price: 3,    effects: { diesel_can_gal: "+1" } }
+  propane:         { requires: { level: 1           }, name: "Propane (lb)",  price: 4,    effects: { propane_lb: "+1" } }
+  butane:          { requires: { level: 1           }, name: "Butane can",    price: 3,    effects: { butane_can: "+1" } }
+  gasoline:        { requires: { level: 1           }, name: "Extra Fuel",    price: 3.50, effects: { extra_fuel: "+1" } }
+  battery:         { requires: { level: 3           }, name: "House battery", price: 1000, effects: { house_cap_ah: "+100" } }
+  ev_battery:      { requires: { level: 5           }, name: "EV battery",    price: 1200, effects: { ev_range_mi: "+40" } }
+  camera:          { requires: { level: 3           }, name: "Digital Camera",price: 700,  effects: { "device:camera":   "install", "device_amps:camera":   "1" } }
+  heater:          { requires: { level: 5           }, name: "Diesel Heater", price: 800,  effects: { "device:heater":   "install", "device_amps:heater": "1.2" } }
+  fridge:          { requires: { level: 1           }, name: "Fridge",        price: 300,  effects: { "device:fridge":   "install", "device_amps:fridge":   "2" } }
+  laptop:          { requires: { level: 3           }, name: "New Laptop",    price: 1500, effects: { "device:laptop":   "install", "device_amps:laptop":   "3" } }
+  weboost:         { requires: { level: 2           }, name: "WeBoost 4G/5G", price: 500,  effects: { "device:weboost":  "install", "device_amps:weboost":  "4" } }
+  starlink:        { requires: { level: 5, exp: 5000}, name: "Starlink",      price: 700,  effects: { "device:starlink": "install", "device_amps:starlink": "5" } }

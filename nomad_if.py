@@ -315,7 +315,7 @@ def dijkstra_route(world, src, dst, total_minutes):
 # ---------------------------- Items (YAML) ----------------------------
 
 def load_items_catalog():
-    """Load items.yaml (see suggested format). Returns dict keyed by item id."""
+    """Load items.yaml Returns dict keyed by item id."""
     here = os.path.dirname(os.path.abspath(__file__))
     p = os.path.join(here, "items.yaml")
     catalog = {}
@@ -331,29 +331,13 @@ def load_items_catalog():
                     v.setdefault("name", k)
                     v.setdefault("price", 0)
                     v.setdefault("effects", {})
+                    v.setdefault("requires", {})
                     catalog[k] = v
         except Exception as e:
             print(f"(items.yaml load failed: {e}. Using default catalog.)")
     if not catalog:
-        # Minimal fallback
-        catalog = {
-            "food": {"name":"Food ration", "price":5, "effects":{"food_rations":"+1"}},
-            "water": {"name":"Water (L)", "price":1, "effects":{"water_gallons":"+1"}},
-            "solar": {"name":"Solar 200W", "price":400, "effects":{"solar_watts":"+200"}},
-            "wind":  {"name":"Wind 300W", "price":600, "effects":{"wind_watts":"+300"}},
-            "battery":{"name":"EV module", "price":1200, "effects":{"ev_range_mi":"+40"}},
-            "storage":{"name":"Storage kit", "price":300,
-"effects":{"water_cap_gallons":"+10","food_cap_rations":"+5"}},
-            "tent":  {"name":"Tent", "price":150, "effects":{"has_tent":"install"}},
-            "fridge":{"name":"Fridge", "price":800, "effects":{"device:fridge":"install","device_amps:fridge":"4"}},
-            "starlink":{"name":"Starlink", "price":500, "effects":{"device:starlink":"install","device_amps:starlink":"6"}},
-            "diesel_heater":{"name":"Diesel Heater","price":200,"effects":{"device:diesel_heater":"install","device_amps:diesel_heater":"1.2"}},
-            "propane_stove":{"name":"Propane Stove","price":80,"effects":{"device:propane_stove":"install"}},
-            "jetboil":{"name":"Jetboil","price":120,"effects":{"device:jetboil":"install"}},
-            "diesel_can":{"name":"Diesel (gal)","price":5,"effects":{"diesel_can_gal":"+1"}},
-            "propane_lb":{"name":"Propane (lb)","price":3,"effects":{"propane_lb":"+1"}},
-            "butane_can":{"name":"Butane can","price":6,"effects":{"butane_can":"+1"}},
-        }
+        print("required file missing: items.yaml")
+        exit(1)
     return catalog
 
 # ---------------------------- XP / Leveling ---------------------------
@@ -463,11 +447,12 @@ class Game:
         # Electrical loads
         self.base_draw_amps = 0.8  # standby draw
         self.devices = {
-            'fridge':        {'owned': False, 'on': False, 'amps': 4.0},
-            'laptop':        {'owned': False, 'on': False, 'amps': 3.0},
-            'starlink':      {'owned': False, 'on': False, 'amps': 6.0},
+            'camera':        {'owned': False, 'on': False, 'amps': 1.0},
             'diesel_heater': {'owned': False, 'on': False, 'amps': 1.2},
-            'propane_stove': {'owned': False},
+            'fridge':        {'owned': False, 'on': False, 'amps': 2.0},
+            'laptop':        {'owned': False, 'on': False, 'amps': 3.0},
+            'starlink':      {'owned': False, 'on': False, 'amps': 4.0},
+            'stove':         {'owned': False},
             'jetboil':       {'owned': False},
         }
         self.diesel_can_gal = 0.0
@@ -478,11 +463,31 @@ class Game:
         self.catalog = catalog
 
     def _check_for_truck_camper(self):
-        print(f"{self.vehicle_type}")
         if self.vehicle_type == 'truck_camper':
             self.adopt_pet()
         else:
             return
+
+    def solar_power_status(self):
+        print(f"{self.solar_watts}")
+        print(f"{self.solar_cap_watts}")
+
+    def wind_power_status(self):
+        print(f"{self.wind_watts}")
+        print(f"{self.wind_cap_watts}")
+
+    def bank(self):
+        print(f"You have ${self.cash:.0f} dollars")
+
+    def inventory(self):
+        if self.food > 0:
+            print(f"Food: {self.food:.0f} meals")
+        if self.water > 0:
+            print(f"Water: {self.water:.2f} gallons")
+        if self.propane_lb > 0:
+            print(f"Propane: {self.propane_lb:.2f} lbs")
+        if self.butane_can > 0:
+            print(f"Butane: {self.butane_can:.2f} canisters")
 
     def elevation(self):
         elev_ft = self.node().get('elevation_ft','?')
@@ -587,7 +592,7 @@ class Game:
     # ------------------ Devices ------------------
     def devices_panel(self):
         print("Devices:")
-        for k in ('fridge','starlink','diesel_heater','propane_stove','jetboil', 'laptop'):
+        for k in ('fridge','starlink','diesel_heater','stove','jetboil', 'laptop'):
             d = self.devices[k]
             owned = d.get('owned', False)
             on    = d.get('on', False)
@@ -599,12 +604,11 @@ class Game:
                     print(f"  - {k}: {'ON ' if on else 'off'}  (~{amps}A when on)")
                 else:
                     print(f"  - {k}: installed (uses fuel when cooking)")
-        print(f"Fuels — diesel_can: {self.diesel_can_gal:.2f} gal | propane: {self.propane_lb:.1f} lb | butane: {self.butane_can:.1f} can")
 
     def toggle_device(self, name, state):
         name = (name or '').lower()
         if name not in self.devices:
-            print("Unknown device. Try: fridge, starlink, diesel_heater, propane_stove, jetboil"); return
+            print("Unknown device. Try: fridge, starlink, diesel_heater, stove, jetboil"); return
         d = self.devices[name]
         if not d.get('owned', False):
             print("You don't own that device."); return
@@ -660,17 +664,28 @@ class Game:
         w = derive_weather(n, self.minutes)
         biome = n.get('biome','').replace('_',' ')
         elev = n.get('elevation_ft','?')
-        print(f"You are at {n['name']}. {biome} at {elev} ft.")
+        print()
+        #print(f"You are at {n['name']}. {biome} at {elev} ft.")
         # intentionally no bar HUD (per your earlier preference)
         desc = n.get('description')
-        if desc: print(desc)
-        print(f"Time: {minutes_to_hhmm(self.minutes)} | Weather: {describe_weather(w)}.")
-        print(f"Resources — water: {n['resources'].get('water','?')}, "
-              f"food: {n['resources'].get('food','?')}, "
-              f"solar: {n['resources'].get('solar','?')}, "
-              f"wind: {n['resources'].get('wind','?')}.")
-        if n.get('pet_adoption'): print("You spot a rescue meetup. You could ADOPT PET here.")
-        if self.pet: print(f"Your companion {self.pet.name}, a {self.pet.breed}, watches the horizon. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%.")
+        ansi = n.get('ansi')
+        if desc: print(COL.green(desc))
+        input("Press ENTER to continue...")
+        if ansi: 
+            with open(ansi, "r", encoding="utf-8") as f: 
+                ansi_content = f.read()
+                print(ansi_content)
+        #print(f"Time: {minutes_to_hhmm(self.minutes)}")
+        print(COL.grey(f"Weather: {describe_weather(w)}."))
+        #print(f"Resources — water: {n['resources'].get('water','?')}, "
+              #f"food: {n['resources'].get('food','?')}, "
+              #f"solar: {n['resources'].get('solar','?')}, "
+        print(COL.grey(f"wind: {n['resources'].get('wind','?')}."))
+        if n.get('pet_adoption') and not self.pet and not self.vehicle_type == 'truck_camper': print("You spot a rescue meetup. You could ADOPT PET here.")
+        if self.pet: 
+            comp = random.choice(["companion","pet","partner","ride or die","best friend","constant shadow"])
+            action = random.choice(["carefully watches the horizon","shuffles around the cab","raises their head briefly and goes back to sleep","barks at something unseen","whines about being fed","jumps down from the passenger seat","jumps into the passenger seat"])
+            print(COL.green(f"\nYour {comp} {self.pet.name} {action}. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%."))
 
     def status(self):
         print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
@@ -811,8 +826,8 @@ class Game:
     def cook(self):
         if self.food <= 0: print("You rummage for crumbs. No food to cook."); return
         used = "cold"
-        if self.devices['propane_stove']['owned'] and self.propane_lb >= 0.2:
-            self.propane_lb -= 0.2; used = "propane stove"
+        if self.devices['stove']['owned'] and self.propane_lb >= 0.2:
+            self.propane_lb -= 0.2; used = "stove"
         elif self.devices['jetboil']['owned'] and self.butane_can >= 0.25:
             self.butane_can -= 0.25; used = "jetboil"
         else:
@@ -820,7 +835,7 @@ class Game:
         use_water = 0.5 if self.water >= 0.5 else 0.0
         self.food -= 1
         self.water = clamp(self.water - use_water, 0, self.water_cap_gallons)
-        morale_boost = 9 if used in ("propane stove","jetboil") else 6
+        morale_boost = 9 if used in ("stove","jetboil") else 6
         self.morale = clamp(self.morale + morale_boost, 0, 100)
         self.energy = clamp(self.energy + 6, 0, 100)
         self.advance(TURN_MINUTES)
@@ -1006,7 +1021,9 @@ class Game:
         for key, it in self.catalog.items():
             name = it.get("name", key)
             price = it.get("price", 0)
-            print(f"  {key:<12} ${price:<5} — {name}")
+            requires = it.get("requires", {})
+            lvl = requires.get("level")
+            print(f"  {key:<12} ${price:<5} — {name:<18} (requires level {lvl}).")
         print(f"Cash: {COL.green(f'${self.cash:.0f}')}")
 
     def _apply_effect(self, key, qty):
@@ -1098,6 +1115,26 @@ class Game:
                     mag = 0
                 purchased = self._apply_effect(eff_key, mag)
 
+        if item.get("requires"):
+            requires = item.get("requires", {})
+            if requires.get("exp") and requires.get("level"): 
+                exp = requires.get("exp")
+                lvl = requires.get("level")
+                if self.xp < int(exp) or self.level < int(lvl):
+                    print(f"Requires level {lvl}. You are only level {self.level}.")
+                    print(f"Requires {exp} experience. You only have {self.xp} experience.")
+                    return
+            elif requires.get("level"): 
+                lvl = requires.get("level")
+                if self.level < int(lvl):
+                    print(f"Requires level {lvl}. You are only level {self.level}.")
+                    return
+            elif requires.get("exp"): 
+                exp = requires.get("exp")
+                if self.xp < int(exp):
+                    print(f"Requires {exp} experience. You only have {self.xp} experience.")
+                    return
+
         self.cash -= price
         print(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}. Gained: {purchased}")
         if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
@@ -1158,16 +1195,10 @@ class Game:
         if not self.node().get('pet_adoption'): print("No adoption event here. Try a larger town/rescue hub."); return
         if self.pet: print("You already travel with a loyal companion."); return
 
-        print(f"{self.vehicle_type}")
-
         if self.vehicle_type == "subaru":
             self.pet_type = "cat"
-            print("Detected Subaru")
-            print(f"{self.pet_type}")
         elif self.vehicle_type == "truck_camper":
             self.pet_type = "dog"
-            print("Detected Truck")
-            print(f"{self.pet_type}")
         else:
             self.pet_type = random.choice(["dog","cat"])
 
@@ -1185,37 +1216,38 @@ class Game:
             action = random.choice(["disappears into the back","makes their way onto the dash","winds between your legs","meows hungrily"])
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
             print(f"You meet {name}, a {spirit} {breed} cat, who promptly {action}. Bond +6.")
-        xp = clamp(10, 0, 30)
+        xp = clamp(self.xp + 10, 0, 30)
         self.add_xp(int(xp), "pet adoption")
 
     def feed_pet(self):
         if not self.pet: print("You travel alone."); return
-        if self.food <= 0: print("You need rations to share."); return
+        if self.food <= 0: print(COL.red("You have nothing to share.")); return
+        print(f"{self.pet.name}")
         self.food -= 1; self.pet.bond = clamp(self.pet.bond + 6, 0, 100); self.advance(TURN_MINUTES)
         print(f"You feed {self.pet.name}. Bond warms.")
-        xp = 5
+        xp = clamp(self.xp + 5, 0, 15)
         self.add_xp(int(xp), "pet care")
 
     def water_pet(self):
         if not self.pet: print("You travel alone."); return
-        if self.water < 0.3: print("Water is too low."); return
+        if self.water < 0.3: print(COL.red("Water is too low.")); return
         self.water = clamp(self.water - 0.3, 0, self.water_cap_gallons); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
         print(f"{self.pet.name} drinks happily.")
-        xp = 5
+        xp = clamp(self.xp + 5, 0, 15)
         self.add_xp(int(xp), "pet care")
 
     def walk_pet(self):
         if not self.pet: print("You travel alone."); return
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
         print(f"You walk {self.pet.name}. Spirits lift.")
-        xp = 10
+        xp = clamp(self.xp + 10, 0, 20)
         self.add_xp(int(xp), "pet care")
 
     def play_with_pet(self):
         if not self.pet: print("You travel alone."); return
         self.pet.bond = clamp(self.pet.bond + 5, 0, 100); self.morale = clamp(self.morale + 4, 0, 100); self.advance(20)
         print(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the van.")
-        xp = 15
+        xp = clamp(self.xp + 15, 0, 30)
         self.add_xp(int(xp), "play")
 
     def command_pet(self, verb):
@@ -1231,7 +1263,7 @@ class Game:
             rng = seeded_rng(self.location, int(self.minutes/60), 'search')
             if rng.random() < 0.4:
                 self.water = clamp(self.water + 1.0, 0, self.water_cap_gallons)
-                print(f"{self.pet.name} finds a hose bib behind a building. +1.0G water.")
+                print(f"{self.pet.name} finds fresh water. +1.0G water.")
                 xp = 20
                 self.add_xp(int(xp), "search")
             else:
@@ -1253,7 +1285,7 @@ HELP_TEXT = """Commands:
   WEATHER
   CAMP [stealth|paid|dispersed]
   COOK | SLEEP
-  HIKE <n|s|e|w|ne|nw|se|sw>   (daylight only; auto-turns back at dusk)
+  HIKE daylight only; turns back at dusk
   WORK [photo|dev|mechanic|guide|artist|gig] [hours]
   SHOP | BUY <item_id> [qty]
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
@@ -1307,8 +1339,8 @@ def character_creation():
     print(COL.cyan("=== Character & Vehicle Setup ==="))
     name = input(COL.prompt("Vehicle Name (enter to randomize): ")).strip()
     if not name:
-        name = random.choice(["River", "Juniper", "Sky", "Ash", "Indigo", "Cedar", "Rook"])
-    color = input(COL.prompt("Vehicle color (e.g., white/sand/forest/red): ")).strip() or "white"
+        name = random.choice(["Rocinante","Casper","River","Juniper","Sky","Ash","Indigo","Cedar","Rook","Raven"])
+    color = input(COL.prompt("Vehicle color: ")).strip() or "white"
     vkey = pick_from_dict("Pick a vehicle type:", VEHICLES)
     jkey = pick_from_dict("Pick a job:", JOBS)
     mode = ""
@@ -1321,7 +1353,6 @@ def character_creation():
     return cfg
 
 def prelude_shopping(game):
-    print("\n" + COL.cyan("=== Moab Outfitters — Prelude ==="))
     print("You can buy initial supplies/upgrades within your starting budget.")
     print("Type SHOP to view items, BUY <item_id> [qty] to purchase, or DONE to begin your journey.")
     while True:
@@ -1342,7 +1373,7 @@ def main():
     catalog = load_items_catalog()
     cfg = character_creation()
     game = Game(world, cfg, catalog)
-    prelude_shopping(game)
+    #prelude_shopping(game)
 
     print(COL.cyan("Welcome to Nomads!"))
     game.look()
@@ -1385,7 +1416,7 @@ def main():
             parts = line.split(); gallons = parts[1] if len(parts) > 1 else ''
             game.refuel(gallons)
         elif u == 'ADOPT PET': game.adopt_pet()
-        elif u == 'FEED PET': game.feed_pet()
+        elif u == "FEED PET": game.feed_pet()
         elif u == 'WATER PET': game.water_pet()
         elif u == 'WALK PET': game.walk_pet()
         elif u == 'PLAY WITH PET': game.play_with_pet()
@@ -1393,7 +1424,7 @@ def main():
             verb = line.split(' ', 2)[2] if len(line.split(' ', 2))>2 else ''
             game.command_pet(verb)
         elif u in ('QUIT','EXIT'):
-            print("You turn the key, and the road beckons. Bye."); break
+            print("You turn off the vehicle and end the adventure. Bye."); break
         elif u.startswith('WORK'):
             parts = line.split()
             kind  = parts[1] if len(parts)>1 and parts[1].lower() not in ('1','2','3','4','5','6') else ''
@@ -1407,6 +1438,10 @@ def main():
         elif u == 'ELECTRICAL': game.electrical_panel()
         elif u == 'EXP': game.exp()
         elif u == 'ELEVATION': game.elevation()
+        elif u in ('INVENTORY','INV','I'): game.inventory()
+        elif u in ('CASH','BANK','MONEY'): game.bank()
+        elif u == "SOLAR": game.solar_power_status()
+        elif u == "WIND": game.wind_power_status()
         else:
             print("Unknown command. Type HELP.")
 
