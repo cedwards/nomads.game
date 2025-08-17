@@ -11,7 +11,7 @@ subaru:
   mpg: 32
   solar_cap_watts: 400
   wind_cap_watts: 500
-sedan:
+prius:
   base_food_cap: 8
   base_water_cap: 25
   ev_range: 300
