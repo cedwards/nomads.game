@@ -1,0 +1,25 @@
+---
+spring:
+  days: 90
+  diurnal_amp: 14.0
+  humidity_base: 35.0
+  temp_base: 60.0
+  uv_peak: 7.5
+summer:
+  days: 120
+  diurnal_amp: 18.0
+  humidity_base: 25.0
+  temp_base: 88.0
+  uv_peak: 10.5
+autumn:
+  days: 90
+  diurnal_amp: 12.0
+  humidity_base: 30.0
+  temp_base: 65.0
+  uv_peak: 6.0
+winter:
+  days: 60
+  diurnal_amp: 10.0
+  humidity_base: 35.0
+  temp_base: 38.0
+  uv_peak: 3.5

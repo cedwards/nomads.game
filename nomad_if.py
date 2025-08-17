@@ -2,6 +2,7 @@
 # Nomad IF prototype — Utah slice (seasons + UV + temp/humidity; items via YAML)
 # Quality-of-life: calm ANSI colors, green prompt; WEATHER command; leaner LOOK/STATUS UI
 
+import yaml
 import os, sys, math, json, random
 from collections import defaultdict, deque
 
@@ -24,60 +25,57 @@ TURN_MINUTES = 15
 DAY_MINUTES  = 24 * 60
 SYSTEM_VOLTAGE = 12.0  # 12V house system
 
-# ===== Archetypes & Jobs =====
-VEHICLES = {
-    "sedan": {
-        "label": "Sedan (stealthy, light)",
-        "base_water_cap": 25, "max_water_cap": 40,
-        "base_food_cap": 8,   "max_food_cap": 14,
-        "house_cap_factor": 0.7,
-        "solar_cap_watts": 400, "wind_cap_watts": 300,
-        "ev_range": 300, "mpg": 30, "fuel_tank_gal": 14
-    },
-    "van": {
-        "label": "Van (classic nomad rig)",
-        "base_water_cap": 50, "max_water_cap": 90,
-        "base_food_cap": 12,  "max_food_cap": 20,
-        "house_cap_factor": 1.0,
-        "solar_cap_watts": 800, "wind_cap_watts": 300,
-        "ev_range": 240, "mpg": 22, "fuel_tank_gal": 24
-    },
-    "truck_camper": {
-        "label": "Truck + Camper (capable, off-grid)",
-        "base_water_cap": 60, "max_water_cap": 110,
-        "base_food_cap": 14,  "max_food_cap": 22,
-        "house_cap_factor": 1.2,
-        "solar_cap_watts": 1000, "wind_cap_watts": 600,
-        "ev_range": 220, "mpg": 15, "fuel_tank_gal": 26
-    },
-    "skoolie": {
-        "label": "Skoolie (roomy bus, slow)",
-        "base_water_cap": 120, "max_water_cap": 200,
-        "base_food_cap": 24,   "max_food_cap": 40,
-        "house_cap_factor": 2.0,
-        "solar_cap_watts": 1800, "wind_cap_watts": 900,
-        "ev_range": 160, "mpg": 8, "fuel_tank_gal": 55
-    }
-}
+# ===== Vehicles =====
+with open("vehicles.yaml", "r", encoding="utf-8") as f:
+    VEHICLES = yaml.safe_load(f)
 
-JOBS = {
-    "photographer": {"label": "Photographer (eye for light)", "epic_bonus": 0.25},
-    "mechanic": {"label": "Mechanic (handy with tools)", "shop_discount": 0.15},
-    "remote_dev": {"label": "Remote Dev (wifi wizard)", "remote_camp_income": 30},
-    "trail_guide": {"label": "Trail Guide (path whisperer)", "hike_energy_mult": 0.8, "hike_find_bonus": 0.10},
-    "artist": {"label": "Artist (muse on wheels)", "morale_bonus_dispersed": 3, "epic_bonus": 0.10}
-}
+# ===== Jobs =====
+with open("jobs.yaml", "r", encoding="utf-8") as f:
+    JOBS = yaml.safe_load(f)
 
-# ===== Seasons & environment model =====
-# 360-day simple calendar: Spring(0-89) → Summer(90-209) → Autumn(210-299) → Winter(300-359)
-SEASONS = [
-    ("spring",  90, {"uv_peak":7.5,  "temp_base":60.0, "diurnal_amp":14.0, "humidity_base":35.0}),
-    ("summer", 120, {"uv_peak":10.5, "temp_base":88.0, "diurnal_amp":18.0, "humidity_base":25.0}),
-    ("autumn",  90, {"uv_peak":6.0,  "temp_base":65.0, "diurnal_amp":12.0, "humidity_base":30.0}),
-    ("winter",  60, {"uv_peak":3.5,  "temp_base":38.0, "diurnal_amp":10.0, "humidity_base":35.0}),
-]
 REF_ELEV_FT = 4000.0
 LAPSE_F_PER_KFT = -3.5   # ~ -3.5°F per 1000 ft elevation vs reference
+
+# put near your other loaders
+def _flatten_meta_list(meta_list):
+    flat = {}
+    for item in meta_list or []:
+        if isinstance(item, dict):
+            flat.update(item)
+    return flat
+
+def load_seasons():
+    here = os.path.dirname(os.path.abspath(__file__))
+    ypath = os.path.join(here, "seasons.yaml")
+    import yaml
+    with open(ypath, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    order = ["spring","summer","autumn","fall","winter"]
+    out = []
+    for key in order:
+        if key not in data: continue
+        block = data[key]
+        name = "fall" if key == "autumn" else key
+
+        if isinstance(block, dict) and "days" in block:
+            days = int(block["days"])
+            meta = {k:v for k,v in block.items() if k != "days"}
+        elif isinstance(block, dict) and len(block) == 1:
+            # supports: spring: { 90: [ {diurnal_amp: 14.0}, {temp_base: 60.0}, ... ] }
+            (days_key, meta_blob), = block.items()
+            days = int(days_key)
+            if isinstance(meta_blob, list):
+                meta = _flatten_meta_list(meta_blob)
+            elif isinstance(meta_blob, dict):
+                meta = meta_blob
+            else:
+                meta = {}
+        else:
+            raise ValueError(f"Unrecognized season block for {key}: {block!r}")
+
+        out.append((name, days, meta))
+    return out
 
 def make_cli_prompt(game):
     # Time (e.g., "Day 2 14:45")
@@ -129,15 +127,22 @@ def seeded_rng(*parts):
     return random.Random(seed)
 
 def get_season(total_minutes):
-    """Return (season_name, season_meta) cycling every 360 days. Day 1 starts in Spring."""
-    day = (total_minutes // DAY_MINUTES) % 360
-    idx = day
+    """Return (season_name, meta) for the current in-game day."""
+    global SEASONS
+    if SEASONS is None:
+        SEASONS = load_seasons()
+
+    # fold across the season spans
+    total_days = sum(span for _, span, _ in SEASONS)
+    day_index = (total_minutes // DAY_MINUTES) % total_days + 1
     acc = 0
     for name, span, meta in SEASONS:
-        if idx < acc + span:
-            return name, meta
         acc += span
-    return "winter", SEASONS[-1][2]  # fallback
+        if day_index <= acc:
+            return name, meta
+    # fallback (shouldn’t happen)
+    name, _, meta = SEASONS[-1]
+    return name, meta
 
 # ---------------------------- World -----------------------------------
 class World:
@@ -411,6 +416,7 @@ class Game:
         self.diesel_can_gal = 0.0
         self.propane_lb     = 0.0
         self.butane_can     = 0.0
+        self.extra_fuel     = 0.0
 
         # Devices: build from catalog items of type device_install
         self.devices = {}
@@ -670,9 +676,7 @@ class Game:
         self.cash += gross
         self.work_hours_today[kind] = self.work_hours_today.get(kind, 0.0) + hours
         print(f"You work {kind} for ~{hours:.1f}h at ~${hourly:.0f}/h. Paid ${gross}.")
-        print(f"Now: Cash ${self.cash:.0f} | House {int(self.battery)}% | "
-              f"{('EV '+str(int(self.ev_battery))+'%') if self.mode=='electric' else ('Fuel '+f'{self.fuel_gal:.1f} gal')} | "
-              f"Water {self.water:.1f}L | Energy {int(self.energy)}.")
+        print(f"W:{self.water:.1f}L | E:{int(self.energy)}.")
 
     # ---------- Hike (daylight-only; dusk truncation) ----------
     def hike(self, direction):
@@ -932,19 +936,31 @@ class Game:
             print(f"Wind charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%.")
 
     def refuel(self, gallons):
-        if self.mode != 'fuel':
-            print("You're not in fuel mode. Switch with: MODE fuel"); return
-        if self.location != 'moab':
-            print("No reliable fuel here. Try Moab."); return
+        capacity = self.fuel_tank_gal
+        remaining = self.fuel_gal
+
         try: g = float(gallons)
         except Exception:
             print("REFUEL <gallons>"); return
+
+        if self.mode != 'fuel':
+            print("You're not in fuel mode. Switch with: MODE fuel"); return
+        if self.location not in ('moab', 'bonneville_salt_flats', 'bryce', 'zion', 'capitol_reef') and not self.extra_fuel:
+            print("No reliable fuel here. Try Moab."); return
+        elif self.extra_fuel:
+            g = self.extra_fuel
         if g <= 0: print("That’s not how fuel works."); return
-        price = 4.00
-        cost = g * price
-        if self.cash < cost:
-            print(f"Need ${cost:.0f}; you have ${self.cash:.0f}."); return
-        self.cash -= cost
+        if g > capacity - remaining: print(f"Your tank capacity is: {capacity}"); return
+        if not self.extra_fuel:
+            price = 3.00
+            cost = g * price
+            if self.cash < cost:
+                print(f"Need ${cost:.0f}; you have ${self.cash:.0f}."); return
+            self.cash -= cost
+        else:
+            price = 0.00
+            cost = g * price
+            self.extra_fuel -= g
         self.fuel_gal += g
         self.advance(10)
         print(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:.0f}.")
@@ -1017,6 +1033,7 @@ class Game:
         print(f"Power {self.battery:>3.0f}%  Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  UV {w['uv']:.1f}  {mode_line}")
         print(f"Stores H₂O {self.water:.1f}/{self.water_cap_liters:.0f}L  Food {self.food}/{self.food_cap_rations}  Cash {COL.green(f'${self.cash:.0f}')}")
         print(f"Env  Temp {w['temp_f']:.0f}°F | Humidity {w['humidity']:.0f}% | UV {w['uv']:.1f}")
+        print(f"Energy {self.energy:.0f} | Morale {self.morale:.0f}%")
         if self.pet:
             p = self.pet
             print(f"Pet {p.name}: Bond {int(p.bond)} | Energy {int(p.energy)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}")
@@ -1096,19 +1113,19 @@ class Game:
         hours = sleep_minutes / 60.0
         w = derive_weather(self.node(), self.minutes)
         if style == 'paid':
-            energy_gain, morale_gain, pet_energy, pet_bond = 20, 10, 18, 2
+            energy_gain, morale_gain, pet_energy, pet_bond = 75, 10, 18, 2
             ranger_knock = 0.01
             note = "Paid site: services, permits, quiet-ish."
         elif style == 'stealth':
-            energy_gain, morale_gain, pet_energy, pet_bond = 15, 6, 14, 2
+            energy_gain, morale_gain, pet_energy, pet_bond = 60, 6, 14, 2
             ranger_knock = 0.08
             if self.node().get('pet_rules') == 'strict': ranger_knock += 0.06
             if self.pet and self.pet.alert > 60:         ranger_knock += 0.04
             note = "Stealth spot: close to town, but keep it low-key."
         else:
-            energy_gain, morale_gain, pet_energy, pet_bond = 23, 12, 20, 3
+            energy_gain, morale_gain, pet_energy, pet_bond = 80, 12, 20, 3
             if self.has_tent:
-                energy_gain += 4; morale_gain += 3; pet_energy += 3
+                energy_gain += 5; morale_gain += 3; pet_energy += 3
                 note = "Dispersed with tent: free, solitary, and cozy under the stars."
             else:
                 note = "Dispersed site: free, solitary, sky for days."
@@ -1178,13 +1195,13 @@ class Game:
         self.water = clamp(self.water - use_water, 0, self.water_cap_liters)
         morale_boost = 9 if used in ("propane stove","jetboil") else 6
         self.morale = clamp(self.morale + morale_boost, 0, 100)
-        self.energy = clamp(self.energy + 6, 0, 100)
+        self.energy = clamp(self.energy + 10, 0, 100)
         self.advance(TURN_MINUTES)
         print(f"You cook with {used} (+morale, +energy). Water used: {use_water:.1f}L.")
 
     def sleep(self):
         self.advance(120)
-        self.energy = clamp(self.energy + 12, 0, 100)
+        self.energy = clamp(self.energy + 50, 0, 100)
         if self.pet: self.pet.energy = clamp(self.pet.energy + 10, 0, 100)
         print(f"You nap for 2h. It's now {minutes_to_hhmm(self.minutes)}.")
 
@@ -1309,9 +1326,9 @@ def pick_from_dict(title, dct):
 
 def character_creation():
     print(COL.cyan("=== Character & Vehicle Setup ==="))
-    name = input(COL.prompt("Name (enter to randomize): ")).strip()
+    name = input(COL.prompt("Vehicle Name (enter to randomize): ")).strip()
     if not name:
-        name = random.choice(["River", "Juniper", "Sky", "Ash", "Indigo", "Cedar", "Rook"])
+        name = random.choice(["River", "Juniper", "Sky", "Ash", "Indigo", "Cedar", "Rook", "Rocinante"])
     color = input(COL.prompt("Vehicle color (e.g., white/sand/forest/red): ")).strip() or "white"
 
     vkey = pick_from_dict("Pick a vehicle type:", VEHICLES)
@@ -1324,7 +1341,7 @@ def character_creation():
 
     # Randomized starting cash (seeded so same choices = same roll)
     rng = seeded_rng(name, color, vkey, jkey, mode)
-    start_cash = rng.randint(500, 2000)
+    start_cash = rng.randint(1000, 10000)
 
     cfg = {
         "name": name, "color": color,

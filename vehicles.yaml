@@ -1,0 +1,61 @@
+---
+subaru:
+  base_food_cap: 10
+  base_water_cap: 25
+  ev_range: 400
+  fuel_tank_gal: 18.5
+  house_cap_factor: 0.7
+  label: Subaru (all-terrain, capable)
+  max_food_cap: 20
+  max_water_cap: 40
+  mpg: 32
+  solar_cap_watts: 400
+  wind_cap_watts: 500
+sedan:
+  base_food_cap: 8
+  base_water_cap: 25
+  ev_range: 300
+  fuel_tank_gal: 14
+  house_cap_factor: 0.7
+  label: Sedan (stealthy, light)
+  max_food_cap: 14
+  max_water_cap: 40
+  mpg: 30
+  solar_cap_watts: 400
+  wind_cap_watts: 300
+skoolie:
+  base_food_cap: 24
+  base_water_cap: 120
+  ev_range: 160
+  fuel_tank_gal: 55
+  house_cap_factor: 2.0
+  label: Skoolie (roomy bus, slow)
+  max_food_cap: 40
+  max_water_cap: 200
+  mpg: 8
+  solar_cap_watts: 1800
+  wind_cap_watts: 900
+truck_camper:
+  base_food_cap: 14
+  base_water_cap: 60
+  ev_range: 220
+  fuel_tank_gal: 26
+  house_cap_factor: 1.2
+  label: Truck + Camper (capable, off-grid)
+  max_food_cap: 22
+  max_water_cap: 110
+  mpg: 15
+  solar_cap_watts: 1000
+  wind_cap_watts: 600
+van:
+  base_food_cap: 12
+  base_water_cap: 50
+  ev_range: 240
+  fuel_tank_gal: 24
+  house_cap_factor: 1.0
+  label: Van (classic nomad rig)
+  max_food_cap: 20
+  max_water_cap: 90
+  mpg: 22
+  solar_cap_watts: 800
+  wind_cap_watts: 300

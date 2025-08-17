@@ -135,6 +135,16 @@ items:
       toggle: false
 
   # --- Fuels (consumables) ---
+  - id: extra_fuel
+    label: "extra fuel"
+    category: fuel
+    price: 3
+    info: "extra fuel for the vehicle (per gallon)"
+    purchase:
+      type: fuel_add
+      fuel_attr: extra_fuel
+      per_unit: 1.0  # each adds 1 gallon
+
   - id: diesel_can
     label: "diesel_can"
     category: fuel

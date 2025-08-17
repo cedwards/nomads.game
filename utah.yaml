@@ -15,6 +15,7 @@ nodes:
     season_rules: ["monsoon_flash_flood", "summer_heat"]
     resources: { water: "moderate", food: "nearby_town", solar: "poor", wind: "fair" }
     pet_rules: "strict"
+    fuel_price: 3.31
     gigs:
       - { id: angels_flight, window: "golden_hour", payout: [120, 240], rep: { locals: 1, rangers: 1 } }
     events:
@@ -22,7 +23,6 @@ nodes:
       - { id: flash_flood_watch, chance: 0.06, tags: ["monsoon"] }
     connections:
       - { to: bryce, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
-      - { to: valley_of_gods, road: "highway", miles: 155, grade: "mixed", wind_exposure: "medium" }
 
   - id: bryce
     description: |
@@ -36,6 +36,7 @@ nodes:
     season_rules: ["cold_nights", "snow_shoulders"]
     resources: { water: "campground", food: "nearby_town", solar: "good", wind: "good" }
     pet_rules: "moderate"
+    fuel_price: 3.55
     gigs:
       - { id: star_party, window: "night_clear", payout: [90, 180], rep: { rangers: 1 } }
     events:
@@ -43,7 +44,6 @@ nodes:
     connections:
       - { to: zion, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
       - { to: capitol_reef, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
-      - { to: mirror_lake_highway, road: "highway", miles: 250, grade: "mixed", wind_exposure: "medium" }
 
   - id: capitol_reef
     description: |
@@ -57,6 +57,7 @@ nodes:
     season_rules: ["flash_floods", "shoulder_season_best"]
     resources: { water: "spigots", food: "bakery", solar: "good", wind: "fair" }
     pet_rules: "moderate"
+    fuel_price: 3.35
     gigs:
       - { id: orchard_stories, window: "daylight", payout: [60, 130], rep: { locals: 1 } }
     events:
@@ -64,7 +65,6 @@ nodes:
     connections:
       - { to: bryce, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
       - { to: san_rafael_swell, road: "scenic", miles: 65, grade: "moderate", wind_exposure: "medium" }
-      - { to: moab, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
 
   - id: arches
     description: |
@@ -106,7 +106,6 @@ nodes:
       - { to: moab, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
       - { to: arches, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
       - { to: valley_of_gods, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
-      - { to: san_rafael_swell, road: "scenic", miles: 100, grade: "mix"}
 
   - id: moab
     description: |
@@ -120,6 +119,7 @@ nodes:
     season_rules: ["summer_heat"]
     resources: { water: "abundant", food: "abundant", solar: "good", wind: "fair", parts: "shops" }
     pet_rules: "friendly"
+    fuel_price: 3.47
     pet_adoption: true
     gigs:
       - { id: shop_day, window: "daylight", payout: [40, 120], rep: { locals: 1 } }
@@ -130,7 +130,6 @@ nodes:
       - { to: canyonlands, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
       - { to: san_rafael_swell, road: "mixed", miles: 110, grade: "light", wind_exposure: "high" }
       - { to: valley_of_gods, road: "highway", miles: 120, grade: "mixed", wind_exposure: "high" }
-      - { to: capitol_reef, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
 
   - id: san_rafael_swell
     description: |
@@ -152,7 +151,6 @@ nodes:
       - { to: moab, road: "mixed", miles: 110, grade: "light", wind_exposure: "high" }
       - { to: capitol_reef, road: "scenic", miles: 65, grade: "moderate", wind_exposure: "medium" }
       - { to: bonneville_salt_flats, road: "highway", miles: 160, grade: "mixed", wind_exposure: "high" }
-      - { to: canyonlands, road: "scenic", miles: 100, grade: "mixed", wind_exposure: "high" }
 
   - id: bonneville_salt_flats
     description: |
@@ -166,6 +164,7 @@ nodes:
     season_rules: ["spring_flooding", "summer_glare"]
     resources: { water: "bring_lots", food: "scarce", solar: "excellent", wind: "fair" }
     pet_rules: "moderate"
+    fuel_price: 3.66
     gigs:
       - { id: salt_and_stars, window: "night_clear", payout: [150, 260], rep: { tourists: 1 } }
     events:
@@ -191,7 +190,7 @@ nodes:
       - { id: bear_check, chance: 0.06, tags: ["wildlife","storage"] }
     connections:
       - { to: bonneville_salt_flats, road: "highway", miles: 150, grade: "mixed", wind_exposure: "medium" }
-      - { to: bryce, road: "highway", miles: 250, grade: "mixed", wind_exposure: "medium" }
+      - { to: san_rafael_swell, road: "highway", miles: 250, grade: "mixed", wind_exposure: "high" }
 
   - id: valley_of_gods
     description: |
