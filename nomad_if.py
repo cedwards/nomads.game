@@ -22,13 +22,14 @@ SYSTEM_VOLTAGE = 12.0
 
 class COL:
     RESET = "\033[0m"
+    blue  = lambda s: f"\033[34m{s}\033[0m"
     bold  = lambda s: f"\033[1m{s}\033[0m"
+    cyan  = lambda s: f"\033[36m{s}\033[0m"
     green = lambda s: f"\033[32m{s}\033[0m"
     grey  = lambda s: f"\033[90m{s}\033[0m"
-    cyan  = lambda s: f"\033[36m{s}\033[0m"
-    blue  = lambda s: f"\033[34m{s}\033[0m"
+    prompt= lambda s: f"\033[36m{s}\033[0m"
+    red   = lambda s: f"\033[31m{s}\033[0m"
     yellow= lambda s: f"\033[33m{s}\033[0m"
-    prompt= lambda s: f"\033[32m{s}\033[0m"
 
 def clamp(v, lo, hi): return max(lo, min(hi, v))
 
@@ -334,7 +335,7 @@ def load_items_catalog():
                     v.setdefault("requires", {})
                     catalog[k] = v
         except Exception as e:
-            print(COL.cyan(f"items.yaml load failed: {e}. Using default catalog."))
+            print(COL.red(f"items.yaml load failed: {e}. Using default catalog."))
     if not catalog:
         print("required file missing: items.yaml")
         exit(1)
@@ -480,7 +481,7 @@ class Game:
         print(COL.grey(f" Battery: {battery:.0f}%"))
         print(COL.grey(f" Capacity: {self.house_cap_ah:.0f}Ah"))
         if battery == 0:
-            print(COL.cyan(f" Remaining: 0 hours"))
+            print(COL.red(f" Remaining: 0 hours"))
         elif net_a < 0:
             print(COL.yellow(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours"))
         elif net_a > 0:
@@ -492,7 +493,7 @@ class Game:
 
     def fuel_status(self):
         if self.mode == 'electric':
-            print(COL.cyan("You don't have a fuel-based vehicle"))
+            print(COL.red("You don't have a fuel-based vehicle"))
             return
         else:
             print(COL.grey(f"Fuel Status:{self.fuel_gal}G"))
@@ -501,7 +502,7 @@ class Game:
 
     def ev_status(self):
         if self.mode == 'fuel':
-            print(COL.cyan("You don't have an electric vehicle"))
+            print(COL.red("You don't have an electric vehicle"))
             return
         else:
             print(COL.grey(f"EV Battery: {self.ev_battery}%"))
@@ -580,7 +581,7 @@ class Game:
         print(COL.grey(f" Battery: {battery:.0f}%"))
         print(COL.grey(f" Capacity: {self.house_cap_ah:.0f}Ah"))
         if battery == 0:
-            print(COL.cyan(f" Remaining: 0 hours"))
+            print(COL.red(f" Remaining: 0 hours"))
         elif net_a < 0:
             print(COL.yellow(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours"))
         elif net_a > 0:
@@ -750,18 +751,18 @@ class Game:
     def route_to(self, dest_key):
         nid = self.world.find_node(dest_key)
         if not nid: print("I don't recognize that destination."); return
-        if nid == self.location: print("You're already here."); return
+        if nid == self.location: print(COL.yellow("You're already here.")); return
         path, total_turns = dijkstra_route(self.world, self.location, nid, self.minutes)
-        if not path: print("No route found."); return
+        if not path: print(COL.red("No route found.")); return
         self.route = path; self.route_idx = 0
         hours = total_turns * TURN_MINUTES / 60
         names = " → ".join(self.world.nodes[a]['name'] for a,_,_ in path) + f" → {self.world.nodes[nid]['name']}"
-        print(COL.green(f"Route plotted ({hours:.1f}h est): {names}"))
-        print("Use: DRIVE to set off.")
+        print(COL.grey(f"Route plotted ({hours:.1f}h est): {names}"))
+        print(COL.grey("Use: DRIVE to set off."))
 
     def drive(self):
-        if not self.route: print("No route plotted. Use: ROUTE TO <place>"); return
-        if self.route_idx >= len(self.route): print("Route already complete."); return
+        if not self.route: print(COL.red("No route plotted. Use: ROUTE TO <place>")); return
+        if self.route_idx >= len(self.route): print(COL.yellow("Route already complete.")); return
         frm, to, conn = self.route[self.route_idx]
         turns, w = edge_drive_turns(self.world, frm, conn, self.minutes)
         hours = turns * TURN_MINUTES / 60.0
@@ -770,13 +771,13 @@ class Game:
         if self.mode == 'electric':
             needed_pct = (miles / max(1.0, self.ev_range_mi)) * 100.0
             if self.ev_battery < needed_pct:
-                print(COL.cyan(f"Not enough charge for {miles:.0f} mi. Need ~{needed_pct:.1f}% EV; have {self.ev_battery:.1f}%."))
+                print(COL.red(f"Not enough charge for {miles:.0f} mi. Need ~{needed_pct:.1f}% EV; have {self.ev_battery:.1f}%."))
                 print(COL.yellow("Try: CHARGE station (Moab), CHARGE solar, or CHARGE wind.")); return
             self.ev_battery = clamp(self.ev_battery - needed_pct, 0, 100)
         else:
             needed_gal = miles / max(1.0, self.mpg)
             if self.fuel_gal < needed_gal:
-                print(COL.cyan(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}."))
+                print(COL.red(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}."))
                 print(COL.yellow("Try: REFUEL in Moab or adjust your route.")); return
             self.fuel_gal = max(0.0, self.fuel_gal - needed_gal)
             self.battery = clamp(self.battery + (2.0*hours)/self._pct_per_ah(), 0, 100)
@@ -794,8 +795,8 @@ class Game:
         self.advance(turns*TURN_MINUTES)
         self.location = to
         self.route_idx += 1
-        print(COL.green(f"You arrive at {self.node()['name']} after {hours:.1f}h and {miles:.0f} mi. Weather en route: {describe_weather(w)}."))
-        if self.route_idx >= len(self.route): print("Route complete.")
+        print(COL.grey(f"You arrive at {self.node()['name']} after {hours:.1f}h and {miles:.0f} mi. Weather en route: {describe_weather(w)}."))
+        if self.route_idx >= len(self.route): print(COL.grey("Route complete."))
         # XP: reward per mile & road difficulty
         road = conn.get('road','mixed'); grade = conn.get('grade','mixed')
         xp = miles * {'interstate':0.25,'highway':0.3,'scenic':0.4,'mixed':0.35,'gravel':0.6,'trail':1.0}.get(road,0.3)
@@ -871,7 +872,7 @@ class Game:
         self.add_xp({'paid':10,'stealth':15,'dispersed':18}[style], f"camp ({style})")
 
     def cook(self):
-        if self.food <= 0: print(COL.cyan("You rummage for crumbs. No food to cook.")); return
+        if self.food <= 0: print(COL.red("You rummage for crumbs. No food to cook.")); return
         used = "cold"
         if self.devices['stove']['owned'] and self.propane_lb >= 0.2:
             self.propane_lb -= 0.2; used = "stove"
@@ -1122,7 +1123,7 @@ class Game:
         except Exception: qty = 1
         if qty <= 0: qty = 1
         if item_id not in self.catalog:
-            print(COL.cyan("Unknown item id. Type SHOP to list items.")); return
+            print(COL.red("Unknown item id. Type SHOP to list items.")); return
         item = self.catalog[item_id]
         price = float(item.get("price", 0)) * qty
         # job discount for upgrades/devices (heuristic: price >= $150)
@@ -1188,7 +1189,7 @@ class Game:
     # ---------- Mode / Energy ----------
     def set_mode(self, mode):
         m = (mode or '').lower()
-        if m not in ('electric','fuel'): print("MODE electric | MODE fuel"); return
+        if m not in ('electric','fuel'): print(COL.red("MODE electric | MODE fuel")); return
         self.mode = m; print(COL.green(f"Drivetrain set to {self.mode.upper()}."))
 
     def charge(self, method):
@@ -1266,7 +1267,7 @@ class Game:
 
     def feed_pet(self):
         if not self.pet: print("You travel alone."); return
-        if self.food <= 0: print(COL.cyan("You have nothing to share.")); return
+        if self.food <= 0: print(COL.red("You have nothing to share.")); return
         self.food -= 1; self.pet.bond = clamp(self.pet.bond + 6, 0, 100); self.advance(TURN_MINUTES)
         print(COL.grey(f"You feed {self.pet.name}. Bond warms."))
         xp = clamp(self.xp + 5, 0, 20)
@@ -1274,7 +1275,7 @@ class Game:
 
     def water_pet(self):
         if not self.pet: print("You travel alone."); return
-        if self.water < 0.3: print(COL.cyan("Water is too low.")); return
+        if self.water < 0.3: print(COL.red("Water is too low.")); return
         self.water = clamp(self.water - 0.3, 0, self.water_cap_gallons); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
         print(COL.grey(f"{self.pet.name} drinks happily."))
         xp = clamp(self.xp + 5, 0, 20)
@@ -1364,7 +1365,7 @@ def load_world():
             with open(cand_yaml, "r", encoding="utf-8") as f:
                 nodes = yaml.safe_load(f)["nodes"]
         except Exception as e:
-            print(COL.cyan(f"YAML load failed: {e}. Falling back to JSON."))
+            print(COL.red(f"YAML load failed: {e}. Falling back to JSON."))
     if nodes is None and os.path.exists(cand_json):
         with open(cand_json, "r", encoding="utf-8") as f:
             nodes = json.load(f)["nodes"]
@@ -1374,7 +1375,7 @@ def load_world():
     return World(nodes)
 
 def pick_from_dict(title, dct):
-    print(COL.cyan(title))
+    print(COL.blue(title))
     keys = list(dct.keys())
     for i, k in enumerate(keys, 1):
         lab = dct[k].get("label", k)
@@ -1385,10 +1386,10 @@ def pick_from_dict(title, dct):
             idx = int(ans)-1
             if 0 <= idx < len(keys): return keys[idx]
         if ans in dct: return ans
-        print("Pick by number or key from the list above.")
+        print(COL.red("Pick by number or key from the list above."))
 
 def character_creation():
-    print(COL.cyan("=== Character & Vehicle Setup ==="))
+    print(COL.blue("=== Character & Vehicle Setup ==="))
     name = input(COL.prompt("Vehicle Name (enter to randomize): ")).strip()
     if not name:
         name = random.choice(["Rocinante","Casper","River","Juniper","Sky","Ash","Indigo","Cedar","Rook","Raven"])
@@ -1444,6 +1445,7 @@ def main():
         elif u in ('LOOK','L'): game.look()
         elif u in ('STATUS','STATS'): game.status()
         elif u == 'MAP': game.show_map()
+        elif u.startswith('ROUTE TO THE '): game.route_to(line.split(' ', 3)[3])
         elif u.startswith('ROUTE TO '): game.route_to(line.split(' ', 2)[2])
         elif u == 'DRIVE': game.drive()
         elif u == 'WEATHER': game.check_weather()
@@ -1497,7 +1499,7 @@ def main():
         elif u == "FUEL": game.fuel_status()
         elif u == "TIME": game.report_time()
         else:
-            print("Unknown command. Type HELP.")
+            print(COL.red("Unknown command. Type HELP."))
 
 if __name__ == "__main__":
     main()
