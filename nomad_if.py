@@ -469,6 +469,16 @@ class Game:
         else:
             return
 
+    def read_book(self):
+        print(COL.grey(f"You read another chapter in your latest book."))
+        xp = clamp(self.xp + 10, 0, 10)
+        self.add_xp(int(xp), "self care")
+
+    def watch_something(self, something):
+        print(COL.grey(f"You watch {something}. Spirits lift."))
+        xp = clamp(self.xp + 10, 0, 15)
+        self.add_xp(int(xp), "self care")
+
     def battery_status(self):
         battery = self.battery
         solar_w = self._solar_input_watts_now()
@@ -1339,9 +1349,11 @@ HELP_TEXT = """Commands:
   LOOK | STATUS | MAP
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
   POWER | ELECTRICAL | BATTERY
+  READ
   ROUTE TO <place> | DRIVE
   SHOP | BUY <item_id> [qty]
   SOLAR
+  WATCH <something>
   WEATHER
   WIND
   WORK [photo|dev|mechanic|guide|artist|gig] [hours]
@@ -1498,6 +1510,8 @@ def main():
         elif u == "EV": game.ev_status()
         elif u == "FUEL": game.fuel_status()
         elif u == "TIME": game.report_time()
+        elif u == "READ": game.read_book()
+        elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))
 
