@@ -12,6 +12,7 @@ This game simulates life living in a vehicle and traveling around the country.
 | Prius         | $20k  | 🕵️ Stealth+ · ⛽ Fuel/EV+ · 📦 Storage–– · 🏕 Dispersed–               |
 | Subaru        | $25k  | 🏕 Dispersed+ (tent) · 🕵️ Stealth+ · 🐾 Cat Adoption · 📦 Storage–     |
 | Truck Camper  | $30k  | 🏕 Dispersed+ (no tent) · 🐕 Dog · 📦 Storage+ · 🕵️ Stealth–           |
+| Jeep          | $35k  | 🏕 Dispersed++ (rooftop tent) · 🐕 2xDog · 📦 Storage- · 🕵️ Stealth–   |
 | Van           | $50k  | 🏕 Dispersed+ (no tent) · 📦 Storage++ · ☀️ Solar+ · 🕵️ Stealth–        |
 | Skoolie       | $75k  | 🏕 Dispersed+ (no tent) · 📦 Storage+++ · ☀️ Solar++ · 🌀 Wind+ · ⛽ Fuel/EV–– · 🕵️ Stealth–– |
 
@@ -212,16 +213,72 @@ These items increase income earned by 10%.
 
 ## ENVIRONMENT
 
-ELEVATION
-WEATHER
+ELEVATION  
+This reports the elevation for your location.
+
+WEATHER  
+This reports the current weather.
+
+## MAPS [ PENDING ]
+Curret map covers the state of Utah for ten locations:
+
+ - Moab (starting point)
+ - Arches National Park
+ - Canyonlands National Park (should this become three?)
+ - Mirror Lake Highway
+ - Valley of the Gods
+ - Bonneville Salt Flats
+ - Bryce Canyon
+ - Zion National Park
+ - San Rafael Swell
+ - Capitol Reef 
+
+At this point, travel is done between these points, with only certain nodes
+directly connected. Gas is limited. Water is limited. Be sure to stock up
+before venturing into the wild.
+
+I would like to extend this such that each location has it's own mini-map.
+Beginning with Arches National Park I'd like to create a n/s/e/w/ne/nw/se/sw
+style replica of each park. This lets you virtually visit the park and get to
+know the parks themselves through the game. The more accurate the better (down
+to which parks have facilities, water, cell service, etc)!
+
+"quick travel" can also be achieved using the ROUTE TO command, but once inside
+each location you can manually navigate around using n/s/e/w keys.
+
+Priority:
+ - Moab: 
+    (N-S strip with Lyon's Park, grocery store, car dealership, mechanic, gas
+    station, EV station, RV park and nearby dispersed camping along the river.
+ - Arches:
+    Replica of the park and connecting (manual) drive from Moab. Include
+    the visitor center, restrooms, garbage, water, etc.
+ - Canyonlands:
+    Replica of the park beginning at Dead Horse Point (unlocks at level N)
+    Include nearby dispersed camping plus (limited) park campsites.
+ - San Rafael Swell
+    Replica of the campground east-to-west plus Buckhorn Draw to the bridge
+ - Bonneville Salt Flats
+    Replica of the speedway access to the gas station plus nearby dispersed.
 
 ## ELECTRICAL SYSTEM
 
-BATTERY
-POWER | ELECTRICAL
-SOLAR
+BATTERY  
+This gives you a battery status including Load, Percentage and Capacity.
+
+POWER | ELECTRICAL  
+This gives you an overview of the entire power/electrical system including Battery, Solar and Wind.
+
+SOLAR  
+This gives you a solar panel status including Solar Input Watts, Current and Capacity.
+(FIXME: fix solar capacity bug. allows you to buy after capacity reached)
+
 WIND
+This gives you a wind turbine status including Wind Input Watts, Current and Capacity.
+(FIXME: fix wind capacity bug. allows you to buy after capacity reached)
+
 EV
+This gives you an EV status including EV Battery Percentage and Range.
 
 ## ACTIONS
 
@@ -229,11 +286,14 @@ READ
 
 ### WATCH <something>
 
-WATCH Netflix (easter-egg: generates random Netflix series output)
+WATCH Netflix (easter-egg: randomized Netflix series)
 WATCH sunrise
 WATCH sunset
+WATCH YouTube (easter-egg: randomized vanlife YouTubers series)
 
-HIKE
+HIKE  
+This sets you off on a random-length hike, gaining experience but using energy.
+(FIXME: add hike descriptions relevant to each region)
 
 (FEED,WATER,WALK,PLAY WITH) PET
 
@@ -245,3 +305,56 @@ COOK
 
 EAT
 
+### (INVENTORY | INV | I)
+INVENTORY reports current consumables inventory:
+
+meals
+water (gallons)
+propane
+butane
+diesel
+extra fuel (if mode fuel)
+
+### GARBAGE [ PENDING ]
+this needs to be tracked
+
+### STATS
+morale     - represents mood & enjoyment in life; increased by (pet, hike, etc); decreased by work.
+energy     - represents ability to do things; increased by food, play, exercise; decreased by work.
+health     - represents hit points; players can be injured or even die. increased with rest,  food.
+confidence - represents confidence in abilities; this stat grows each level. decrease if morale low.
+creativity - represents the muse; important for artist/photog. affects epic chances and income.
+comfort    - represents livability of the vehicle; fancy vs feral living. increase w/ devices.
+
+Part of the game mechanics include keeping watch over these and fostering them accordingly.
+
+### EXERCISE [ PENDING ]
+this needs to be added
+- increases all stats on sliding scale (this may have its own exp chart)
+
+### DEVICES
+fridge   - provides +5 food and water storage; bonus to morale, comfort
+stove    - gives bonus energy, morale and comfort when used to cook
+jetboil  - gives bonus energy & morale when used to cook (this should have alternate function)
+heater   - diesel heater provides cabin heat during cold weather or winter season (increase comfort, morale)
+starlink - guarantees connectivity even when dispersed (increase comfort, morale)
+
+laptop        - increases income for all job types; unlocks for dev at level 10 quest
+camera        - increases creativity for all job types; unlocks for photographer at level 10 quest
+guitar        - increases morale for all job types; unlocks for artist at level 10 quest
+repair manual - increases confidence for all job types; unlocks for mechanic at level 10 quest
+deluxe tent   - increases comfort for all job types; unlocks for trail guide at level 10 quest
+
+### REPAIRS [ PENDING ]
+this needs to be added
+vehicles can have breakdowns and items can wear out
+
+the mechanic role can self-repair a lot of these issues, the others roles cannot.
+a visit to the repair shop and some cash are required otherwise.
+
+after level 10 you can purchase the repair manual and learn to repair items.
+this can make the mechanic role appealing in this regard.
+
+### REFUEL
+refuel vehicle with gasoline
+(FIXME: station lets you buy more than your cap)

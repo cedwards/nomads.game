@@ -475,6 +475,7 @@ class Game:
             'fridge':        {'owned': False, 'on': False, 'amps': 2.0},
             'laptop':        {'owned': False, 'on': False, 'amps': 3.0},
             'starlink':      {'owned': False, 'on': False, 'amps': 4.0},
+            'weboost':       {'owned': False, 'on': False, 'amps': 4.5},
             'stove':         {'owned': False},
             'jetboil':       {'owned': False},
         }
@@ -491,17 +492,17 @@ class Game:
 
     def look_vehicle(self):
         v = VEHICLES[self.vehicle_type]
-        print(f"{self.vehicle_color.title()} {v['label']} — {self.player_name} ({self.job.replace('_',' ')})")
+        print(COL.grey(f"{self.vehicle_color.title()} {v['label']} — {self.player_name} ({self.job.replace('_',' ')})"))
         if self.mode == 'electric':
-            print(f"Drive: EV {int(self.ev_battery)}% (~{self.ev_range_mi} mi)")
+            print(COL.grey(f"Drive: EV {int(self.ev_battery)}% (~{self.ev_range_mi} mi)"))
         else:
-            print(f"Drive: Fuel {self.fuel_gal:.1f} gal (~{int(self.fuel_gal*self.mpg)} mi)")
-        print(f"House: {int(self.battery)}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)")
-        print(f"Harvest: Solar {self.solar_watts:.0f}W (cap {self.solar_cap_watts}W), Wind {self.wind_watts:.0f}W (cap {self.wind_cap_watts}W)")
+            print(COL.grey(f"Drive: Fuel {self.fuel_gal:.1f} gal (~{int(self.fuel_gal*self.mpg)} mi)"))
+        print(COL.grey(f"House: {int(self.battery)}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)"))
+        print(COL.grey(f"Harvest: Solar {self.solar_watts:.0f}W (cap {self.solar_cap_watts}W), Wind {self.wind_watts:.0f}W (cap {self.wind_cap_watts}W)"))
         if self.mode == "electric":
-            print(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}L, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap")
+            print(COL.grey(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap"))
         if self.mode == "fuel":
-            print(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}L, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap, Extra Fuel {self.gasoline_can_gal}/cap")
+            print(COL.grey(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap, Extra Fuel {self.gasoline_can_gal}/cap"))
         # Quick device summary
         on = []
         for k, d in self.devices.items():
@@ -512,9 +513,9 @@ class Game:
     
     def look_pet(self):
         if not self.pet:
-            print("You travel solo. (ADOPT PET at a rescue meetup.)"); return
+            print(COL.yellow("You travel solo. (ADOPT PET at a rescue meetup.)")); return
         p = self.pet
-        print(f"{p.name} — Bond {int(p.bond)} | Energy {int(p.energy)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}")
+        print(COL.grey(f"{p.name} — Bond {int(p.bond)} | Energy {int(p.energy)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}"))
     
     def look_npc(self, who):
         who = (who or '').strip().lower()
@@ -524,26 +525,26 @@ class Game:
                 print(COL.yellow("No one around to size up.")); return
             print(COL.grey("Nearby people:"))
             for n in crew:
-                print(f"  - {n['name']} — {n.get('title','')} [{n['id']}]")
+                print(COL.grey(f"  - {n['name']} — {n.get('title','')} [{n['id']}]"))
             return
         # match by id or display name
         target = next((n for n in crew if n['id'].lower()==who or n['name'].lower()==who), None)
         if not target:
             print(COL.yellow("They're not here right now.")); return
-        print(f"{target['name']} — {target.get('title','')}")
+        print(COL.grey(f"{target['name']} — {target.get('title','')}"))
         topics = ((target.get('dialogue') or {}).get('topics') or {})
         if topics:
-            print("Topics:", ", ".join(topics.keys()))
+            print(f"Topics:", ", ".join(topics.keys()))
         if "shop" in target:
             print(f"Trades gear. Try: TRADE {target['id']}")
     
     def look_item(self, item_id):
         key = (item_id or '').strip().lower()
         if not key:
-            print("LOOK ITEM <id>. Use SHOP/TRADE to list ids."); return
+            print(COL.yellow("LOOK ITEM <id>. Use SHOP/TRADE to list ids.")); return
         it = (getattr(self, 'catalog', {}) or {}).get(key)
         if not it:
-            print("Unknown item id."); return
+            print(COL.yellow("Unknown item id.")); return
         name  = it.get('name', key)
         desc  = it.get('desc', key)
         price = it.get('price', '?')
@@ -627,7 +628,7 @@ class Game:
         net_a   = (solar_a + wind_a) - load_a
         print(COL.grey(f" Load: {load_a:.1f}A"))
         print(COL.grey(f" Battery: {battery:.0f}%"))
-        print(COL.grey(f" Capacity: {self.house_cap_ah:.0f}Ah"))
+        print(COL.grey(f" Capacity: {self.house_cap_ah:,.0f}Ah"))
         if battery == 0:
             print(COL.red(f" Remaining: 0 hours"))
         elif net_a < 0:
@@ -641,37 +642,37 @@ class Game:
 
     def fuel_status(self):
         if self.mode == 'electric':
-            print(COL.red("You don't have a fuel-based vehicle"))
+            print(COL.yellow("You don't have a fuel-based vehicle"))
             return
         else:
-            print(COL.grey(f"Fuel Status:{self.fuel_gal}G"))
-            print(COL.grey(f"Fuel MPG:   {self.mpg} mpg"))
-            print(COL.grey(f"Fuel Tank:  {self.fuel_tank_gal} gallons"))
+            print(COL.grey(f"Fuel Status:{self.fuel_gal:.2f}G"))
+            print(COL.grey(f"Fuel MPG:   {self.mpg:.0f} mpg"))
+            print(COL.grey(f"Fuel Tank:  {self.fuel_tank_gal:.0f} gallons"))
 
     def ev_status(self):
         if self.mode == 'fuel':
-            print(COL.red("You don't have an electric vehicle"))
+            print(COL.yellow("You don't have an electric vehicle"))
             return
         else:
-            print(COL.grey(f"EV Battery: {self.ev_battery}%"))
-            print(COL.grey(f"EV Range: {self.ev_range_mi} miles"))
+            print(COL.grey(f"EV Battery: {self.ev_battery:0f}%"))
+            print(COL.grey(f"EV Range: {self.ev_range_mi:0f} miles"))
 
     def solar_power_status(self):
         solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
-        print(COL.grey(f"Solar Input: {self._solar_input_watts_now():.0f}W"))
+        print(COL.grey(f"Solar Input: {self._solar_input_watts_now():,.0f}W"))
         print(COL.grey(f"Solar Current: {solar_current:.2f}A"))
-        print(COL.grey(f"Current Capacity: {self.solar_watts:.0f}W"))
-        print(COL.grey(f"Vehicle Capacity: {self.solar_cap_watts:.0f}W"))
+        print(COL.grey(f"Current Capacity: {self.solar_watts:,.0f}W"))
+        print(COL.grey(f"Vehicle Capacity: {self.solar_cap_watts:,.0f}W"))
 
     def wind_power_status(self):
         wind_current = self._wind_input_watts_now() / SYSTEM_VOLTAGE
-        print(COL.grey(f"Wind Input: {self._wind_input_watts_now():.0f}W"))
+        print(COL.grey(f"Wind Input: {self._wind_input_watts_now():,.0f}W"))
         print(COL.grey(f"Wind Current: {wind_current:.2f}A"))
-        print(COL.grey(f"Current Capacity: {self.wind_watts:.0f}W"))
-        print(COL.grey(f"Vehicle Capacity: {self.wind_cap_watts:.0f}W"))
+        print(COL.grey(f"Current Capacity: {self.wind_watts:,.0f}W"))
+        print(COL.grey(f"Vehicle Capacity: {self.wind_cap_watts:,.0f}W"))
 
     def bank(self):
-        print(COL.green(f"You have ${self.cash:.0f} dollars"))
+        print(COL.green(f"You have ${self.cash:,.2f} dollars"))
 
     def inventory(self):
         water_cap = self.water_cap_gallons
@@ -735,7 +736,7 @@ class Game:
             else:
                 print(COL.grey("They shrug."))
             return
-        print(random.choice(lines))
+        print(COL.grey(random.choice(lines)))
         # micro-hooks: grant a gig, flag a tip, etc. (later)
 
     def trade(self, who):
@@ -745,13 +746,13 @@ class Game:
             print("No trading with them."); return
         inv = npc["shop"].get("inventory", [])
         mult = float(npc["shop"].get("price_mult", 1.0))
-        print(f"{npc['name']}'s pack — BUY <item> [qty]")
+        print(COL.grey(f"{npc['name']}'s pack — BUY <item> [qty]"))
         for item_id in inv:
             item = self.catalog.get(item_id)
             if not item: continue
             price = int(round(item.get("price",0) * mult))
-            print(f"  {item_id:<12} ${price:<5} — {item.get('name', item_id)}")
-        print(f"Cash: ${self.cash:.0f}")
+            print(COL.grey(f"  {item_id:<12} ${price:<5} — {item.get('name', item_id)}"))
+        print(COL.green(f"Cash: ${self.cash:,.2f}"))
 
     def _pct_per_ah(self):
         # how many percentage points is 1Ah
@@ -819,6 +820,8 @@ class Game:
             amps += self.devices['fridge']['amps']
         if self.devices['starlink']['owned'] and self.devices['starlink']['on']:
             amps += self.devices['starlink']['amps']
+        if self.devices['weboost']['owned'] and self.devices['weboost']['on']:
+            amps += self.devices['weboost']['amps']
         if self.devices['laptop']['owned'] and self.devices['laptop']['on']:
             amps += self.devices['laptop']['amps']
         if self.devices['heater']['owned'] and self.devices['heater']['on']:
@@ -848,7 +851,7 @@ class Game:
     # ------------------ Devices ------------------
     def devices_panel(self):
         print("Devices:")
-        for k in ('fridge','starlink','heater','stove','jetboil', 'laptop'):
+        for k in ('fridge','weboost','starlink','heater','stove','jetboil', 'laptop'):
             d = self.devices[k]
             owned = d.get('owned', False)
             on    = d.get('on', False)
@@ -913,7 +916,7 @@ class Game:
         mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric'
                      else f"Fuel {self.fuel_gal:.1f} gal")
         print(COL.grey(f"Power Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}"))
-        print(COL.grey(f"Stores H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}  Lv{self.level} ({self.xp} XP)"))
+        print(COL.grey(f"Stores H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:,.2f}  Rig L{self.rig_level()}  Lv{self.level} ({self.xp} XP)"))
 
     def look(self):
         n = self.node()
@@ -990,7 +993,7 @@ class Game:
             needed_gal = miles / max(1.0, self.mpg)
             if self.fuel_gal < needed_gal:
                 print(COL.red(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}."))
-                print(COL.yellow("Try: REFUEL in Moab or adjust your route.")); return
+                print(COL.yellow("Try: REFUEL or adjust your route.")); return
             self.fuel_gal = max(0.0, self.fuel_gal - needed_gal)
             self.battery = clamp(self.battery + (2.0*hours)/self._pct_per_ah(), 0, 100)
         # Travel drains
@@ -1262,7 +1265,7 @@ class Game:
         self.water  = clamp(self.water - extra_water, 0, self.water_cap_gallons)
         gross = int(round(gross)); self.cash += gross; self.work_hours_today[kind] = self.work_hours_today.get(kind, 0.0) + hours
         print(COL.grey(f"You work {kind} for ~{hours:.1f}h at ~${hourly:.0f}/h. Paid ${gross}."))
-        print(COL.green(f"Now: Cash ${self.cash:.0f} | House {int(self.battery)}% | "
+        print(COL.green(f"Now: Cash ${self.cash:,.2f} | House {int(self.battery)}% | "
               f"{('EV '+str(int(self.ev_battery))+'%') if self.mode=='electric' else ('Fuel '+f'{self.fuel_gal:.1f} gal')} | "
               f"Water {self.water:.1f}G | Energy {int(self.energy)}."))
         # XP: based on hours and difficulty (wind/heat add challenge)
@@ -1279,7 +1282,7 @@ class Game:
             requires = it.get("requires", {})
             lvl = requires.get("level")
             print(COL.grey(f"  {key:<12} ${price:<5} — {name:<18} (requires level {lvl})."))
-        print(f"Cash: {COL.green(f'${self.cash:.0f}')}")
+        print(f"Cash: {COL.green(f'${self.cash:,.2f}')}")
 
     def _apply_effect(self, key, qty):
         """Resolve one catalog effect key for quantity qty."""
@@ -1343,7 +1346,7 @@ class Game:
         if item.get("price", 0) >= 150:
             price *= (1.0 - self.job_perks.get('shop_discount', 0.0))
         if self.cash < price:
-            print(COL.yellow(f"Not enough cash (${self.cash:.0f}). This costs ${price:.0f}.")); return
+            print(COL.yellow(f"Not enough cash (${self.cash:,.2f}). This costs ${price:.0f}.")); return
 
         purchased = None
         effects = item.get("effects", {})
@@ -1395,9 +1398,9 @@ class Game:
                     return
 
         self.cash -= price
-        print(COL.grey(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}."))
+        print(COL.grey(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:,.2f}."))
         if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
-            print(COL.grey(f"Upgrades — solar: {self.solar_watts:.0f}W | wind: {self.wind_watts:.0f}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
+            print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W | wind: {self.wind_watts:,.0f}W | EV range: {self.ev_range_mi:,.0f} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
 
     # ---------- Mode / Energy ----------
     def set_mode(self, mode):
@@ -1413,9 +1416,9 @@ class Game:
         if method == 'station':
             if self.location != 'moab': print(COL.yellow("Fast charger unavailable here. Try Moab.")); return
             hours = 1.0; add_pct = 40.0; cost = add_pct * 0.5
-            if self.cash < cost: print(COL.grey(f"Charging costs ${cost:.0f}. You have ${self.cash:.0f}.")); return
+            if self.cash < cost: print(COL.grey(f"Charging costs ${cost:.0f}. You have ${self.cash:,.2f}.")); return
             self.cash -= cost; self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100); self.advance(int(hours*60))
-            print(COL.grey(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:.0f}."))
+            print(COL.grey(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:,.2f}."))
         elif method == 'solar':
             hours = 2.0
             sol = (self.node().get('resources', {}) or {}).get('solar', 'fair')
@@ -1440,14 +1443,14 @@ class Game:
 
     def refuel(self, gallons):
         if self.mode != 'fuel': print("You're not in fuel mode. Switch with: MODE fuel"); return
-        if self.location not in 'moab|bonneville_salt_flats': print(COL.yellow("No fuel stations here.")); return
+        if self.location not in 'valley_of_the_gods|bryce|moab|bonneville_salt_flats': print(COL.yellow("No fuel stations here.")); return
         try: g = float(gallons)
         except Exception: print("REFUEL <gallons>"); return
         if g <= 0: print("That’s not how fuel works."); return
         price = 3.00; cost = g * price
-        if self.cash < cost: print(COL.yellow(f"Need ${cost:.0f}; you have ${self.cash:.0f}.")); return
+        if self.cash < cost: print(COL.yellow(f"Need ${cost:.0f}; you have ${self.cash:,.2f}.")); return
         self.cash -= cost; self.fuel_gal += g; self.advance(10)
-        print(COL.green(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:.0f}."))
+        print(COL.green(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:,.2f}."))
 
     # ----- Pets -----
     def adopt_pet(self):
@@ -1467,14 +1470,14 @@ class Game:
             spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
             action = random.choice(["licks your face","claims your passenger seat","looks at you with big brown eyes","wags their tail","barks excitedly"])
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
-            print(COL.grey(f"You meet {name}, a {spirit} {breed}, who promptly {action}. Bond +10."))
+            print(COL.grey(f"You meet {name}, a {spirit} {breed}, who walks up to you and {action}. Bond +10."))
         if self.pet_type == "cat":
             breed = random.choice(["Siamese","Persian","Maine Coon","Ragdoll","Sphynx","American Shorthair","Burmese","British Shorthair","Longhair","Bobtail"])
             name = random.choice(["Swazi","Whiskers","Patches","Satan","Grouchy Pants","Moo","Olaf","Chandler","Joey","Monica","Ross","Phoebe","Rachael"])
             spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
             action = random.choice(["disappears into the back of your vehicle","makes their way onto the dash","winds between your legs","meows hungrily"])
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
-            print(COL.grey(f"You meet {name}, a {spirit} {breed} cat, who promptly {action}. Bond +6."))
+            print(COL.grey(f"You meet {name}, a {spirit} {breed} cat, who walks up to you and {action}. Bond +6."))
         xp = clamp(self.xp + 10, 0, 30)
         self.add_xp(int(xp), "pet adoption")
 
@@ -1571,9 +1574,8 @@ HELP_TEXT = """Commands:
 
 def make_cli_prompt(game):
     t = minutes_to_hhmm(game.minutes)
-    netA, _, _, _ = game.compute_current()
-    mode = f"EV {int(game.ev_battery)}%" if game.mode=='electric' else f"Fuel {game.fuel_gal:.1f}g"
-    return COL.prompt(f"[{t}] > ")
+    c = game.cash
+    return COL.prompt(f"[{t} [${c:,.2f}] > ")
 
 # --- NPC command parsing helper ---
 def parse_ask_command(line: str):
@@ -1624,7 +1626,7 @@ def pick_from_dict(title, dct):
         lab = dct[k].get("label", k)
         print(f"  {i}) {lab} [{k}]")
     while True:
-        ans = input(COL.prompt("> ")).strip().lower()
+        ans = input(COL.prompt("> ")).strip().lower() or random.choice(keys)
         if ans.isdigit():
             idx = int(ans)-1
             if 0 <= idx < len(keys): return keys[idx]
@@ -1636,17 +1638,17 @@ def character_creation():
     name = input(COL.prompt("Vehicle Name (enter to randomize): ")).strip()
     if not name:
         name = random.choice(["Rocinante","Casper","River","Juniper","Sky","Ash","Indigo","Cedar","Rook","Raven"])
-    color = input(COL.prompt("Vehicle color: ")).strip() or "white"
-    vkey = pick_from_dict("Pick a vehicle type:", VEHICLES)
-    jkey = pick_from_dict("Pick a job:", JOBS)
+    color = input(COL.prompt("Vehicle color (enter to randomize): ")).strip() or random.choice(["white","grey","yellow","green","red","blue","black","orange","purple","pink","beige"])
+    vkey = pick_from_dict("Pick a vehicle type (enter to randomize):", VEHICLES)
+    jkey = pick_from_dict("Pick a job (enter to randomize):", JOBS)
     mode = ""
     while mode not in ("electric", "fuel"):
-        mode = input(COL.prompt("Drivetrain [electric|fuel]: ")).strip().lower() or "electric"
+        mode = input(COL.prompt("Drivetrain [electric|fuel] (enter to randomize): ")).strip().lower() or random.choice(["electric","fuel"])
     rng = seeded_rng(name, color, vkey, jkey, mode)
     start_cash = rng.randint(1000, 10000)
     cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(COL.blue(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash}')}"))
+    print(COL.blue(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash:,.2f}')}"))
     return cfg
 
 def main():
@@ -1670,7 +1672,7 @@ def main():
 
     while True:
         try:
-            line = input("\n" + make_cli_prompt(game)).strip()
+            line = input(make_cli_prompt(game)).strip()
         except (EOFError, KeyboardInterrupt):
             print("\nGood roads and tailwinds."); break
         if not line: continue

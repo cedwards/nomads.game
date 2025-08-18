@@ -5,17 +5,73 @@ items:
     desc: "Generic description of food"
     price: 5
     effects: { food_rations: "+1" }
-  water:           { requires: { level: 1           }, name: "Water (G)",       price: 0.50, effects: { water_gallons: "+1" } }
-  stove:           { requires: { level: 1           }, name: "Propane Stove",   price: 100,  effects: { stove: "+1",  "device:stove":   "install" } }
-  jetboil:         { requires: { level: 1           }, name: "Jetboil",         price: 60,   effects: { jetboil: "+1", "device:jetboil": "install" } }
-  propane:         { requires: { level: 1           }, name: "Propane (lb)",    price: 4,    effects: { propane_lb: "+1" } }
-  butane:          { requires: { level: 1           }, name: "Butane can",      price: 3,    effects: { butane_can: "+1" } }
-  fridge:          { requires: { level: 1           }, name: "Fridge",          price: 300,  effects: {                    "device:fridge":   "install", "device_amps:fridge":   "2"   } }
-  gasoline:        { requires: { level: 1           }, name: "Extra Fuel",      price: 3.50, effects: { gasoline_can_gal: "+1" } }
-  tent:            { requires: { level: 2           }, name: "Tent",            price: 150,  effects: { has_tent: "install" } }
-  solar:           { requires: { level: 2, exp: 50  }, name: "Solar 200W",      price: 200,  effects: { solar_watts: "+200" } }
-  wind:            { requires: { level: 3           }, name: "Wind 300W",       price: 300,  effects: { wind_watts: "+300" } }
-  storage:         { requires: { level: 3           }, name: "Storage kit",     price: 300,  effects: { water_cap_gallons: "+10", food_cap_rations: "+5" } }
+  water:
+    requires: { level: 1}
+    name: "Water (G)"
+    price: 0.50
+    effects: { water_gallons: "+1" }
+  stove:
+    requires: { level: 1 }
+    name: "Propane Stove"
+    price: 100
+    effects: 
+      stove:            "+1"
+      "device:stove":   "install"
+  jetboil:
+    requires: { level: 1 }
+    name: "Jetboil"
+    price: 60
+    effects: 
+      jetboil:          "+1"
+      "device:jetboil": "install"
+  propane:
+    requires: { level: 1 }
+    name: "Propane (lb)"
+    price: 4
+    effects: { propane_lb: "+1" }
+  butane:
+    requires: { level: 1 }
+    name: "Butane can"
+    price: 3
+    effects: { butane_can: "+1" }
+  fridge:
+    requires: { level: 1 }
+    name: "Fridge"
+    price: 300
+    effects:
+      "device:fridge":      "install"
+      "device_amps:fridge": "2"
+  gasoline:
+    requires: { level: 1 }
+    name: "Extra Fuel"
+    price: 3.50
+    effects:
+      gasoline_can_gal: "+1"
+  tent:
+    requires: { level: 2 }
+    name: "Tent"
+    price: 150
+    effects:
+      has_tent: "install"
+  solar:
+    requires: { level: 2, exp: 50 }
+    name: "Solar 200W"
+    price: 200
+    effects:
+      solar_watts: "+200"
+  wind:
+    requires: { level: 3 }
+    name: "Wind 300W"
+    price: 300
+    effects:
+      wind_watts: "+300"
+  storage:
+    requires: { level: 3 }
+    name: "Storage kit"
+    price: 300
+    effects:
+      water_cap_gallons: "+10"
+      food_cap_rations: "+5"
   diesel:          { requires: { level: 5           }, name: "Diesel Fuel",     price: 3,    effects: { diesel_can_gal: "+1" } }
   battery:         { requires: { level: 3           }, name: "House battery",   price: 1000, effects: { house_cap_ah: "+100" } }
   ev_battery:      { requires: { level: 5           }, name: "EV battery",      price: 1200, effects: { ev_range_mi: "+40" } }

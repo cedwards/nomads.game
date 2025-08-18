@@ -45,7 +45,7 @@ skoolie:
   max_food_cap: 40
   max_water_cap: 200
   mpg: 8
-  solar_cap_watts: 800
+  solar_cap_watts: 1200
   wind_cap_watts: 900
 truck_camper:
   base_food_cap: 14
