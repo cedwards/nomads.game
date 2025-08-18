@@ -8,7 +8,7 @@ npcs:
     presence:
       # simple schedule primitives that are easy to check
       - when: daily
-        hours: "09:00-18:00"
+        hours: "09:00-17:00"
         at: moab
     dialogue:
       greeting:

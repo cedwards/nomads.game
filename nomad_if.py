@@ -31,6 +31,16 @@ class COL:
     red   = lambda s: f"\033[31m{s}\033[0m"
     yellow= lambda s: f"\033[33m{s}\033[0m"
 
+def load_npcs():
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(here, "npcs.yaml")
+    if not os.path.exists(p): return {}
+    import yaml
+    with open(p, "r", encoding="utf-8") as f:
+        raw = yaml.safe_load(f) or {}
+    lst = raw.get("npcs", [])
+    return {n["id"]: n for n in lst}
+
 def clamp(v, lo, hi): return max(lo, min(hi, v))
 
 def draw_bar(pct, width=20):
@@ -373,7 +383,7 @@ class Pet:
 # ---------------------------- Game State ------------------------------
 
 class Game:
-    def __init__(self, world, config, catalog):
+    def __init__(self, world, config, catalog, npcs=None):
         self.world = world
         self.location = 'moab' if 'moab' in world.nodes else next(iter(world.nodes.keys()))
         self.minutes = 8*60  # start Day 1 morning
@@ -462,6 +472,40 @@ class Game:
 
         # Items catalog
         self.catalog = catalog
+
+        # NPCs
+        self.npcs = npcs or {}
+        self.npc_state = {}  # per-npc: rep, flags, quest progress
+
+    def _parse_hhmm(self, s):
+        h,m = s.split(":"); return int(h)*60 + int(m)
+
+    def _is_weekend(self):
+        day_idx = (self.minutes // DAY_MINUTES) % 7  # 0..6
+        return day_idx in (5,6)
+    
+    def npcs_here_now(self):
+        """Return list of NPC dicts present at current node and time/season."""
+        here = self.location
+        m = self.minutes % DAY_MINUTES
+        season, _meta = get_season(self.minutes)
+        present = []
+        for npc in self.npcs.values():
+            for slot in npc.get("presence", []):
+                if slot.get("at") != here: continue
+                when = (slot.get("when") or "daily").lower()
+                if when == "weekday" and self._is_weekend(): continue
+                if when == "weekend" and not self._is_weekend(): continue
+                if when == "season":
+                    seasons = [s.lower() for s in slot.get("seasons",[])]
+                    if season not in seasons: continue
+                # hour window
+                hh = slot.get("hours", "00:00-23:59")
+                start, end = [self._parse_hhmm(x) for x in hh.split("-")]
+                if not (start <= m <= end): continue
+                present.append(npc); break
+        return present
+
 
     def _check_for_truck_camper(self):
         if self.vehicle_type == 'truck_camper':
@@ -556,6 +600,61 @@ class Game:
 
     def exp(self):
         print(COL.grey(f"Level: {self.level} | Experience: {self.xp} | Needed: {xp_needed_for_level(self.level+1)-self.xp}"))
+
+
+    def people(self):
+        crew = self.npcs_here_now()
+        if not crew:
+            print(COL.grey("No one around right now.")); return
+        print("People here:")
+        for npc in crew:
+            print(COL.blue(f"  - {npc['name']} — {npc.get('title','')} [{npc['id']}]"))
+
+    def talk(self, who):
+        who = (who or "").lower()
+        npc = next((n for n in self.npcs_here_now() if n["id"]==who or n["name"].lower()==who), None)
+        if not npc:
+            print(COL.yellow("They're not here.")); return
+        greet = npc.get("dialogue", {}).get("greeting", ["They nod."])
+        print(random.choice(greet))
+        topics = list((npc.get("dialogue", {}).get("topics") or {}).keys())
+        if topics:
+            print("Topics:", ", ".join(topics))
+        if "shop" in npc:
+            print("Hint: TRADE", npc["id"])
+        if npc.get("quests"):
+            print("Hint: ASK", npc["id"], "ABOUT quests")
+
+    def ask(self, who, topic):
+        who = (who or "").lower(); topic = (topic or "").lower()
+        npc = next((n for n in self.npcs_here_now() if n["id"]==who or n["name"].lower()==who), None)
+        if not npc:
+            print(COL.yellow("They're not here.")); return
+        topics = (npc.get("dialogue", {}).get("topics") or {})
+        lines = topics.get(topic)
+        if not lines:
+            if topic in ("quest","quests") and npc.get("quests"):
+                print(COL.grey("Available quests:", ", ".join(q["id"] for q in npc["quests"])));
+            else:
+                print(COL.grey("They shrug."))
+            return
+        print(random.choice(lines))
+        # micro-hooks: grant a gig, flag a tip, etc. (later)
+
+    def trade(self, who):
+        who = (who or "").lower()
+        npc = next((n for n in self.npcs_here_now() if n["id"]==who or n["name"].lower()==who), None)
+        if not npc or "shop" not in npc:
+            print("No trading with them."); return
+        inv = npc["shop"].get("inventory", [])
+        mult = float(npc["shop"].get("price_mult", 1.0))
+        print(f"{npc['name']}'s pack — BUY <item> [qty]")
+        for item_id in inv:
+            item = self.catalog.get(item_id)
+            if not item: continue
+            price = int(round(item.get("price",0) * mult))
+            print(f"  {item_id:<12} ${price:<5} — {item.get('name', item_id)}")
+        print(f"Cash: ${self.cash:.0f}")
 
     def _pct_per_ah(self):
         # how many percentage points is 1Ah
@@ -741,6 +840,9 @@ class Game:
               #f"food: {n['resources'].get('food','?')}, "
               #f"solar: {n['resources'].get('solar','?')}, "
         print(COL.grey(f"wind: {n['resources'].get('wind','?')}."))
+        crew = self.npcs_here_now()
+        if crew:
+            print("Also here:", ", ".join(f"{n['name']} ({n.get('title','')})" for n in crew))
         if n.get('pet_adoption') and not self.pet and not self.vehicle_type == 'truck_camper': print("You spot a rescue meetup. You could ADOPT PET here.")
         if self.pet: 
             comp = random.choice(["companion","pet","partner","ride-or-die","best friend","constant shadow"])
@@ -1384,7 +1486,7 @@ def load_world():
         with open(cand_json, "r", encoding="utf-8") as f:
             nodes = json.load(f)["nodes"]
     if not nodes:
-        print("No world data found. Place utah.yaml (or utah.json) next to this script.")
+        print(COL.red("No world data found. Place utah.yaml (or utah.json) next to this script."))
         sys.exit(1)
     return World(nodes)
 
@@ -1419,32 +1521,18 @@ def character_creation():
     print(COL.blue(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash}')}"))
     return cfg
 
-def prelude_shopping(game):
-    print("You can buy initial supplies/upgrades within your starting budget.")
-    print("Type SHOP to view items, BUY <item_id> [qty] to purchase, or DONE to begin your journey.")
-    while True:
-        line = input("\n" + make_cli_prompt(game)).strip()
-        up = line.upper()
-        if up in ("DONE","START"): break
-        elif up == "SHOP": game.shop()
-        elif up.startswith("BUY "):
-            parts = line.split(); item = parts[1] if len(parts) > 1 else ""
-            qty = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
-            game.buy(item, qty)
-        elif up in ("HELP","?"): print("Commands: SHOP | BUY <item_id> [qty] | DONE")
-        elif up == "": continue
-        else: print("Use SHOP, BUY ..., or DONE.")
-
 def main():
     world = load_world()
     catalog = load_items_catalog()
+    npcs = load_npcs()
+
     with open('WELCOME', "r", encoding="utf-8") as f:
         welcome_txt = f.read()
     print(COL.blue(welcome_txt))
     input(COL.blue("Press ENTER to continue..."))
+
     cfg = character_creation()
-    game = Game(world, cfg, catalog)
-    #prelude_shopping(game)
+    game = Game(world, cfg, catalog, npcs=npcs)
 
     print(COL.cyan("Welcome to Nomads!"))
     game.look()
@@ -1517,7 +1605,10 @@ def main():
         elif u == "FUEL": game.fuel_status()
         elif u == "TIME": game.report_time()
         elif u == "READ": game.read_book()
+        elif u == "PEOPLE": game.people()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
+        elif u.startswith('TRADE '): game.trade(line.split(' ', 1)[1])
+        elif u.startswith('TALK '): game.talk(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))
 
