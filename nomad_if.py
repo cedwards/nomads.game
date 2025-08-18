@@ -477,6 +477,22 @@ class Game:
         self.npcs = npcs or {}
         self.npc_state = {}  # per-npc: rep, flags, quest progress
 
+    def report_pet_status(self):
+        print(f"Name: {self.pet.name}")
+        print(f"Breed: {self.pet.breed}")
+        print(f"Bond: {self.pet.bond}")
+        print(f"Energy: {self.pet.energy}")
+        print(f"Obedience: {self.pet.obedience}")
+        print(f"Paw: {self.pet.paw}")
+        print(f"Alert: {self.pet.alert}")
+        print(f"Guard Mode: {self.pet.guard_mode}")
+
+    def report_morale(self):
+        print(f"Your morale is: {self.morale:.0f}")
+
+    def report_energy(self):
+        print(f"Your energy is: {self.energy:.0f}")
+
     def _parse_hhmm(self, s):
         h,m = s.split(":"); return int(h)*60 + int(m)
 
@@ -1006,7 +1022,7 @@ class Game:
 
     def sleep(self):
         self.advance(120)
-        self.energy = clamp(self.energy + 12, 0, 100)
+        self.energy = clamp(self.energy + 20, 0, 100)
         if self.pet: self.pet.energy = clamp(self.pet.energy + 10, 0, 100)
         print(COL.grey(f"You nap for 2h. It's now {minutes_to_hhmm(self.minutes)}."))
 
@@ -1405,7 +1421,8 @@ class Game:
     def play_with_pet(self):
         if not self.pet: print("You travel alone."); return
         self.pet.bond = clamp(self.pet.bond + 5, 0, 100); self.morale = clamp(self.morale + 4, 0, 100); self.advance(20)
-        print(COL.grey(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the van."))
+        vehicle = self.vehicle_type.replace('_',' ')
+        print(COL.grey(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the {vehicle}."))
         xp = clamp(self.xp + 15, 0, 30)
         self.add_xp(int(xp), "play")
 
@@ -1452,6 +1469,7 @@ HELP_TEXT = """Commands:
   INVENTORY | INV | I
   LOOK | STATUS | MAP
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
+  PET
   POWER | ELECTRICAL | BATTERY
   READ
   ROUTE TO <place> | DRIVE
@@ -1606,6 +1624,9 @@ def main():
         elif u == "TIME": game.report_time()
         elif u == "READ": game.read_book()
         elif u == "PEOPLE": game.people()
+        elif u == "MORALE": game.report_morale()
+        elif u == "ENERGY": game.report_energy()
+        elif u == "PET": game.report_pet_status()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
         elif u.startswith('TRADE '): game.trade(line.split(' ', 1)[1])
         elif u.startswith('TALK '): game.talk(line.split(' ', 1)[1])

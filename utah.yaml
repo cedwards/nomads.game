@@ -24,7 +24,6 @@ nodes:
       water, and gravity. More than a park, it is a sacred canyon—its walls not just
       scenery, but scripture written in geologic time.
     name: "Zion National Park"
-    hike_map: { n: 3, s: 2, e: 5, w: 2, ne: 4, nw: 3, se: 5, sw: 2 }
     biome: canyon
     elevation_ft: 4000
     season_rules: ["monsoon_flash_flood", "summer_heat"]
@@ -61,7 +60,6 @@ nodes:
       Bryce is a paradox: fragile yet enduring, whimsical yet solemn, a natural
       sculpture garden where erosion doubles as artistry.
     name: "Bryce Canyon"
-    hike_map: { n: 2, s: 2, e: 3, w: 3, ne: 3, nw: 3, se: 4, sw: 4 }
     biome: high_plateau
     elevation_ft: 8000
     season_rules: ["cold_nights", "snow_shoulders"]
@@ -99,7 +97,6 @@ nodes:
       beauty lies not only in what you see, but in the sense that you are walking
       through time itself.
     name: "Capitol Reef"
-    hike_map: { n: 3, s: 3, e: 4, w: 4, ne: 3, nw: 3, se: 5, sw: 5 }
     biome: desert_canyon
     elevation_ft: 5500
     season_rules: ["flash_floods", "shoulder_season_best"]
@@ -138,7 +135,6 @@ nodes:
       breath.
     name: "Arches"
     ansi: "delicate_arch.ans"
-    hike_map: { n: 2, s: 3, e: 3, w: 2, ne: 4, nw: 3, se: 3, sw: 2 }
     biome: desert_canyon
     elevation_ft: 4100
     season_rules: ["timed_entry", "summer_heat"]
@@ -176,7 +172,6 @@ nodes:
       and how endless the desert can be.
     name: "Canyonlands"
     ansi: mesa_arch.ans
-    hike_map: { n: 4, s: 5, e: 4, w: 5, ne: 4, nw: 5, se: 5, sw: 4 }
     biome: mesa_desert
     elevation_ft: 6000
     shop_inventory: ["water"]
@@ -213,7 +208,6 @@ nodes:
       buttes, and slot canyons. Standing at the Island in the Sky, you feel suspended
       above a broken world, each canyon a wound in the earth.
     name: "Moab"
-    hike_map: { n: 3, s: 3, e: 3, w: 3, ne: 4, nw: 4, se: 4, sw: 4 }
     biome: town_desert
     elevation_ft: 4000
     season_rules: ["summer_heat"]
@@ -254,7 +248,6 @@ nodes:
       doesn’t welcome you—it tests you, strips you down, and leaves you with the
       sense that you’ve wandered into Earth’s unfinished workshop.
     name: "San Rafael Swell"
-    hike_map: { n: 4, s: 4, e: 5, w: 5, ne: 4, nw: 4, se: 5, sw: 5 }
     biome: high_desert
     elevation_ft: 6000
     season_rules: ["windy_spring", "cold_winter_nights"]
@@ -293,7 +286,6 @@ nodes:
       small figure moving across an infinite canvas.
     name: "Bonneville Salt Flats"
     ansi: salt_flats.ans
-    hike_map: { n: 3, s: 3, e: 4, w: 4, ne: 4, nw: 4, se: 3, sw: 3 }
     biome: salt_pan
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]
@@ -332,7 +324,6 @@ nodes:
       Highway isn’t just a drive—it’s a passage into Utah’s high-country sanctuary,
       where silence, reflection, and wilderness meet.
     name: "Mirror Lake Highway (Uintas)"
-    hike_map: { n: 4, s: 3, e: 4, w: 3, ne: 5, nw: 5, se: 4, sw: 3 }
     biome: alpine
     elevation_ft: 8500
     season_rules: ["snow_closure", "mosquito_summer"]
@@ -368,7 +359,6 @@ nodes:
       of the Gods is both humble and grand—a place where solitude itself feels like
       the main attraction.
     name: "Valley of the Gods / Four Corners"
-    hike_map: { n: 3, s: 4, e: 4, w: 3, ne: 5, nw: 4, se: 4, sw: 5 }
     biome: desert
     elevation_ft: 5200
     season_rules: ["monsoon_cells", "desert_extremes"]
