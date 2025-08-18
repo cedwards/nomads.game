@@ -486,6 +486,10 @@ class Game:
         elif net_a > 0:
             print(COL.green(f" Remaining: infinite"))
 
+    def report_time(self):
+        t = minutes_to_hhmm(self.minutes)
+        print(COL.grey(f"{t}"))
+
     def fuel_status(self):
         if self.mode == 'electric':
             print(COL.cyan("You don't have a fuel-based vehicle"))
@@ -651,7 +655,7 @@ class Game:
     def toggle_device(self, name, state):
         name = (name or '').lower()
         if name not in self.devices:
-            print("Unknown device. Try: fridge, starlink, heater, stove, jetboil"); return
+            print(COL.yellow("Unknown device. Try: fridge, starlink, heater, stove, jetboil")); return
         d = self.devices[name]
         if not d.get('owned', False):
             print("You don't own that device."); return
@@ -767,13 +771,13 @@ class Game:
             needed_pct = (miles / max(1.0, self.ev_range_mi)) * 100.0
             if self.ev_battery < needed_pct:
                 print(COL.cyan(f"Not enough charge for {miles:.0f} mi. Need ~{needed_pct:.1f}% EV; have {self.ev_battery:.1f}%."))
-                print("Try: CHARGE station (Moab), CHARGE solar, or CHARGE wind."); return
+                print(COL.yellow("Try: CHARGE station (Moab), CHARGE solar, or CHARGE wind.")); return
             self.ev_battery = clamp(self.ev_battery - needed_pct, 0, 100)
         else:
             needed_gal = miles / max(1.0, self.mpg)
             if self.fuel_gal < needed_gal:
                 print(COL.cyan(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}."))
-                print("Try: REFUEL in Moab or adjust your route."); return
+                print(COL.yellow("Try: REFUEL in Moab or adjust your route.")); return
             self.fuel_gal = max(0.0, self.fuel_gal - needed_gal)
             self.battery = clamp(self.battery + (2.0*hours)/self._pct_per_ah(), 0, 100)
         # Travel drains
@@ -891,25 +895,19 @@ class Game:
         if self.pet: self.pet.energy = clamp(self.pet.energy + 10, 0, 100)
         print(COL.grey(f"You nap for 2h. It's now {minutes_to_hhmm(self.minutes)}."))
 
-    def hike(self, direction):
-        dir_clean = (direction or '').lower()
-        valid = {'n','s','e','w','ne','nw','se','sw'}
-        if dir_clean not in valid: print(COL.yellow("HIKE which way? Use: HIKE n|s|e|w|ne|nw|se|sw")); return
+    def hike(self):
         # Daylight-only hiking; auto-limit to dusk
         m = self.minutes % DAY_MINUTES
         if not (6*60 <= m < 18*60) and self.job != 'trail_guide':
             print(COL.yellow("It’s not safe to start a hike right now. Try between 06:00 and 18:00.")); return
-        node = self.node()
-        hmap = (node.get('hike_map') or {})
-        seg = int(hmap.get(dir_clean, 3)); seg = max(1, min(5, seg))
         base_hours = random.randint(1,5)
-        factor = max(0.5, min(2.0, seg / 3.0))
-        hours = max(1.0, round(base_hours * factor, 1))
+        node = self.node()
+        hours = max(1.0, round(base_hours, 1))
         # Trim so we don't go past dusk (18:00; a little cushion)
         minutes_left = (18*60) - m
         hours = min(hours, max(1.0, minutes_left/60.0))
         ticks = int((hours * 60) // TURN_MINUTES) or 1
-        print(COL.grey(f"You set out {dir_clean.upper()} for a ~{hours:.1f}h hike."))
+        print(COL.grey(f"You set out on a ~{hours:.1f}h hike."))
         found = False
         windows, _w0 = current_time_windows(self.minutes, node)
         for _ in range(ticks):
@@ -1059,7 +1057,7 @@ class Game:
 
     # ---------- Moab Shop ----------
     def shop(self):
-        if self.location != 'moab': print("No outfitter here. Try Moab."); return
+        if self.location != 'moab': print(COL.yellow("No outfitter here. Try Moab.")); return
         print(COL.blue("Moab Outfitters — items (BUY <item_id> [qty])"))
         for key, it in self.catalog.items():
             name = it.get("name", key)
@@ -1199,11 +1197,11 @@ class Game:
         if method not in ('station','solar','wind'): print(COL.yellow("CHARGE how? Options: station | solar | wind")); return
 
         if method == 'station':
-            if self.location != 'moab': print("Fast charger unavailable here. Try Moab."); return
+            if self.location != 'moab': print(COL.yellow("Fast charger unavailable here. Try Moab.")); return
             hours = 1.0; add_pct = 40.0; cost = add_pct * 0.5
             if self.cash < cost: print(COL.grey(f"Charging costs ${cost:.0f}. You have ${self.cash:.0f}.")); return
             self.cash -= cost; self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100); self.advance(int(hours*60))
-            print(COL.green(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:.0f}."))
+            print(COL.grey(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:.0f}."))
         elif method == 'solar':
             hours = 2.0
             sol = (self.node().get('resources', {}) or {}).get('solar', 'fair')
@@ -1228,7 +1226,7 @@ class Game:
 
     def refuel(self, gallons):
         if self.mode != 'fuel': print("You're not in fuel mode. Switch with: MODE fuel"); return
-        if self.location != 'moab': print("No reliable fuel here. Try Moab."); return
+        if self.location != 'moab': print(COL.yellow("No reliable fuel here. Try Moab.")); return
         try: g = float(gallons)
         except Exception: print("REFUEL <gallons>"); return
         if g <= 0: print("That’s not how fuel works."); return
@@ -1239,8 +1237,8 @@ class Game:
 
     # ----- Pets -----
     def adopt_pet(self):
-        if not self.node().get('pet_adoption'): print("No adoption event here. Try a larger town/rescue hub."); return
-        if self.pet: print("You already travel with a loyal companion."); return
+        if not self.node().get('pet_adoption'): print(COL.yellow("No adoption event here. Try a larger town/rescue hub.")); return
+        if self.pet: print(COL.yellow("You already travel with a loyal companion.")); return
 
         if self.vehicle_type == "subaru":
             self.pet_type = "cat"
@@ -1442,7 +1440,7 @@ def main():
         if not line: continue
         u = line.upper()
 
-        if u in ('HELP','?'): print(HELP_TEXT)
+        if u in ('HELP','?'): print(COL.grey(HELP_TEXT))
         elif u in ('LOOK','L'): game.look()
         elif u in ('STATUS','STATS'): game.status()
         elif u == 'MAP': game.show_map()
@@ -1454,9 +1452,7 @@ def main():
             game.camp(style)
         elif u in ('COOK','EAT'): game.cook()
         elif u == 'NAP': game.sleep()
-        elif u.startswith('HIKE'):
-            parts = line.split(); d = parts[1] if len(parts) > 1 else ''
-            game.hike(d)
+        elif u == 'HIKE': game.hike()
         elif u == 'SHOP': game.shop()
         elif u.startswith('BUY '):
             parts = line.split(); item = parts[1] if len(parts) > 1 else ''
@@ -1499,6 +1495,7 @@ def main():
         elif u == "WIND": game.wind_power_status()
         elif u == "EV": game.ev_status()
         elif u == "FUEL": game.fuel_status()
+        elif u == "TIME": game.report_time()
         else:
             print("Unknown command. Type HELP.")
 
