@@ -334,7 +334,7 @@ def load_items_catalog():
                     v.setdefault("requires", {})
                     catalog[k] = v
         except Exception as e:
-            print(f"(items.yaml load failed: {e}. Using default catalog.)")
+            print(COL.cyan(f"items.yaml load failed: {e}. Using default catalog."))
     if not catalog:
         print("required file missing: items.yaml")
         exit(1)
@@ -476,69 +476,69 @@ class Game:
         wind_a  = wind_w  / SYSTEM_VOLTAGE
         load_a  = self._load_amps_now()
         net_a   = (solar_a + wind_a) - load_a
-        print(f" Load: {load_a:.1f}A")
-        print(f" Battery: {battery:.0f}%")
-        print(f" Capacity: {self.house_cap_ah:.0f}Ah")
+        print(COL.grey(f" Load: {load_a:.1f}A"))
+        print(COL.grey(f" Battery: {battery:.0f}%"))
+        print(COL.grey(f" Capacity: {self.house_cap_ah:.0f}Ah"))
         if battery == 0:
-            print(COL.red(f" Remaining: 0 hours"))
+            print(COL.cyan(f" Remaining: 0 hours"))
         elif net_a < 0:
-            print(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours")
+            print(COL.yellow(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours"))
         elif net_a > 0:
-            print(f" Remaining: infinite")
+            print(COL.green(f" Remaining: infinite"))
 
     def fuel_status(self):
         if self.mode == 'electric':
-            print("You don't have a fuel-based vehicle")
+            print(COL.cyan("You don't have a fuel-based vehicle"))
             return
         else:
-            print(f"Fuel Status:{self.fuel_gal}G")
-            print(f"Fuel MPG:   {self.mpg} mpg")
-            print(f"Fuel Tank:  {self.fuel_tank_gal} gallons")
+            print(COL.grey(f"Fuel Status:{self.fuel_gal}G"))
+            print(COL.grey(f"Fuel MPG:   {self.mpg} mpg"))
+            print(COL.grey(f"Fuel Tank:  {self.fuel_tank_gal} gallons"))
 
     def ev_status(self):
         if self.mode == 'fuel':
-            print("You don't have an electric vehicle")
+            print(COL.cyan("You don't have an electric vehicle"))
             return
         else:
-            print(f"EV Battery: {self.ev_battery}%")
-            print(f"EV Range: {self.ev_range_mi} miles")
+            print(COL.grey(f"EV Battery: {self.ev_battery}%"))
+            print(COL.grey(f"EV Range: {self.ev_range_mi} miles"))
 
     def solar_power_status(self):
         solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
-        print(f"Solar Input: {self._solar_input_watts_now():.0f}W")
-        print(f"Solar Current: {solar_current:.2f}A")
-        print(f"Current Capacity: {self.solar_watts:.0f}W")
-        print(f"Vehicle Capacity: {self.solar_cap_watts:.0f}W")
+        print(COL.grey(f"Solar Input: {self._solar_input_watts_now():.0f}W"))
+        print(COL.grey(f"Solar Current: {solar_current:.2f}A"))
+        print(COL.grey(f"Current Capacity: {self.solar_watts:.0f}W"))
+        print(COL.grey(f"Vehicle Capacity: {self.solar_cap_watts:.0f}W"))
 
     def wind_power_status(self):
         wind_current = self._wind_input_watts_now() / SYSTEM_VOLTAGE
-        print(f"Wind Input: {self._wind_input_watts_now():.0f}W")
-        print(f"Wind Current: {wind_current:.2f}A")
-        print(f"Current Capacity: {self.wind_watts:.0f}W")
-        print(f"Vehicle Capacity: {self.wind_cap_watts:.0f}W")
+        print(COL.grey(f"Wind Input: {self._wind_input_watts_now():.0f}W"))
+        print(COL.grey(f"Wind Current: {wind_current:.2f}A"))
+        print(COL.grey(f"Current Capacity: {self.wind_watts:.0f}W"))
+        print(COL.grey(f"Vehicle Capacity: {self.wind_cap_watts:.0f}W"))
 
     def bank(self):
-        print(f"You have ${self.cash:.0f} dollars")
+        print(COL.green(f"You have ${self.cash:.0f} dollars"))
 
     def inventory(self):
         water_cap = self.water_cap_gallons
         food_cap = self.food_cap_rations
         if self.food >= 0:
-            print(f"Food: {self.food:.0f}/{food_cap} meals")
+            print(COL.grey(f"Food: {self.food:.0f}/{food_cap} meals"))
         if self.water >= 0:
-            print(f"Water: {self.water:.2f}/{water_cap} gallons")
+            print(COL.grey(f"Water: {self.water:.2f}/{water_cap} gallons"))
         if self.propane_lb >= 0:
-            print(f"Propane: {self.propane_lb:.2f} lbs")
+            print(COL.grey(f"Propane: {self.propane_lb:.2f} lbs"))
         if self.butane_can >= 0:
-            print(f"Butane: {self.butane_can:.2f} canisters")
+            print(COL.grey(f"Butane: {self.butane_can:.2f} canisters"))
 
     def elevation(self):
         elev_ft = self.node().get('elevation_ft','?')
         elev_m  = elev_ft / 3.281
-        print(f"Elevation: {elev_ft:.0f} ft / {elev_m:.0f} meters above sea level")
+        print(COL.grey(f"Elevation: {elev_ft:.0f} ft / {elev_m:.0f} meters above sea level"))
 
     def exp(self):
-        print(f"Level: {self.level} | Experience: {self.xp} | Needed: {xp_needed_for_level(self.level+1)-self.xp}")
+        print(COL.grey(f"Level: {self.level} | Experience: {self.xp} | Needed: {xp_needed_for_level(self.level+1)-self.xp}"))
 
     def _pct_per_ah(self):
         # how many percentage points is 1Ah
@@ -569,20 +569,20 @@ class Game:
         wind_a  = wind_w  / SYSTEM_VOLTAGE
         load_a  = self._load_amps_now()
         net_a   = (solar_a + wind_a) - load_a
-        print(f" Solar: {solar_w:.0f}W | {solar_a:.1f}A")
-        print(f" Wind: {wind_w:.0f}W | {wind_a:.1f}A")
-        print(f" Load: {load_a:.1f}A")
-        print(f" Net: {net_a:.1f}A")
-        print(f" Battery: {battery:.0f}%")
-        print(f" Capacity: {self.house_cap_ah:.0f}Ah")
+        print(COL.grey(f" Solar: {solar_w:.0f}W | {solar_a:.1f}A"))
+        print(COL.grey(f" Wind: {wind_w:.0f}W | {wind_a:.1f}A"))
+        print(COL.grey(f" Load: {load_a:.1f}A"))
+        print(COL.grey(f" Net: {net_a:.1f}A"))
+        print(COL.grey(f" Battery: {battery:.0f}%"))
+        print(COL.grey(f" Capacity: {self.house_cap_ah:.0f}Ah"))
         if battery == 0:
             print(COL.cyan(f" Remaining: 0 hours"))
         elif net_a < 0:
-            print(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours")
+            print(COL.yellow(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours"))
         elif net_a > 0:
-            print(f" Remaining: infinite")
-        print(f" EV Battery: {self.ev_battery:.0f}%")
-        print(f" EV Range: {self.ev_range_mi:.0f} miles")
+            print(COL.green(f" Remaining: infinite"))
+        print(COL.grey(f" EV Battery: {self.ev_battery:.0f}%"))
+        print(COL.grey(f" EV Range: {self.ev_range_mi:.0f} miles"))
 
     def _solar_input_watts_now(self):
         node = self.node()
@@ -628,9 +628,9 @@ class Game:
         msg = f"+{amount} XP"
         if reason: msg += f" ({reason})"
         if self.level > prev_level:
-            print(COL.yellow(f"{msg} → Level up! You are now Lv{self.level}."))
+            print(COL.bold(f"{msg} → Level up! You are now Lv{self.level}."))
         else:
-            print(COL.grey(msg))
+            print(COL.green(msg))
 
     # ------------------ Devices ------------------
     def devices_panel(self):
@@ -656,12 +656,12 @@ class Game:
         if not d.get('owned', False):
             print("You don't own that device."); return
         if 'on' not in d:
-            print(f"{name} has no on/off; it only consumes fuel when cooking."); return
+            print(COL.yellow(f"{name} has no on/off; it only consumes fuel when cooking.")); return
         on = True if state.lower() in ('on','true','1') else False
         if name == 'heater' and on and self.diesel_can_gal <= 0:
             print("No diesel in the can. BUY diesel_can <gallons> first."); return
         d['on'] = on
-        print(f"{name} set to {'ON' if on else 'off'}.")
+        print(COL.green(f"{name} set to {'ON' if on else 'off'}."))
 
     # ------------------ Time advance ------------------
     def advance(self, minutes):
@@ -699,8 +699,8 @@ class Game:
         netA, pvA, windA, loadA = self.compute_current()
         mode_line = (f"EV {self.ev_battery:.0f}%" if self.mode=='electric'
                      else f"Fuel {self.fuel_gal:.1f} gal")
-        print(f"Power Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}")
-        print(f"Stores H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}  Lv{self.level} ({self.xp} XP)")
+        print(COL.grey(f"Power Current {netA:+.1f}A (PV {pvA:.1f}, Wind {windA:.1f}, Load {loadA:.1f})  {mode_line}"))
+        print(COL.grey(f"Stores H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G  Food {self.food}/{self.food_cap_rations}  Cash ${self.cash:.0f}  Rig L{self.rig_level()}  Lv{self.level} ({self.xp} XP)"))
 
     def look(self):
         n = self.node()
@@ -713,7 +713,7 @@ class Game:
         desc = n.get('description')
         ansi = n.get('ansi')
         if desc: print(COL.green(desc))
-        input("Press ENTER to continue...")
+        input(COL.blue("Press ENTER to continue..."))
         if ansi: 
             with open(ansi, "r", encoding="utf-8") as f: 
                 ansi_content = f.read()
@@ -731,17 +731,17 @@ class Game:
             print(COL.green(f"\nYour {comp} {self.pet.name} {action}. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%."))
 
     def status(self):
-        print(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}")
-        print(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)}")
+        print(COL.grey(f"{self.player_name} — {self.vehicle_color.title()} {VEHICLES[self.vehicle_type]['label']} | Job: {JOBS[self.job]['label']}"))
+        print(COL.grey(f"Location: {self.node()['name']} | {minutes_to_hhmm(self.minutes)}"))
         self.print_hud()
 
     def show_map(self):
         n = self.node()
-        print(f"From {n['name']} you can reach:")
+        print(COL.grey(f"From {n['name']} you can reach:"))
         for c in n.get('connections', []):
             other = self.world.nodes[c['to']]
-            print(f"  - {other['name']} ({c.get('road','?')}, {c.get('miles','?')} mi, grade {c.get('grade','mixed')})")
-        print("Use: ROUTE TO <place>")
+            print(COL.grey(f"  - {other['name']} ({c.get('road','?')}, {c.get('miles','?')} mi, grade {c.get('grade','mixed')})"))
+        print(COL.grey("Use: ROUTE TO <place>"))
 
     def route_to(self, dest_key):
         nid = self.world.find_node(dest_key)
@@ -752,7 +752,7 @@ class Game:
         self.route = path; self.route_idx = 0
         hours = total_turns * TURN_MINUTES / 60
         names = " → ".join(self.world.nodes[a]['name'] for a,_,_ in path) + f" → {self.world.nodes[nid]['name']}"
-        print(f"Route plotted ({hours:.1f}h est): {names}")
+        print(COL.green(f"Route plotted ({hours:.1f}h est): {names}"))
         print("Use: DRIVE to set off.")
 
     def drive(self):
@@ -766,13 +766,13 @@ class Game:
         if self.mode == 'electric':
             needed_pct = (miles / max(1.0, self.ev_range_mi)) * 100.0
             if self.ev_battery < needed_pct:
-                print(f"Not enough charge for {miles:.0f} mi. Need ~{needed_pct:.1f}% EV; have {self.ev_battery:.1f}%.")
+                print(COL.cyan(f"Not enough charge for {miles:.0f} mi. Need ~{needed_pct:.1f}% EV; have {self.ev_battery:.1f}%."))
                 print("Try: CHARGE station (Moab), CHARGE solar, or CHARGE wind."); return
             self.ev_battery = clamp(self.ev_battery - needed_pct, 0, 100)
         else:
             needed_gal = miles / max(1.0, self.mpg)
             if self.fuel_gal < needed_gal:
-                print(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}.")
+                print(COL.cyan(f"Not enough fuel for {miles:.0f} mi. Need ~{needed_gal:.1f} gal; have {self.fuel_gal:.1f}."))
                 print("Try: REFUEL in Moab or adjust your route."); return
             self.fuel_gal = max(0.0, self.fuel_gal - needed_gal)
             self.battery = clamp(self.battery + (2.0*hours)/self._pct_per_ah(), 0, 100)
@@ -786,11 +786,11 @@ class Game:
         rng = seeded_rng(frm, to, int(self.minutes/60))
         if rng.random() < 0.06:
             delay = rng.randint(1,3)
-            print(f"A detour slows you down (+{delay} turns)."); turns += delay; hours = turns * TURN_MINUTES / 60.0
+            print(COL.yellow(f"A detour slows you down (+{delay} turns).")); turns += delay; hours = turns * TURN_MINUTES / 60.0
         self.advance(turns*TURN_MINUTES)
         self.location = to
         self.route_idx += 1
-        print(f"You arrive at {self.node()['name']} after {hours:.1f}h and {miles:.0f} mi. Weather en route: {describe_weather(w)}.")
+        print(COL.green(f"You arrive at {self.node()['name']} after {hours:.1f}h and {miles:.0f} mi. Weather en route: {describe_weather(w)}."))
         if self.route_idx >= len(self.route): print("Route complete.")
         # XP: reward per mile & road difficulty
         road = conn.get('road','mixed'); grade = conn.get('grade','mixed')
@@ -801,12 +801,12 @@ class Game:
     def check_weather(self):
         w = derive_weather(self.node(), self.minutes)
         daylight = "daylight" if is_daylight(self.minutes) else "night"
-        print(f"At {self.node()['name']} ({daylight}): {describe_weather(w)}.")
+        print(COL.grey(f"At {self.node()['name']} ({daylight}): {describe_weather(w)}."))
 
     def camp(self, style):
         style = (style or '').lower()
         if style not in ('stealth','paid','dispersed'):
-            print("CAMP how? Options: stealth | paid | dispersed"); return
+            print(COL.yellow("CAMP how? Options: stealth | paid | dispersed")); return
         # Sleep until next 06:00 (not 24h+)
         now = self.minutes % DAY_MINUTES
         if now <= 6*60: sleep_minutes = 6*60 - now
@@ -850,24 +850,24 @@ class Game:
             maybe_remote = any(k in biome for k in ['desert','swell','salt','mesa','canyon'])
             rng_sig = seeded_rng(self.location, int(self.minutes/60), 'signal')
             has_signal = not (maybe_remote and rng_sig.random() < 0.6)
-            if not has_signal: print("No bars out here. Your phone becomes a very expensive paperweight tonight.")
+            if not has_signal: print(COL.yellow("No bars out here. Your phone becomes a very expensive paperweight tonight."))
             inc = self.job_perks.get('remote_camp_income', 0)
             if inc and has_signal:
-                self.cash += inc; print(f"You push a little code under the stars (+${inc}).")
+                self.cash += inc; print(COL.green(f"You push a little code under the stars (+${inc})."))
         rng = seeded_rng(self.location, int(self.minutes/60), style)
         if rng.random() < ranger_knock:
-            print("A flashlight sweeps your curtains. A ranger checks on you.")
-            if style == 'paid': print("Your permit checks out. You roll over and go back to sleep.")
-            elif style == 'dispersed': print("Friendly reminder about tread-lightly and stay limits. You chat stars and keep it mellow.")
-            else: self.cash = max(0, self.cash - 25); self.morale = clamp(self.morale - 6, 0, 100); print("You get a warning and a $25 fine. Morale dips.")
+            print(COL.yellow("A flashlight sweeps your curtains. A ranger checks on you."))
+            if style == 'paid': print(COL.green("Your permit checks out. You roll over and go back to sleep."))
+            elif style == 'dispersed': print(COL.yellow("Friendly reminder about tread-lightly and stay limits. You chat stars and keep it mellow."))
+            else: self.cash = max(0, self.cash - 25); self.morale = clamp(self.morale - 6, 0, 100); print(COL.yellow("You get a warning and a $25 fine. Morale dips."))
 
         self.advance(sleep_minutes)
-        print(f"{note} You camp {style} for {hours:.1f}h. Morning at {minutes_to_hhmm(self.minutes)}. Battery {int(self.battery)}%.")
+        print(COL.grey(f"{note} You camp {style} for {hours:.1f}h. Morning at {minutes_to_hhmm(self.minutes)}. Battery {int(self.battery)}%."))
         # XP
         self.add_xp({'paid':10,'stealth':15,'dispersed':18}[style], f"camp ({style})")
 
     def cook(self):
-        if self.food <= 0: print("You rummage for crumbs. No food to cook."); return
+        if self.food <= 0: print(COL.cyan("You rummage for crumbs. No food to cook.")); return
         used = "cold"
         if self.devices['stove']['owned'] and self.propane_lb >= 0.2:
             self.propane_lb -= 0.2; used = "stove"
@@ -882,23 +882,23 @@ class Game:
         self.morale = clamp(self.morale + morale_boost, 0, 100)
         self.energy = clamp(self.energy + 6, 0, 100)
         self.advance(TURN_MINUTES)
-        print(f"You cook with {used} (+morale, +energy). Water used: {use_water:.1f}G.")
+        print(COL.grey(f"You cook with {used} (+morale, +energy). Water used: {use_water:.1f}G."))
         self.add_xp(5 if used != "cold" else 3, "cooking")
 
     def sleep(self):
         self.advance(120)
         self.energy = clamp(self.energy + 12, 0, 100)
         if self.pet: self.pet.energy = clamp(self.pet.energy + 10, 0, 100)
-        print(f"You nap for 2h. It's now {minutes_to_hhmm(self.minutes)}.")
+        print(COL.grey(f"You nap for 2h. It's now {minutes_to_hhmm(self.minutes)}."))
 
     def hike(self, direction):
         dir_clean = (direction or '').lower()
         valid = {'n','s','e','w','ne','nw','se','sw'}
-        if dir_clean not in valid: print("HIKE which way? Use: HIKE n|s|e|w|ne|nw|se|sw"); return
+        if dir_clean not in valid: print(COL.yellow("HIKE which way? Use: HIKE n|s|e|w|ne|nw|se|sw")); return
         # Daylight-only hiking; auto-limit to dusk
         m = self.minutes % DAY_MINUTES
         if not (6*60 <= m < 18*60) and self.job != 'trail_guide':
-            print("It’s not safe to start a hike right now. Try between 06:00 and 18:00."); return
+            print(COL.yellow("It’s not safe to start a hike right now. Try between 06:00 and 18:00.")); return
         node = self.node()
         hmap = (node.get('hike_map') or {})
         seg = int(hmap.get(dir_clean, 3)); seg = max(1, min(5, seg))
@@ -909,7 +909,7 @@ class Game:
         minutes_left = (18*60) - m
         hours = min(hours, max(1.0, minutes_left/60.0))
         ticks = int((hours * 60) // TURN_MINUTES) or 1
-        print(f"You set out {dir_clean.upper()} for a ~{hours:.1f}h hike.")
+        print(COL.grey(f"You set out {dir_clean.upper()} for a ~{hours:.1f}h hike."))
         found = False
         windows, _w0 = current_time_windows(self.minutes, node)
         for _ in range(ticks):
@@ -927,7 +927,7 @@ class Game:
                     self.ev_battery = clamp(self.ev_battery + (self.wind_watts / 300.0) * ev_level / 4.0, 0, 100)
             self.advance(TURN_MINUTES)
             if not found and random.random() < 0.08:
-                found = True; self.morale = clamp(self.morale + 4, 0, 100); print("You crest a ridge to a ridiculous view. Morale soars.")
+                found = True; self.morale = clamp(self.morale + 4, 0, 100); print(COL.green("You crest a ridge to a ridiculous view. Morale soars."))
         extra_energy = min(12, int(hours * 3))
         extra_water  = round(0.12 * hours, 2)
         mult = self.job_perks.get('hike_energy_mult', 1.0)
@@ -936,9 +936,9 @@ class Game:
         if self.pet:
             self.pet.energy = clamp(self.pet.energy - max(6, int(hours * 2)), 0, 100)
             self.pet.bond   = clamp(self.pet.bond + 2, 0, 100)
-        print(f"You return after ~{hours:.1f}h. House {int(self.battery)}% | "
+        print(COL.grey(f"You return after ~{hours:.1f}h. House {int(self.battery)}% | "
               f"{'EV ' + str(int(self.ev_battery)) + '%' if self.mode=='electric' else 'Fuel ' + f'{self.fuel_gal:.1f} gal'} | "
-              f"Water {self.water:.1f}G | Energy {int(self.energy)}.")
+              f"Water {self.water:.1f}G | Energy {int(self.energy)}."))
         # XP: hikes worth a solid chunk
         w_now = derive_weather(node, self.minutes)
         diff = 1.0 + (0.15 if w_now['wind']=='high' else 0) + (0.10 if w_now['heat']=='hot' else 0)
@@ -1003,7 +1003,7 @@ class Game:
             hours = rng.uniform(1.5, 3.0); ticks = int((hours*60)//TURN_MINUTES) or 1
             base = rng.uniform(18, 32); tip_mult *= rng.uniform(0.9, 1.2)
         else:
-            print("Unknown work type. Try: WORK photo|dev|mechanic|guide|artist|gig [hours]"); return
+            print(COL.yellow("Unknown work type. Try: WORK photo|dev|mechanic|guide|artist|gig [hours]")); return
 
         if fail_prereq: print(fail_prereq); return
 
@@ -1027,7 +1027,7 @@ class Game:
         if kind in ('photo','artist'):
             if rng.random() < (0.15 + 0.05 * (1 if 'golden_hour' in windows else 0)):
                 bonus = rng.randint(40, 140); bonus = int(bonus * (1.0 + self.job_perks.get('epic_bonus', 0.0))); gross += bonus
-                print(f"A client bites on a shot/print (+${bonus}).")
+                print(COL.green(f"A client buys a photo print (+${bonus})."))
 
         for _ in range(ticks):
             if self.mode == 'electric' and self.solar_watts > 0 and is_daylight(self.minutes):
@@ -1049,10 +1049,10 @@ class Game:
         self.energy = clamp(self.energy - extra_energy, 0, 100)
         self.water  = clamp(self.water - extra_water, 0, self.water_cap_gallons)
         gross = int(round(gross)); self.cash += gross; self.work_hours_today[kind] = self.work_hours_today.get(kind, 0.0) + hours
-        print(f"You work {kind} for ~{hours:.1f}h at ~${hourly:.0f}/h. Paid ${gross}.")
-        print(f"Now: Cash ${self.cash:.0f} | House {int(self.battery)}% | "
+        print(COL.grey(f"You work {kind} for ~{hours:.1f}h at ~${hourly:.0f}/h. Paid ${gross}."))
+        print(COL.green(f"Now: Cash ${self.cash:.0f} | House {int(self.battery)}% | "
               f"{('EV '+str(int(self.ev_battery))+'%') if self.mode=='electric' else ('Fuel '+f'{self.fuel_gal:.1f} gal')} | "
-              f"Water {self.water:.1f}G | Energy {int(self.energy)}.")
+              f"Water {self.water:.1f}G | Energy {int(self.energy)}."))
         # XP: based on hours and difficulty (wind/heat add challenge)
         diff = 1.0 + (0.1 if cur_weather['wind']=='high' else 0) + (0.1 if cur_weather['heat']=='hot' else 0)
         self.add_xp(int(hours*12*diff), f"work:{kind}")
@@ -1060,13 +1060,13 @@ class Game:
     # ---------- Moab Shop ----------
     def shop(self):
         if self.location != 'moab': print("No outfitter here. Try Moab."); return
-        print(COL.cyan("Moab Outfitters — items (BUY <item_id> [qty])"))
+        print(COL.blue("Moab Outfitters — items (BUY <item_id> [qty])"))
         for key, it in self.catalog.items():
             name = it.get("name", key)
             price = it.get("price", 0)
             requires = it.get("requires", {})
             lvl = requires.get("level")
-            print(f"  {key:<12} ${price:<5} — {name:<18} (requires level {lvl}).")
+            print(COL.grey(f"  {key:<12} ${price:<5} — {name:<18} (requires level {lvl})."))
         print(f"Cash: {COL.green(f'${self.cash:.0f}')}")
 
     def _apply_effect(self, key, qty):
@@ -1118,20 +1118,20 @@ class Game:
         return purchased
 
     def buy(self, item_id, qty=1):
-        if self.location != 'moab': print("You need to be in Moab to buy gear."); return
+        if self.location != 'moab': print(COL.yellow("You need to be in Moab to buy gear.")); return
         item_id = (item_id or '').lower()
         try: qty = int(qty)
         except Exception: qty = 1
         if qty <= 0: qty = 1
         if item_id not in self.catalog:
-            print("Unknown item id. Type SHOP to list items."); return
+            print(COL.cyan("Unknown item id. Type SHOP to list items.")); return
         item = self.catalog[item_id]
         price = float(item.get("price", 0)) * qty
         # job discount for upgrades/devices (heuristic: price >= $150)
         if item.get("price", 0) >= 150:
             price *= (1.0 - self.job_perks.get('shop_discount', 0.0))
         if self.cash < price:
-            print(f"Not enough cash (${self.cash:.0f}). This costs ${price:.0f}."); return
+            print(COL.yellow(f"Not enough cash (${self.cash:.0f}). This costs ${price:.0f}.")); return
 
         purchased = None
         effects = item.get("effects", {})
@@ -1168,42 +1168,42 @@ class Game:
                 exp = requires.get("exp")
                 lvl = requires.get("level")
                 if self.xp < int(exp) or self.level < int(lvl):
-                    print(f"Requires level {lvl}. You are only level {self.level}.")
-                    print(f"Requires {exp} experience. You only have {self.xp} experience.")
+                    print(COL.yellow(f"Requires level {lvl}. You are only level {self.level}."))
+                    print(COL.yellow(f"Requires {exp} experience. You only have {self.xp} experience."))
                     return
             elif requires.get("level"): 
                 lvl = requires.get("level")
                 if self.level < int(lvl):
-                    print(f"Requires level {lvl}. You are only level {self.level}.")
+                    print(COL.yellow(f"Requires level {lvl}. You are only level {self.level}."))
                     return
             elif requires.get("exp"): 
                 exp = requires.get("exp")
                 if self.xp < int(exp):
-                    print(f"Requires {exp} experience. You only have {self.xp} experience.")
+                    print(COL.yellow(f"Requires {exp} experience. You only have {self.xp} experience."))
                     return
 
         self.cash -= price
-        print(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}. Gained: {purchased}")
+        print(COL.grey(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:.0f}."))
         if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
-            print(f"Upgrades — solar: {self.solar_watts:.0f}W | wind: {self.wind_watts:.0f}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations")
+            print(COL.grey(f"Upgrades — solar: {self.solar_watts:.0f}W | wind: {self.wind_watts:.0f}W | EV range: {self.ev_range_mi} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
 
     # ---------- Mode / Energy ----------
     def set_mode(self, mode):
         m = (mode or '').lower()
         if m not in ('electric','fuel'): print("MODE electric | MODE fuel"); return
-        self.mode = m; print(f"Drivetrain set to {self.mode.upper()}.")
+        self.mode = m; print(COL.green(f"Drivetrain set to {self.mode.upper()}."))
 
     def charge(self, method):
         method = (method or '').lower()
-        if self.mode != 'electric': print("You're not in electric mode. Switch with: MODE electric"); return
-        if method not in ('station','solar','wind'): print("CHARGE how? Options: station | solar | wind"); return
+        if self.mode != 'electric': print(COL.yellow("You're not in electric mode. Switch with: MODE electric")); return
+        if method not in ('station','solar','wind'): print(COL.yellow("CHARGE how? Options: station | solar | wind")); return
 
         if method == 'station':
             if self.location != 'moab': print("Fast charger unavailable here. Try Moab."); return
             hours = 1.0; add_pct = 40.0; cost = add_pct * 0.5
-            if self.cash < cost: print(f"Charging costs ${cost:.0f}. You have ${self.cash:.0f}."); return
+            if self.cash < cost: print(COL.grey(f"Charging costs ${cost:.0f}. You have ${self.cash:.0f}.")); return
             self.cash -= cost; self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100); self.advance(int(hours*60))
-            print(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:.0f}.")
+            print(COL.green(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:.0f}."))
         elif method == 'solar':
             hours = 2.0
             sol = (self.node().get('resources', {}) or {}).get('solar', 'fair')
@@ -1214,7 +1214,7 @@ class Game:
             self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100)
             self.battery = clamp(self.battery + add_pct, 0, 100)
             self.advance(int(hours*60))
-            print(f"Solar charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%.")
+            print(COL.green(f"Solar charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%."))
         else:
             hours = 2.0
             w = derive_weather(self.node(), self.minutes)
@@ -1224,7 +1224,7 @@ class Game:
             self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100)
             self.battery = clamp(self.battery + add_pct, 0, 100)
             self.advance(int(hours*60))
-            print(f"Wind charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%.")
+            print(COL.green(f"Wind charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%."))
 
     def refuel(self, gallons):
         if self.mode != 'fuel': print("You're not in fuel mode. Switch with: MODE fuel"); return
@@ -1233,9 +1233,9 @@ class Game:
         except Exception: print("REFUEL <gallons>"); return
         if g <= 0: print("That’s not how fuel works."); return
         price = 4.00; cost = g * price
-        if self.cash < cost: print(f"Need ${cost:.0f}; you have ${self.cash:.0f}."); return
+        if self.cash < cost: print(COL.yellow(f"Need ${cost:.0f}; you have ${self.cash:.0f}.")); return
         self.cash -= cost; self.fuel_gal += g; self.advance(10)
-        print(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:.0f}.")
+        print(COL.green(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:.0f}."))
 
     # ----- Pets -----
     def adopt_pet(self):
@@ -1255,45 +1255,44 @@ class Game:
             spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
             action = random.choice(["licks your face","claims the passenger seat","looks at you with big brown eyes","wags their tail","barks excitedly"])
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
-            print(f"You meet {name}, a {spirit} {breed}, who promptly {action}. Bond +10.")
+            print(COL.grey(f"You meet {name}, a {spirit} {breed}, who promptly {action}. Bond +10."))
         if self.pet_type == "cat":
             breed = random.choice(["Siamese","Persian","Maine Coon","Ragdoll","Sphynx","American Shorthair","Burmese","British Shorthair","Longhair","Bobtail"])
             name = random.choice(["Swazi","Whiskers","Patches","Satan","Grouchy Pants","Moo","Olaf","Chandler","Joey","Monica","Ross","Phoebe","Rachael"])
             spirit = random.choice(["spirited","lazy","young","overweight","timid","large","small","playful","youthful","energetic"])
-            action = random.choice(["disappears into the back","makes their way onto the dash","winds between your legs","meows hungrily"])
+            action = random.choice(["disappears into the back of the vehicle","makes their way onto the dash","winds between your legs","meows hungrily"])
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
-            print(f"You meet {name}, a {spirit} {breed} cat, who promptly {action}. Bond +6.")
+            print(COL.grey(f"You meet {name}, a {spirit} {breed} cat, who promptly {action}. Bond +6."))
         xp = clamp(self.xp + 10, 0, 30)
         self.add_xp(int(xp), "pet adoption")
 
     def feed_pet(self):
         if not self.pet: print("You travel alone."); return
-        if self.food <= 0: print(COL.red("You have nothing to share.")); return
-        print(f"{self.pet.name}")
+        if self.food <= 0: print(COL.cyan("You have nothing to share.")); return
         self.food -= 1; self.pet.bond = clamp(self.pet.bond + 6, 0, 100); self.advance(TURN_MINUTES)
-        print(f"You feed {self.pet.name}. Bond warms.")
+        print(COL.grey(f"You feed {self.pet.name}. Bond warms."))
         xp = clamp(self.xp + 5, 0, 20)
         self.add_xp(int(xp), "pet care")
 
     def water_pet(self):
         if not self.pet: print("You travel alone."); return
-        if self.water < 0.3: print(COL.red("Water is too low.")); return
+        if self.water < 0.3: print(COL.cyan("Water is too low.")); return
         self.water = clamp(self.water - 0.3, 0, self.water_cap_gallons); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
-        print(f"{self.pet.name} drinks happily.")
+        print(COL.grey(f"{self.pet.name} drinks happily."))
         xp = clamp(self.xp + 5, 0, 20)
         self.add_xp(int(xp), "pet care")
 
     def walk_pet(self):
         if not self.pet: print("You travel alone."); return
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
-        print(f"You walk {self.pet.name}. Spirits lift.")
+        print(COL.grey(f"You walk {self.pet.name}. Spirits lift."))
         xp = clamp(self.xp + 10, 0, 25)
         self.add_xp(int(xp), "pet care")
 
     def play_with_pet(self):
         if not self.pet: print("You travel alone."); return
         self.pet.bond = clamp(self.pet.bond + 5, 0, 100); self.morale = clamp(self.morale + 4, 0, 100); self.advance(20)
-        print(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the van.")
+        print(COL.grey(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the van."))
         xp = clamp(self.xp + 15, 0, 30)
         self.add_xp(int(xp), "play")
 
@@ -1302,25 +1301,25 @@ class Game:
         v = (verb or '').strip().upper()
         if v == 'GUARD':
             self.pet.guard_mode = True; self.pet.alert = clamp(self.pet.alert + 10, 0, 100)
-            print(f"{self.pet.name} settles by the door, ears up. Guard mode ON.")
+            print(COL.grey(f"{self.pet.name} settles by the door, ears up. Guard mode ON."))
         elif v == 'CALM':
             self.pet.guard_mode = False; self.pet.alert = clamp(self.pet.alert - 10, 0, 100)
-            print(f"{self.pet.name} relaxes. Guard mode OFF.")
+            print(COL.grey(f"{self.pet.name} relaxes. Guard mode OFF."))
         elif v == 'SEARCH':
             rng = seeded_rng(self.location, int(self.minutes/60), 'search')
             if rng.random() < 0.4:
                 self.water = clamp(self.water + 1.0, 0, self.water_cap_gallons)
-                print(f"{self.pet.name} finds fresh water. +1.0G water.")
+                print(COL.green(f"{self.pet.name} finds fresh water. +1.0G water."))
                 xp = 20
                 self.add_xp(int(xp), "search")
             else:
-                print(f"{self.pet.name} sniffs around but finds nothing today.")
+                print(COL.grey(f"{self.pet.name} sniffs around but finds nothing today."))
             self.advance(TURN_MINUTES)
         elif v == 'HEEL':
-            print(f"{self.pet.name} falls in line. It's the little things.")
+            print(COL.grey(f"{self.pet.name} falls in line. It's the little things."))
         elif v == 'FETCH':
             self.morale = clamp(self.morale + 2, 0, 100)
-            print(f"{self.pet.name} returns triumphantly with... a glove? Sure, that tracks.")
+            print(COL.grey(f"{self.pet.name} returns triumphantly with... a glove? Sure, that tracks."))
         else:
             print("Available: HEEL, SEARCH, GUARD, CALM, FETCH.")
 
@@ -1333,6 +1332,7 @@ HELP_TEXT = """Commands:
   COOK | EAT
   NAP
   DEVICES | TURN <device> <on|off>
+  ELEVATION
   EV
   FUEL
   HIKE
@@ -1366,7 +1366,7 @@ def load_world():
             with open(cand_yaml, "r", encoding="utf-8") as f:
                 nodes = yaml.safe_load(f)["nodes"]
         except Exception as e:
-            print(f"(YAML load failed: {e}. Falling back to JSON.)")
+            print(COL.cyan(f"YAML load failed: {e}. Falling back to JSON."))
     if nodes is None and os.path.exists(cand_json):
         with open(cand_json, "r", encoding="utf-8") as f:
             nodes = json.load(f)["nodes"]
@@ -1403,7 +1403,7 @@ def character_creation():
     rng = seeded_rng(name, color, vkey, jkey, mode)
     start_cash = rng.randint(1000, 10000)
     cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
-    print(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash}')}")
+    print(COL.blue(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash}')}"))
     return cfg
 
 def prelude_shopping(game):
