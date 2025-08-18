@@ -539,6 +539,40 @@ class Game:
         "se":"southeast", "southeast":"southeast",
         "sw":"southwest", "southwest":"southwest",
     }
+
+    def manage_weboost(self):
+        s = self.devices.get('weboost')
+        if s.get('owned') and s.get('on'):
+            p = random.uniform(98.5, 100.0)
+            l = random.uniform(9, 35)
+            d = random.uniform(25, 30)
+            t = random.uniform(1.1, 11.1)
+            print(f"Ping Success: {p:.2f}%")
+            print(f"Latency: {l:.0f}ms")
+            print(f"Power Draw: {d:.0f}W")
+            print(f"Throughput: {t:.2f}Mbps")
+            print(f"Outages: No outages >2s in the last 15 minutes")
+        if s.get('owned') and not s.get('on'):
+            print(f"You need to power on your weboost (TURN WEBOOST ON).")
+        else:
+            print(f"You don't own a weboost device.")
+
+    def manage_starlink(self):
+        s = self.devices.get('starlink')
+        if s.get('owned') and s.get('on'):
+            p = random.uniform(98.5, 100.0)
+            l = random.uniform(9, 35)
+            d = random.uniform(35, 40)
+            t = random.uniform(1.1, 55.5)
+            print(f"Ping Success: {p:.2f}%")
+            print(f"Latency: {l:.0f}ms")
+            print(f"Power Draw: {d:.0f}W")
+            print(f"Throughput: {t:.2f}Mbps")
+            print(f"Outages: No outages >2s in the last 15 minutes")
+        if s.get('owned') and not s.get('on'):
+            print(f"You need to power on your starlink (TURN STARLINK ON).")
+        else:
+            print(f"You don't own a starlink device.")
     
     def _available_local_map_here(self):
         """Return the map dict for this overworld location, or None."""
@@ -1955,6 +1989,8 @@ def main():
         elif u == "MORALE": game.report_morale()
         elif u == "ENERGY": game.report_energy()
         elif u == "PET": game.report_pet_status()
+        elif u == "STARLINK": game.manage_starlink()
+        elif u == "WEBOOST": game.manage_weboost()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))

@@ -8,7 +8,107 @@ rooms:
     description: |
       Scenic bridge crossing the mighty Colorado River.
     exits:
-      south: lions_park
+      northwest: courthouse_wash
+      southeast: lions_park
+    items: []
+  - id: courthouse_wash
+    name: Courthouse Wash (Rock Art)
+    camping: stealth
+    description: |
+      Describe the Courthouse Wash and rock art.
+    exits:
+      southeast: colorado_river_bridge
+      northwest: courthouse_wash_parking
+    items: []
+  - id: courthouse_wash_parking
+    name: Highway 191
+    camping: stealth
+    description: |
+      Describe this stretch of highway 191 north of Moab
+    exits:
+      southeast: courthouse_wash
+      west: the_bend
+    items: []
+  - id: the_bend
+    name: Highway 191, Bend
+    camping: stealth
+    description: |
+      Describe this bend in the highway 191 north of Moab
+    exits:
+      east: courthouse_wash_parking
+      northwest: power_relay_station
+    items: []
+  - id: potash_road
+    name: Highway 191, Potash Rd
+    camping: stealth
+    description: |
+      Describe this intersection of HW191 and Potash Road
+      (secret unlock for Jeep, Potash Ponds)
+    exits:
+      east: courthouse_wash_parking
+      northwest: power_relay_station
+    items: []
+  - id: power_relay_station
+    name: Highway 191, Power Relay Station
+    camping: stealth
+    description: |
+      Describe the power relay station to the west side of the highway
+    exits:
+      southeast: potash_road
+      east: visitor_center_intersection
+      northwest: moabs_sand_hill
+    items: []
+  - id: visitor_center_intersection
+    name: Arches National Park, Visitor Center Intersection
+    camping: none
+    description: |
+      Describe the intersection of HWY191 and Arches National Park
+    exits:
+      west: power_relay_station
+      northwest: arches_entrance_se
+    items: []
+  - id: arches_entrance_se
+    name: Arches National Park Entrance
+    camping: none
+    description: |
+      Describe the entrance path to the national park
+    exits:
+      southeast: visitor_center_intersection
+      northwest: arches_entrance_mid
+    items: []
+  - id: arches_entrance_mid
+    name: Arches National Park Entrance
+    camping: none
+    description: |
+      Describe the entrance path to the national park, mid
+    exits:
+      southeast: arches_entrance_se
+      northwest: arches_entrance_nw
+    items: []
+  - id: arches_entrance_nw
+    name: Arches National Park Entrance NW
+    camping: none
+    description: |
+      Describe the entrance path to the national park, NW
+    exits:
+      southeast: arches_entrance_mid
+      west: arches_visitor_center
+    items: []
+  - id: arches_visitor_center
+    name: Arches National Park Visitor Center
+    camping: none
+    description: |
+      Describe the Arches National Park visitor center
+    exits:
+      southeast: arches_entrance_nw
+    items: []
+  - id: moabs_sand_hill
+    name: Highway 191, Sand Hill
+    camping: stealth
+    description: |
+      Describe the sand hill activities
+    exits:
+      southeast: power_relay_station
     items: []
   - id: moab_mainstreet_south
     name: Moab Main Street (South)
@@ -45,7 +145,7 @@ rooms:
       same thing but actually I was lazy and didn't fill out a description.
     items: []
     exits:
-      north: colorado_river_bridge
+      northwest: colorado_river_bridge
       south: moab_mainstreet_north
       northeast: colorado_river_intersection
   - id: colorado_river_intersection

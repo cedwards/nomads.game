@@ -82,4 +82,4 @@ items:
   heater:          { requires: { level: 5           }, name: "Diesel Heater",   price: 800,  effects: { comfort: "+5",     "device:heater":   "install", "device_amps:heater":   "1.2" } }
   laptop:          { requires: { level: 3           }, name: "New Laptop",      price: 1500, effects: {                    "device:laptop":   "install", "device_amps:laptop":   "3"   } }
   weboost:         { requires: { level: 2           }, name: "WeBoost 4G/5G",   price: 500,  effects: {                    "device:weboost":  "install", "device_amps:weboost":  "4"   } }
-  starlink:        { requires: { level: 4, exp: 1000}, name: "Starlink",        price: 700,  effects: {                    "device:starlink": "install", "device_amps:starlink": "5"   } }
+  starlink:        { requires: { level: 2, exp: 0100}, name: "Starlink",        price: 700,  effects: {                    "device:starlink": "install", "device_amps:starlink": "5"   } }
