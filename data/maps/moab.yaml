@@ -1,0 +1,111 @@
+id: moab                  # map id (defaults to filename if omitted)
+world_node: moab          # which overworld node this map belongs to
+start: lions_park
+rooms:
+  - id: colorado_river_bridge
+    name: Bridge (Colorado River)
+    camping: none
+    description: |
+      Scenic bridge crossing the mighty Colorado River.
+    exits:
+      south: lions_park
+    items: []
+  - id: moab_mainstreet_south
+    name: Moab Main Street (South)
+    camping: stealth
+    description: |
+      Moab Mainstreet South (Grocery Store)
+    exits:
+      north: moab_mainstreet_north
+      south: the_blue_pig
+      east: moab_rv_park
+    items: []
+  - id: the_blue_pig
+    name: The Blue Pig
+    camping: stealth
+    description: |
+      The Blue Pig - BBQ and Blues!
+    exits:
+      north: moab_mainstreet_south
+    items: ["food","beer"]
+  - id: moab_mainstreet_north
+    name: Moab Mainstreet (North)
+    camping: stealth
+    description: |
+      Moab Mainstreet North (Hardware Store)
+    exits:
+      north: lions_park
+      south: moab_mainstreet_south
+    items: []
+  - id: lions_park
+    name: Lions Park
+    camping: stealth
+    description: |
+      This is a description of Lions park. I thought they were printing the
+      same thing but actually I was lazy and didn't fill out a description.
+    items: []
+    exits:
+      north: colorado_river_bridge
+      south: moab_mainstreet_north
+      northeast: colorado_river_intersection
+  - id: colorado_river_intersection
+    camping: stealth
+    name: Colorado River (Intersection)
+    description: |
+      Colorado River Intersection
+    items: []
+    exits:
+      southwest: lions_park
+      northeast: colorado_river_one
+  - id: colorado_river_one
+    name: Colorado River (H-128)
+    camping: dispersed
+    description: |
+      Colorado River First
+    items: []
+    exits:
+      southwest: colorado_river_intersection
+      east: colorado_river_two
+  - id: colorado_river_two
+    name: Colorado River (H-128)
+    camping: dispersed
+    description: |
+      Colorado River Two
+    items: []
+    exits:
+      east: colorado_river_three
+      west: colorado_river_one
+  - id: colorado_river_three
+    name: Colorado River (H-128)
+    camping: dispersed
+    description: |
+      Colorado River Three
+    items: []
+    exits:
+      northeast: colorado_river_four
+      west: colorado_river_two
+  - id: colorado_river_four
+    name: Colorado River (H-128)
+    camping: dispersed
+    description: |
+      Colorado River Four
+    items: []
+    exits:
+      northeast: colorado_river_five
+      southwest: colorado_river_three
+  - id: colorado_river_five
+    name: Colorado River (H-128)
+    camping: dispersed
+    description: |
+      Colorado River Five
+    items: []
+    exits:
+      southwest: colorado_river_four
+  - id: moab_rv_park
+    name: Moab RV Park
+    camping: paid
+    description: |
+      A description of a desert tiny town RV park.
+    items: []
+    exits:
+      west: moab_mainstreet_south

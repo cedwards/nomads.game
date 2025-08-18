@@ -14,7 +14,7 @@ import yaml
 import re, os, sys, math, json, random
 from collections import defaultdict
 
-TURN_MINUTES = 15
+TURN_MINUTES = 10
 DAY_MINUTES  = 24 * 60
 SYSTEM_VOLTAGE = 12.0
 
@@ -30,6 +30,38 @@ class COL:
     prompt= lambda s: f"\033[36m{s}\033[0m"
     red   = lambda s: f"\033[31m{s}\033[0m"
     yellow= lambda s: f"\033[33m{s}\033[0m"
+
+# ---- Local room-map loader ----
+def load_local_maps(maps_root="data/maps"):
+    import os, glob
+    try:
+        import yaml
+    except Exception:
+        print("(local maps) PyYAML not installed; skipping local maps.")
+        return {}
+
+    maps = {}
+    if not os.path.isdir(maps_root):
+        return maps
+
+    for p in glob.glob(os.path.join(maps_root, "**", "*.y*ml"), recursive=True):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except Exception as e:
+            print(f"(local maps) Failed to load {p}: {e}")
+            continue
+
+        # derive id from filename if absent
+        import os as _os
+        mid = data.get("id") or _os.path.splitext(_os.path.basename(p))[0]
+        data["id"] = mid
+
+        # index rooms by id
+        rooms = {r["id"]: r for r in (data.get("rooms") or []) if r.get("id")}
+        data["_rooms"] = rooms
+        maps[mid] = data
+    return maps
 
 def load_npcs():
     here = os.path.dirname(os.path.abspath(__file__))
@@ -489,6 +521,100 @@ class Game:
         # NPCs
         self.npcs = npcs or {}
         self.npc_state = {}  # per-npc: rep, flags, quest progress
+
+        # Local map state
+        self.local_maps = load_local_maps("data/maps")
+        self.in_local = False
+        self.local_map_id = None
+        self.local_room_id = "lions_park"
+
+    # Direction normalization
+    DIR_ALIASES = {
+        "n":"north", "north":"north",
+        "s":"south", "south":"south",
+        "e":"east", "east":"east",
+        "w":"west", "west":"west",
+        "ne":"northeast", "northeast":"northeast",
+        "nw":"northwest", "northwest":"northwest",
+        "se":"southeast", "southeast":"southeast",
+        "sw":"southwest", "southwest":"southwest",
+    }
+    
+    def _available_local_map_here(self):
+        """Return the map dict for this overworld location, or None."""
+        for m in self.local_maps.values():
+            if m.get("world_node") == self.location:
+                return m
+        return None
+    
+    def enter_map(self, map_id=None):
+        if self.in_local:
+            print("You’re already exploring town blocks."); return
+        m = self.local_maps.get(map_id) if map_id else self._available_local_map_here()
+        if not m:
+            print("No local map available here."); return
+        if m.get("world_node") != self.location:
+            wn = m.get("world_node", "?")
+            print(f"That map belongs to {self.world.nodes.get(wn,{}).get('name', wn)}."); return
+        self.in_local = True
+        self.local_map_id = m["id"]
+        self.local_room_id = m.get("start") or next(iter(m.get("_rooms") or {}), None)
+        print(COL.grey(f"You start exploring {self.world.nodes[self.location]['name']}."))
+        self.look_local()
+    
+    def leave_map(self):
+        if not self.in_local:
+            print(COL.yellow("You’re not in a local map.")); return
+        self.in_local = False
+        print(COL.grey("You step back to the wider landscape."))
+        self.look()  # show overworld look
+    
+    def _cur_map(self):
+        return self.local_maps.get(self.local_map_id) if self.in_local else None
+    
+    def _cur_room(self):
+        m = self._cur_map()
+        return (m and m["_rooms"].get(self.local_room_id)) or None
+    
+    def look_local(self):
+        r = self._cur_room()
+        if not (self.in_local and r):
+            print(COL.yellow("You’re not exploring a town map.")); return
+        print(COL.cyan(f"{r.get('name','(unnamed)')}"))
+        desc = (r.get('description') or r.get('desc') or '').strip()
+        if desc: print(COL.green(desc))
+        ex = r.get('exits', {})
+        if ex:
+            # show canonical compass order
+            order = ["north","northeast","east","southeast","south","southwest","west","northwest"]
+            listed = [d.lower() for d in order if d in ex]
+            print("Exits:", ", ".join(listed))
+    
+    def list_exits(self):
+        r = self._cur_room()
+        if not (self.in_local and r):
+            print("No local exits to list."); return
+        ex = r.get('exits', {})
+        if not ex:
+            print(COL.yellow("No obvious exits.")); return
+        order = ["north","northeast","east","southeast","south","southwest","west","northwest"]
+        listed = [f"{d.upper()}→{ex[d]}" for d in order if d in ex]
+        print("Exits:", ", ".join(listed))
+    
+    def move_dir(self, direction):
+        if not self.in_local:
+            print(COL.yellow("Explore the local map first (EXPLORE).")); return
+        d = self.DIR_ALIASES.get((direction or '').lower())
+        if not d:
+            print("Move which way? n/s/e/w/ne/nw/se/sw"); return
+        r = self._cur_room()
+        nxt = r.get('exits', {}).get(d) if r else None
+        if not nxt:
+            print(COL.yellow("You can’t go that way.")); return
+        self.local_room_id = nxt
+        # One local move = 1 turn
+        self.advance(5)
+        self.look_local()
 
     def look_vehicle(self):
         v = VEHICLES[self.vehicle_type]
@@ -1542,6 +1668,7 @@ class Game:
 # ---------------------------- IO & Loop -------------------------------
 
 HELP_TEXT = """Commands:
+  N|S|E|W|NE|NW|SE|SW
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
   ASK <npc> ABOUT <topic>
   CAMP [stealth|paid|dispersed]
@@ -1551,11 +1678,13 @@ HELP_TEXT = """Commands:
   DEVICES | TURN <device> <on|off>
   ELEVATION
   EV
+  EXPLORE
   FUEL
   HIKE
   INVENTORY | INV | I
-  LOOK | STATUS | MAP
+  STATUS
   LOOK NPC <id|name> | LOOK PET | LOOK ITEM <id> | LOOK VEHICLE
+  MAP
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
   PEOPLE | TALK <npc>
   PET
@@ -1664,9 +1793,11 @@ def main():
     os.system('cls' if os.name == 'nt' else 'clear')
 
     cfg = character_creation()
+    local_maps = load_local_maps("data/maps")
     game = Game(world, cfg, catalog, npcs=npcs)
 
     game.look()
+    game.enter_map()
     game._check_for_truck_camper()
     print("Type HELP for commands.\n")
 
@@ -1679,6 +1810,28 @@ def main():
         u = line.upper()
 
         if u in ('HELP','?'): print(COL.grey(HELP_TEXT))
+
+        # Single-word compass moves
+        if u in ("N","NORTH","S","SOUTH","E","EAST","W","WEST","NE","NORTHEAST","NW","NORTHWEST","SE","SOUTHEAST","SW","SOUTHWEST"):
+            game.move_dir(u.lower()); continue
+        
+        #elif u.startswith("GO "):
+        #    parts = line.split()
+        #    if len(parts) >= 2:
+        #        game.move_dir(parts[1])
+        #    else:
+        #        print("GO which way? n/s/e/w/ne/nw/se/sw")
+        #    continue
+        
+        elif u in ("EXITS",):
+            game.list_exits(); continue
+        
+        elif u in ("EXPLORE","ENTER MAP"):
+            game.enter_map()  # auto-picks the map tied to this overworld node
+            continue
+        
+        elif u in ("LEAVE","EXIT MAP"):
+            game.leave_map(); continue
         elif u.startswith('LOOK'):
             # Forms:
             #   LOOK
@@ -1686,8 +1839,11 @@ def main():
             #   LOOK PET
             #   LOOK ITEM <id>
             #   LOOK VEHICLE
-            parts = line.split()
-            if len(parts) == 1 or parts[1].upper() in ('', 'AROUND', 'HERE'):
+            #parts = line.split()
+            parts = line.split(maxsplit=2)
+            if game.in_local and (len(parts)==1 or parts[1].upper() in ('','HERE','AROUND')):
+                game.look_local()
+            elif len(parts) == 1 or parts[1].upper() in ('', 'AROUND', 'HERE'):
                 game.look()
             else:
                 sub = parts[1].lower()
