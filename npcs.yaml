@@ -1,0 +1,90 @@
+version: 1
+npcs:
+  - id: raina
+    name: Raina
+    title: Moab Outfitter
+    faction: locals
+    home: moab
+    presence:
+      # simple schedule primitives that are easy to check
+      - when: daily
+        hours: "09:00-18:00"
+        at: moab
+    dialogue:
+      greeting:
+        - "Need a panel, a pot, or a plan? I’ve got you."
+      topics:
+        weather:
+          - "Hot days, cool nights. Keep an eye on UV—it’s brutal in summer."
+        gigs:
+          - "Photogs do well at golden hour. Devs thrive if you’ve got sky."
+        parks:
+          - "Arches is jammed by 10am. Go early, or skip to the Swell."
+    shop:
+      price_mult: 1.0   # per-NPC shop tuning
+      inventory:        # item ids from items.yaml
+        - food
+        - water
+        - solar
+        - house_battery
+        - ev_battery
+        - fridge
+        - starlink
+        - propane_stove
+        - jetboil
+
+  - id: ranger_soto
+    name: Ranger Soto
+    title: BLM Ranger
+    faction: blm
+    home: valley_of_gods
+    presence:
+      - when: weekend
+        hours: "08:00-12:00"
+        at: valley_of_gods
+      - when: weekend
+        hours: "13:00-16:00"
+        at: mexican_hat
+    dialogue:
+      greeting:
+        - "Pack in, pack out. Storms? Don’t camp in washes."
+      topics:
+        dispersed:
+          - "14-day limit. Leave no trace, and mind cryptobiotic soil."
+        safety:
+          - "Flash floods don’t negotiate. Check the sky and the forecast."
+    quests:
+      - id: photo_wash_warning
+        requires: []
+        steps:
+          - type: talk
+            to: ranger_soto
+            topic: safety
+          - type: travel
+            to: canyonlands
+        reward:
+          cash: 40
+          xp: 60
+
+  - id: kai
+    name: Kai
+    title: Traveling Photographer
+    faction: nomads
+    home: arches
+    presence:
+      - when: season
+        seasons: [spring, autumn]
+        hours: "06:00-08:00"
+        at: arches
+      - when: season
+        seasons: [spring, autumn]
+        hours: "17:00-19:30"
+        at: arches
+    dialogue:
+      greeting:
+        - "Chasing light and coffee. Preferably both."
+      topics:
+        lenses:
+          - "Tele at dawn flattens mesas into layers. Chef’s kiss."
+        gigs:
+          - "I can point you to a client—bring your A-game."

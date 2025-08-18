@@ -472,11 +472,13 @@ class Game:
     def read_book(self):
         print(COL.grey(f"You read another chapter in your latest book."))
         xp = clamp(self.xp + 10, 0, 10)
+        self.advance(30)
         self.add_xp(int(xp), "self care")
 
     def watch_something(self, something):
         print(COL.grey(f"You watch {something}. Spirits lift."))
         xp = clamp(self.xp + 10, 0, 15)
+        self.advance(30)
         self.add_xp(int(xp), "self care")
 
     def battery_status(self):
@@ -741,7 +743,7 @@ class Game:
         print(COL.grey(f"wind: {n['resources'].get('wind','?')}."))
         if n.get('pet_adoption') and not self.pet and not self.vehicle_type == 'truck_camper': print("You spot a rescue meetup. You could ADOPT PET here.")
         if self.pet: 
-            comp = random.choice(["companion","pet","partner","ride or die","best friend","constant shadow"])
+            comp = random.choice(["companion","pet","partner","ride-or-die","best friend","constant shadow"])
             action = random.choice(["carefully watches the horizon","shuffles around the cab","raises their head briefly and goes back to sleep","barks at something unseen","whines about being fed","jumps down from the passenger seat","jumps into the passenger seat"])
             print(COL.green(f"\nYour {comp} {self.pet.name} {action}. Bond {int(self.pet.bond)}%. Energy {int(self.pet.energy)}%."))
 
@@ -945,7 +947,7 @@ class Game:
         if self.pet:
             self.pet.energy = clamp(self.pet.energy - max(6, int(hours * 2)), 0, 100)
             self.pet.bond   = clamp(self.pet.bond + 2, 0, 100)
-        print(COL.grey(f"You return after ~{hours:.1f}h. House {int(self.battery)}% | "
+        print(COL.grey(f"You return after ~{hours:.1f}h. Battery {int(self.battery)}% | "
               f"{'EV ' + str(int(self.ev_battery)) + '%' if self.mode=='electric' else 'Fuel ' + f'{self.fuel_gal:.1f} gal'} | "
               f"Water {self.water:.1f}G | Energy {int(self.energy)}."))
         # XP: hikes worth a solid chunk

@@ -173,6 +173,43 @@ This game simulates life living in a vehicle and traveling around the country.
 | **Remote Dev**    | Wifi Wizard     | ⭐⭐       | ⭐         | ⭐            | ⭐⭐⭐⭐⭐ | ⭐⭐⭐         | ⭐⭐⭐⭐⭐ | 💻 Income++       · 📡 Signal Req   · 🪫 Drain+   |
 | **Guide**         | Trail Whisperer | ⭐⭐⭐     | ⭐⭐⭐⭐   | ⭐⭐⭐        | ⭐⭐⭐     | ⭐⭐⭐⭐⭐     | ⭐         | 🥾 Survival++     · 🌲 Terrain+     · 🔋 Drain–   |
 
+## CHALLENGES
+
+What are the challenges, tasks and quests in the game? What puzzles are there
+to solve?
+
+Perhaps you're required to travel to a distant destination but must level up
+before you earn the solar/wind capacity to support the distance?
+
+Perhaps you're required to visit the mighty five and 'TAKE PHOTO' at each
+location?
+
+Perhaps you're required to attend the speedway event at the salt flats
+(photographer bonus)?
+
+Perhaps you're required to guide hikers at each of the mighty five 'GUIDE HIKE'
+in each of the parks?
+
+Perhaps the mechanic needs to gather parts from 3-4 different locations in
+order to upgrade their vehicle?
+
+Perhaps the artist is invited to showcase art/music at 3-4 of the locations.
+'PERFORM' in each location to unlock the upgrade.
+
+Perhaps the remove dev needs to show up on-site in SLC and that becomes an
+adventure. (introduce SLC for resources, shopping, etc. Level restricted.)
+
+By completing the tasks, the character unlocks and is gifted their "quest"
+item:
+
+Photographer - camera
+Remove devel - laptop
+Mechanic     - toolbox
+Artist       - guitar
+Trail Guide  - maps
+
+These items increase income earned by 10%.
+
 ## ENVIRONMENT
 
 ELEVATION
