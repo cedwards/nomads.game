@@ -5,7 +5,7 @@ jeep:
   ev_range: 300
   fuel_tank_gal: 20.5
   house_cap_factor: 0.6
-  label: Jeep (rugged, 4x4)
+  label: Jeep
   max_food_cap: 18
   max_water_cap: 30
   mpg: 22
@@ -17,7 +17,7 @@ subaru:
   ev_range: 400
   fuel_tank_gal: 18.5
   house_cap_factor: 0.7
-  label: Subaru (all-terrain, capable)
+  label: Subaru
   max_food_cap: 20
   max_water_cap: 40
   mpg: 32
@@ -29,7 +29,7 @@ prius:
   ev_range: 300
   fuel_tank_gal: 14
   house_cap_factor: 0.7
-  label: Prius (stealthy, light)
+  label: Prius
   max_food_cap: 14
   max_water_cap: 40
   mpg: 30
@@ -41,7 +41,7 @@ skoolie:
   ev_range: 160
   fuel_tank_gal: 55
   house_cap_factor: 2.0
-  label: Skoolie (roomy bus, slow)
+  label: Skoolie
   max_food_cap: 40
   max_water_cap: 200
   mpg: 8
@@ -53,7 +53,7 @@ truck_camper:
   ev_range: 220
   fuel_tank_gal: 26
   house_cap_factor: 1.2
-  label: Truck Camper (capable, off-grid)
+  label: Truck Camper
   max_food_cap: 22
   max_water_cap: 110
   mpg: 15
@@ -65,7 +65,7 @@ van:
   ev_range: 240
   fuel_tank_gal: 24
   house_cap_factor: 1.0
-  label: Van (classic nomad rig)
+  label: Van
   max_food_cap: 20
   max_water_cap: 90
   mpg: 22

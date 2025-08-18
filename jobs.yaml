@@ -1,18 +1,18 @@
 ---
 artist:
   epic_bonus: 0.1
-  label: Artist (muse on wheels)
+  label: Artist
   morale_bonus_dispersed: 3
 mechanic:
-  label: Mechanic (handy with tools)
-  shop_discount: 0.15
+  label: Mechanic
+  shop_discount: 0.10
 photographer:
   epic_bonus: 0.25
-  label: Photographer (eye for light)
+  label: Photographer
 remote_dev:
-  label: Remote Dev (wifi wizard)
-  remote_camp_income: 30
+  label: Remote Worker
+  remote_camp_income: 300
 trail_guide:
+  label: Trail Guide
   hike_energy_mult: 0.8
   hike_find_bonus: 0.1
-  label: Trail Guide (path whisperer)
