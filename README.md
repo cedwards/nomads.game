@@ -203,11 +203,11 @@ adventure. (introduce SLC for resources, shopping, etc. Level restricted.)
 By completing the tasks, the character unlocks and is gifted their "quest"
 item:
 
-Photographer - camera
-Remove devel - laptop
-Mechanic     - toolbox
-Artist       - guitar
-Trail Guide  - maps
+Photographer  - camera
+Remove worker - laptop
+Mechanic      - repair manual
+Artist        - guitar
+Trail Guide   - deluxe tent
 
 These items increase income earned by 10%.
 
@@ -358,3 +358,18 @@ this can make the mechanic role appealing in this regard.
 ### REFUEL
 refuel vehicle with gasoline
 (FIXME: station lets you buy more than your cap)
+
+### STARLINK
+This outputs realistic metrics from a functioning Starlink device
+
+### WEBOOST
+This outputs realistic metrics for a functioning weboost (despite a weboost not
+having an interface)
+
+### FRIDGE
+This (will) interact with the fridge inventory. better food requires the
+fridge.
+
+### HEATER
+This (will) interact with the diesel heater to increase/decrease the heat based
+on the outside temps and comfort value.

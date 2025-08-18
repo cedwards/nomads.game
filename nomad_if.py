@@ -31,7 +31,7 @@ class COL:
     red   = lambda s: f"\033[31m{s}\033[0m"
     yellow= lambda s: f"\033[33m{s}\033[0m"
 
-# ---- Local room-map loader ----
+## ---- Load site-local maps ----
 def load_local_maps(maps_root="data/maps"):
     import os, glob
     try:
@@ -63,6 +63,7 @@ def load_local_maps(maps_root="data/maps"):
         maps[mid] = data
     return maps
 
+# ---- Local room-map loader ----
 def load_npcs():
     here = os.path.dirname(os.path.abspath(__file__))
     p = os.path.join(here, "npcs.yaml")
@@ -540,9 +541,41 @@ class Game:
         "sw":"southwest", "southwest":"southwest",
     }
 
+    def manage_laptop(self):
+        """manage laptop (email, websites, etc)"""
+        s = self.devices.get('laptop')
+        if not s.get('owned'):
+            print(f"You don't own a laptop.")
+        elif s.get('owned') and s.get('on'):
+            print("You hear the familiar bootup sound of your laptop")
+        elif s.get('owned') and not s.get('on'):
+            print(f"You need to power on your laptop (TURN LAPTOP ON).")
+
+    def manage_heater(self):
+        """heat level, fuel consumption, heat output"""
+        s = self.devices.get('heater')
+        if not s.get('owned'):
+            print(f"You don't own a diesel heater.")
+        elif s.get('owned') and s.get('on'):
+            print("Chinese characters display on the screen.")
+        elif s.get('owned') and not s.get('on'):
+            print(f"You need to power on your heater (TURN HEATER ON).")
+
+    def manage_fridge(self):
+        """store fresh veggies, meat, etc"""
+        s = self.devices.get('fridge')
+        if not s.get('owned'):
+            print(f"You don't own a fridge device.")
+        elif s.get('owned') and s.get('on'):
+            print("You peer into an empty fridge.")
+        elif s.get('owned') and not s.get('on'):
+            print(f"You need to power on your heater (TURN FRIDGE ON).")
+
     def manage_weboost(self):
         s = self.devices.get('weboost')
-        if s.get('owned') and s.get('on'):
+        if not s.get('owned'):
+            print(f"You don't own a weboost device.")
+        elif s.get('owned') and s.get('on'):
             p = random.uniform(98.5, 100.0)
             l = random.uniform(9, 35)
             d = random.uniform(25, 30)
@@ -552,14 +585,14 @@ class Game:
             print(f"Power Draw: {d:.0f}W")
             print(f"Throughput: {t:.2f}Mbps")
             print(f"Outages: No outages >2s in the last 15 minutes")
-        if s.get('owned') and not s.get('on'):
+        elif s.get('owned') and not s.get('on'):
             print(f"You need to power on your weboost (TURN WEBOOST ON).")
-        else:
-            print(f"You don't own a weboost device.")
 
     def manage_starlink(self):
         s = self.devices.get('starlink')
-        if s.get('owned') and s.get('on'):
+        if not s.get('owned'):
+            print(f"You don't own a starlink device.")
+        elif s.get('owned') and s.get('on'):
             p = random.uniform(98.5, 100.0)
             l = random.uniform(9, 35)
             d = random.uniform(35, 40)
@@ -571,8 +604,6 @@ class Game:
             print(f"Outages: No outages >2s in the last 15 minutes")
         if s.get('owned') and not s.get('on'):
             print(f"You need to power on your starlink (TURN STARLINK ON).")
-        else:
-            print(f"You don't own a starlink device.")
     
     def _available_local_map_here(self):
         """Return the map dict for this overworld location, or None."""
@@ -654,10 +685,10 @@ class Game:
         v = VEHICLES[self.vehicle_type]
         print(COL.grey(f"{self.vehicle_color.title()} {v['label']} — {self.player_name} ({self.job.replace('_',' ')})"))
         if self.mode == 'electric':
-            print(COL.grey(f"Drive: EV {int(self.ev_battery)}% (~{self.ev_range_mi} mi)"))
+            print(COL.grey(f"Drive: EV {int(self.ev_battery):.0f}% (~{self.ev_range_mi} mi)"))
         else:
             print(COL.grey(f"Drive: Fuel {self.fuel_gal:.1f} gal (~{int(self.fuel_gal*self.mpg)} mi)"))
-        print(COL.grey(f"House: {int(self.battery)}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)"))
+        print(COL.grey(f"House: {int(self.battery):.0f}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)"))
         print(COL.grey(f"Harvest: Solar {self.solar_watts:.0f}W (cap {self.solar_cap_watts}W), Wind {self.wind_watts:.0f}W (cap {self.wind_cap_watts}W)"))
         if self.mode == "electric":
             print(COL.grey(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap"))
@@ -814,8 +845,8 @@ class Game:
             print(COL.yellow("You don't have an electric vehicle"))
             return
         else:
-            print(COL.grey(f"EV Battery: {self.ev_battery:0f}%"))
-            print(COL.grey(f"EV Range: {self.ev_range_mi:0f} miles"))
+            print(COL.grey(f"EV Battery: {self.ev_battery:.0f}%"))
+            print(COL.grey(f"EV Range: {self.ev_range_mi:.0f} miles"))
 
     def solar_power_status(self):
         solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
@@ -1805,8 +1836,11 @@ def character_creation():
     vkey = pick_from_dict("Pick a vehicle type (enter to randomize):", VEHICLES)
     jkey = pick_from_dict("Pick a job (enter to randomize):", JOBS)
     mode = ""
-    while mode not in ("electric", "fuel"):
-        mode = input(COL.prompt("Drivetrain [electric|fuel] (enter to randomize): ")).strip().lower() or random.choice(["electric","fuel"])
+    if vkey != "prius":
+        while mode not in ("electric", "fuel"):
+            mode = input(COL.prompt("Drivetrain [electric|fuel] (enter to randomize): ")).strip().lower() or random.choice(["electric","fuel"])
+    else:
+        mode = 'electric'
     rng = seeded_rng(name, color, vkey, jkey, mode)
     start_cash = rng.randint(1000, 10000)
     cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
@@ -1991,6 +2025,9 @@ def main():
         elif u == "PET": game.report_pet_status()
         elif u == "STARLINK": game.manage_starlink()
         elif u == "WEBOOST": game.manage_weboost()
+        elif u == "FRIDGE": game.manage_fridge()
+        elif u == "HEATER": game.manage_heater()
+        elif u == "LAPTOP": game.manage_laptop()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))
