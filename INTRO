@@ -1,18 +1,14 @@
 This is my attempt to write copy for the game, beginning with the intro.
 ---
-
-Welcome to Nomads! The only (known) text-based Nomad simulator, created by an
-actual nomad.
-
-This game simulates life living in a vehicle and traveling around the country.
-
-To begin you'll be presented with a handful of prompts to generate your vehicle
-and character. These decisions will affect the game difficulty level and
-available skills within the game.
-
-Feel free to experiment with different vehicles and job combinations to
-discover your style!
-
+##################################################################################
+# Welcome to Nomads! The only (known) text-based Nomad simulator, created by an  #
+# actual nomad.                                                                  #
+#                                                                                #
+# This game simulates life living in a vehicle and traveling around the country. #
+#                                                                                #
+# Feel free to experiment with different vehicles and job combinations to        #
+# discover your style!                                                           #
+##################################################################################
 ----
 
 Welcome to Moab! You are standing in front of the most unique car dealership.

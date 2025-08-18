@@ -5,7 +5,6 @@ actual nomad.
 
 This game simulates life living in a vehicle and traveling around the country.
 
-
 ## Vehicles
 
 | Vehicle       | Cost  | Traits                                                                 |
@@ -173,3 +172,39 @@ This game simulates life living in a vehicle and traveling around the country.
 | **Photographer**  | Eye for Light   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐     | ⭐⭐          | ⭐⭐       | ⭐             | ⭐⭐⭐     | 📸 Epic Moments++ · 🎉 Festival+    · 😓 Weather– |
 | **Remote Dev**    | Wifi Wizard     | ⭐⭐       | ⭐         | ⭐            | ⭐⭐⭐⭐⭐ | ⭐⭐⭐         | ⭐⭐⭐⭐⭐ | 💻 Income++       · 📡 Signal Req   · 🪫 Drain+   |
 | **Guide**         | Trail Whisperer | ⭐⭐⭐     | ⭐⭐⭐⭐   | ⭐⭐⭐        | ⭐⭐⭐     | ⭐⭐⭐⭐⭐     | ⭐         | 🥾 Survival++     · 🌲 Terrain+     · 🔋 Drain–   |
+
+## ENVIRONMENT
+
+ELEVATION
+WEATHER
+
+## ELECTRICAL SYSTEM
+
+BATTERY
+POWER | ELECTRICAL
+SOLAR
+WIND
+EV
+
+## ACTIONS
+
+READ
+
+### WATCH <something>
+
+WATCH Netflix (easter-egg: generates random Netflix series output)
+WATCH sunrise
+WATCH sunset
+
+HIKE
+
+(FEED,WATER,WALK,PLAY WITH) PET
+
+WORK
+
+NAP
+
+COOK
+
+EAT
+

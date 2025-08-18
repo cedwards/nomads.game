@@ -1436,6 +1436,10 @@ def prelude_shopping(game):
 def main():
     world = load_world()
     catalog = load_items_catalog()
+    with open('WELCOME', "r", encoding="utf-8") as f:
+        welcome_txt = f.read()
+    print(COL.blue(welcome_txt))
+    input(COL.blue("Press ENTER to continue..."))
     cfg = character_creation()
     game = Game(world, cfg, catalog)
     #prelude_shopping(game)
