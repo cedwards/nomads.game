@@ -11,7 +11,7 @@
 # - Device toggles and fuel consumption
 
 import yaml
-import os, sys, math, json, random
+import re, os, sys, math, json, random
 from collections import defaultdict
 
 TURN_MINUTES = 15
@@ -477,6 +477,65 @@ class Game:
         self.npcs = npcs or {}
         self.npc_state = {}  # per-npc: rep, flags, quest progress
 
+    def look_vehicle(self):
+        v = VEHICLES[self.vehicle_type]
+        print(f"{self.vehicle_color.title()} {v['label']} — {self.player_name} ({self.job.replace('_',' ')})")
+        if self.mode == 'electric':
+            print(f"Drive: EV {int(self.ev_battery)}% (~{self.ev_range_mi} mi)")
+        else:
+            print(f"Drive: Fuel {self.fuel_gal:.1f} gal (~{int(self.fuel_gal*self.mpg)} mi)")
+        print(f"House: {int(self.battery)}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)")
+        print(f"Harvest: Solar {self.solar_watts:.0f}W (cap {self.solar_cap_watts}W), Wind {self.wind_watts:.0f}W (cap {self.wind_cap_watts}W)")
+        print(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}L, Food {self.food}/{self.food_cap_rations}")
+        # Quick device summary
+        on = []
+        for k, d in self.devices.items():
+            if d.get('owned') and d.get('on'):
+                on.append(f"{k}~{d.get('amps',0)}A")
+        if on:
+            print("Devices ON:", ", ".join(on))
+    
+    def look_pet(self):
+        if not self.pet:
+            print("You travel solo. (ADOPT PET at a rescue meetup.)"); return
+        p = self.pet
+        print(f"{p.name} — Bond {int(p.bond)} | Energy {int(p.energy)} | Alert {int(p.alert)} | Guard {'ON' if p.guard_mode else 'OFF'}")
+    
+    def look_npc(self, who):
+        who = (who or '').strip().lower()
+        crew = self.npcs_here_now()
+        if not who:
+            if not crew:
+                print(COL.yellow("No one around to size up.")); return
+            print(COL.grey("Nearby people:"))
+            for n in crew:
+                print(f"  - {n['name']} — {n.get('title','')} [{n['id']}]")
+            return
+        # match by id or display name
+        target = next((n for n in crew if n['id'].lower()==who or n['name'].lower()==who), None)
+        if not target:
+            print(COL.yellow("They're not here right now.")); return
+        print(f"{target['name']} — {target.get('title','')}")
+        topics = ((target.get('dialogue') or {}).get('topics') or {})
+        if topics:
+            print("Topics:", ", ".join(topics.keys()))
+        if "shop" in target:
+            print(f"Trades gear. Try: TRADE {target['id']}")
+    
+    def look_item(self, item_id):
+        key = (item_id or '').strip().lower()
+        if not key:
+            print("LOOK ITEM <id>. Use SHOP/TRADE to list ids."); return
+        it = (getattr(self, 'catalog', {}) or {}).get(key)
+        if not it:
+            print("Unknown item id."); return
+        name  = it.get('name', key)
+        price = it.get('price', '?')
+        eff   = it.get('effects', {})
+        print(f"{key} — {name} (${price})")
+        for k, v in eff.items():
+            print(f"  effect: {k} = {v}")
+
     def report_pet_status(self):
         print(f"Name: {self.pet.name}")
         print(f"Breed: {self.pet.breed}")
@@ -846,6 +905,7 @@ class Game:
         ansi = n.get('ansi')
         if desc: print(COL.green(desc))
         input(COL.blue("Press ENTER to continue..."))
+        os.system('cls' if os.name == 'nt' else 'clear')
         if ansi: 
             with open(ansi, "r", encoding="utf-8") as f: 
                 ansi_content = f.read()
@@ -956,16 +1016,16 @@ class Game:
 
         # Base gains/risks
         if style == 'paid':
-            energy_gain, morale_gain, pet_energy, pet_bond = 20, 10, 18, 2
+            energy_gain, morale_gain, pet_energy, pet_bond = 40, 10, 18, 2
             ranger_knock = 0.01; note = "Paid site: services, permits, quiet-ish."
         elif style == 'stealth':
-            energy_gain, morale_gain, pet_energy, pet_bond = 15, 6, 14, 2
+            energy_gain, morale_gain, pet_energy, pet_bond = 30, 8, 14, 2
             ranger_knock = 0.08; note = "Stealth spot: close to town, but keep it low-key."
             if self.node().get('pet_rules') == 'strict': ranger_knock += 0.06
             if self.pet and self.pet.alert > 60:         ranger_knock += 0.04
         else:  # dispersed
-            energy_gain, morale_gain, pet_energy, pet_bond = 23, 12, 20, 3
-            if self.has_tent: energy_gain += 4; morale_gain += 3; pet_energy += 3; note = "Dispersed with tent: free, solitary, and cozy under the stars."
+            energy_gain, morale_gain, pet_energy, pet_bond = 45, 20, 20, 3
+            if self.has_tent: energy_gain += 5; morale_gain += 5; pet_energy += 5; note = "Dispersed with tent: free, solitary, and cozy under the stars."
             else: note = "Dispersed site: free, solitary, sky for days."
             in_park = self.location in {'zion','bryce','arches','canyonlands','capitol_reef'}
             ranger_knock = 0.04 if in_park else 0.005
@@ -1457,6 +1517,7 @@ class Game:
 
 HELP_TEXT = """Commands:
   ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
+  ASK <npc> ABOUT <topic>
   CAMP [stealth|paid|dispersed]
   COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
   COOK | EAT
@@ -1468,13 +1529,16 @@ HELP_TEXT = """Commands:
   HIKE
   INVENTORY | INV | I
   LOOK | STATUS | MAP
+  LOOK NPC <id|name> | LOOK PET | LOOK ITEM <id> | LOOK VEHICLE
   MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
+  PEOPLE | TALK <npc>
   PET
   POWER | ELECTRICAL | BATTERY
   READ
   ROUTE TO <place> | DRIVE
   SHOP | BUY <item_id> [qty]
   SOLAR
+  TRADE <npc>
   WATCH <something>
   WEATHER
   WIND
@@ -1487,6 +1551,28 @@ def make_cli_prompt(game):
     netA, _, _, _ = game.compute_current()
     mode = f"EV {int(game.ev_battery)}%" if game.mode=='electric' else f"Fuel {game.fuel_gal:.1f}g"
     return COL.prompt(f"[{t}] > ")
+
+# --- NPC command parsing helper ---
+def parse_ask_command(line: str):
+    """
+    Accepts either:
+      ASK <who> ABOUT <topic>
+      ASK <who> <topic>
+    Returns (who, topic) lowercased & stripped; or (None, None) if no match.
+    """
+    m = re.match(r'^\s*ASK\s+(.+?)(?:\s+ABOUT\s+(.+))?\s*$', line, re.IGNORECASE)
+    if not m:
+        return None, None
+    who = (m.group(1) or "").strip()
+    topic = (m.group(2) or "").strip()
+    if not topic:
+        # fallback: split remaining words after first token as topic
+        parts = who.split(None, 1)
+        if len(parts) == 2:
+            who, topic = parts[0], parts[1]
+        else:
+            return None, None
+    return who.lower(), topic.lower()
 
 def load_world():
     here = os.path.dirname(os.path.abspath(__file__))
@@ -1548,6 +1634,7 @@ def main():
         welcome_txt = f.read()
     print(COL.blue(welcome_txt))
     input(COL.blue("Press ENTER to continue..."))
+    os.system('cls' if os.name == 'nt' else 'clear')
 
     cfg = character_creation()
     game = Game(world, cfg, catalog, npcs=npcs)
@@ -1566,7 +1653,45 @@ def main():
         u = line.upper()
 
         if u in ('HELP','?'): print(COL.grey(HELP_TEXT))
-        elif u in ('LOOK','L'): game.look()
+        elif u.startswith('LOOK'):
+            # Forms:
+            #   LOOK
+            #   LOOK NPC <who>
+            #   LOOK PET
+            #   LOOK ITEM <id>
+            #   LOOK VEHICLE
+            parts = line.split()
+            if len(parts) == 1 or parts[1].upper() in ('', 'AROUND', 'HERE'):
+                game.look()
+            else:
+                sub = parts[1].lower()
+                rest = line.split(' ', 2)[2] if len(parts) > 2 else ''
+                if sub in ('npc','person','people'):
+                    game.look_npc(rest)
+                elif sub in ('pet',):
+                    game.look_pet()
+                elif sub in ('item','items','gear'):
+                    game.look_item(rest)
+                elif sub in ('vehicle','rig','van','bus','car'):
+                    game.look_vehicle()
+                else:
+                    # smart guess: try NPC by that token, then item, then fall back
+                    token = sub if not rest else f"{sub} {rest}"
+                    token = token.strip()
+                    # NPC first
+                    crew = game.npcs_here_now()
+                    match = next((n for n in crew if n['id'].lower()==token.lower()
+                                  or n['name'].lower()==token.lower()), None)
+                    if match:
+                        game.look_npc(token)
+                    elif token.lower() == 'pet':
+                        game.look_pet()
+                    elif token.lower() in ('vehicle','rig'):
+                        game.look_vehicle()
+                    elif getattr(game, 'catalog', {}).get(token.lower()):
+                        game.look_item(token)
+                    else:
+                        game.look()
         elif u in ('STATUS','STATS'): game.status()
         elif u == 'MAP': game.show_map()
         elif u.startswith('ROUTE TO THE '): game.route_to(line.split(' ', 3)[3])
@@ -1591,6 +1716,27 @@ def main():
         elif u.startswith('REFUEL'):
             parts = line.split(); gallons = parts[1] if len(parts) > 1 else ''
             game.refuel(gallons)
+        elif u == 'PEOPLE':
+            game.people()
+        elif u.startswith('TALK '):
+            who = line.split(' ', 1)[1].strip()
+            if not who:
+                print("Use: TALK <npc>")
+            else:
+                game.talk(who)
+        elif u.startswith('ASK '):
+            who, topic = parse_ask_command(line)
+            if not who or not topic:
+                print("Use: ASK <npc> ABOUT <topic>")
+            else:
+                game.ask(who, topic)
+        elif u.startswith('TRADE'):
+            parts = line.split(maxsplit=1)
+            who = parts[1].strip() if len(parts) > 1 else ''
+            if not who:
+                print("Use: TRADE <npc>")
+            else:
+                game.trade(who)
         elif u == 'ADOPT PET': game.adopt_pet()
         elif u == "FEED PET": game.feed_pet()
         elif u == 'WATER PET': game.water_pet()
@@ -1628,8 +1774,6 @@ def main():
         elif u == "ENERGY": game.report_energy()
         elif u == "PET": game.report_pet_status()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
-        elif u.startswith('TRADE '): game.trade(line.split(' ', 1)[1])
-        elif u.startswith('TALK '): game.talk(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))
 
