@@ -91,7 +91,7 @@ items:
       water_cap_gallons: "+10"
       food_cap_rations: "+5"
   diesel:
-    requires: { level: 5 }
+    requires: { level: 1 }
     name: "Diesel Fuel"
     desc: "Jerry can full of diesel fuel (1 gallon)."
     price: 3
@@ -191,9 +191,9 @@ items:
       "device:maxfann": "install"
       "device_amps:starlink": "4.5"
   generator:
-    requires: { level: 5 }
-    name: "Generator (gasoline)"
-    desc: "Fuel-powered generator. Generates electricity and consumes gasoline."
+    requires: { level: 1 }
+    name: "Generator (diesel)"
+    desc: "Fuel-powered generator. Generates electricity and consumes diesel."
     price: 400
     effects:
       "device:generator": "install"

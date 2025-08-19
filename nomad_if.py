@@ -523,15 +523,16 @@ class Game:
         # Electrical loads
         self.base_draw_amps = 0.8  # standby draw
         self.devices = {
-            'camera':        {'owned': False, 'on': False, 'amps': 1.0},
-            'heater':        {'owned': False, 'on': False, 'amps': 1.2},
-            'fridge':        {'owned': False, 'on': False, 'amps': 2.0},
-            'laptop':        {'owned': False, 'on': False, 'amps': 3.0},
-            'starlink':      {'owned': False, 'on': False, 'amps': 4.0},
-            'weboost':       {'owned': False, 'on': False, 'amps': 4.5},
-            'stove':         {'owned': False},
-            'jetboil':       {'owned': False},
-            'mousetrap':     {'owned': False},
+            'camera':    {'owned': False, 'on': False, 'amps': 1.0},
+            'heater':    {'owned': False, 'on': False, 'amps': 1.2},
+            'fridge':    {'owned': False, 'on': False, 'amps': 2.0},
+            'laptop':    {'owned': False, 'on': False, 'amps': 3.0},
+            'starlink':  {'owned': False, 'on': False, 'amps': 4.0},
+            'weboost':   {'owned': False, 'on': False, 'amps': 4.5},
+            'stove':     {'owned': False},
+            'jetboil':   {'owned': False},
+            'mousetrap': {'owned': False},
+            'generator': {'owned': False, 'on': False, 'charge_amps': 16.67, 'burn_gph': 0.15, 'fuel': 'diesel'},
         }
         self.diesel_can_gal = 0.0
         self.propane_lb     = 0.0
@@ -611,6 +612,44 @@ class Game:
             print("You hear the familiar bootup sound of your laptop")
         elif s.get('owned') and not s.get('on'):
             print(f"You need to power on your laptop (TURN LAPTOP ON).")
+
+    def manage_generator(self):
+        """query generator status"""
+        s = self.devices.get('generator')
+        if not s.get('owned'):
+            print(COL.yellow(f"You don't own a generator."))
+        elif s.get('owned') and s.get('on'):
+            # device config
+            charge_a = float(s.get('charge_amps', 0.0))
+            burn_gph = float(s.get('burn_gph', 0.0))
+            fuel_kind = (s.get('fuel') or 'diesel').lower()
+            on = bool(s.get('on', False))
+
+            # fuel levels (supports either gas or diesel cans)
+            gas = getattr(self, 'gasoline_can_gal', 0.0)
+            diesel = getattr(self, 'diesel_can_gal', 0.0)
+            fuel_level = diesel if fuel_kind == 'diesel' else gas
+            fuel_label = f"{fuel_level:.2f} gal {fuel_kind}"
+
+            # “Currently generated” amps = charge rate only when ON + fuel available (for continuous mode).
+            # If you only use session-based CHARGE generator, this will be 0 unless ON.
+            effective_a = charge_a if (on and fuel_level > 0 and burn_gph > 0) else 0.0
+
+            # How long could it run from the can?
+            hours_left = (fuel_level / burn_gph) if burn_gph > 0 else float('inf')
+
+            # Charging efficiency estimates (same model you already use)
+            cap_ah = 100.0 * getattr(self, 'house_cap', 1.0)       # effective 12V house capacity
+            house_pct_per_h = (charge_a / cap_ah) * 100.0 if cap_ah > 0 else 0.0
+            ev_pct_per_h = (charge_a * 12.0 / 1000.0) * 4.0        # ~4%/h per kW rule
+
+            print(COL.grey(f"  Output: {charge_a:.1f}A"))
+            print(COL.grey(f"  Burn Rate: {burn_gph:.2f} gal/h ({fuel_kind})"))
+            print(COL.grey(f"  Runtime left: {('∞' if hours_left==float('inf') else f'{hours_left:.1f}h')}"))
+            print(COL.grey(f"  Fuel remaining: {fuel_label} "))
+            print(COL.grey(f"  Per hour (est.): House +{house_pct_per_h:.1f}% EV +{ev_pct_per_h:.1f}%"))
+        elif s.get('owned') and not s.get('on'):
+            print(COL.yellow(f"You need to connect your generator (TURN GENERATOR ON)."))
 
     def manage_heater(self):
         """heat level, fuel consumption, heat output"""
@@ -836,13 +875,15 @@ class Game:
         self.add_xp(int(xp), "self care")
 
     def battery_status(self):
-        battery = self.battery
-        solar_w = self._solar_input_watts_now()
-        wind_w  = self._wind_input_watts_now()
-        solar_a = solar_w / SYSTEM_VOLTAGE
-        wind_a  = wind_w  / SYSTEM_VOLTAGE
-        load_a  = self._load_amps_now()
-        net_a   = (solar_a + wind_a) - load_a
+        battery     = self.battery
+        solar_w     = self._solar_input_watts_now()
+        wind_w      = self._wind_input_watts_now()
+        solar_a     = solar_w / SYSTEM_VOLTAGE
+        wind_a      = wind_w  / SYSTEM_VOLTAGE
+        generator_a = self._generator_input_amps_now()
+        load_a      = self._load_amps_now()
+        net_a       = (solar_a + wind_a + generator_a) - load_a
+        print(COL.grey(f" Net: {net_a:.1f}A"))
         print(COL.grey(f" Load: {load_a:.1f}A"))
         print(COL.grey(f" Battery: {battery:.0f}%"))
         print(COL.grey(f" Capacity: {self.house_cap_ah:,.0f}Ah"))
@@ -851,7 +892,7 @@ class Game:
         elif net_a < 0:
             print(COL.yellow(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours"))
         elif net_a > 0:
-            print(COL.green(f" Remaining: infinite"))
+            print(COL.green(f" Remaining: ∞"))
 
     def report_time(self):
         t = minutes_to_hhmm(self.minutes)
@@ -876,17 +917,17 @@ class Game:
 
     def solar_power_status(self):
         solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
-        print(COL.grey(f"Solar Input: {self._solar_input_watts_now():,.0f}W"))
-        print(COL.grey(f"Solar Current: {solar_current:.2f}A"))
-        print(COL.grey(f"Current Capacity: {self.solar_watts:,.0f}W"))
-        print(COL.grey(f"Vehicle Capacity: {self.solar_cap_watts:,.0f}W"))
+        print(COL.grey(f"  Solar Input: {self._solar_input_watts_now():,.0f}W"))
+        print(COL.grey(f"  Solar Current: {solar_current:.2f}A"))
+        print(COL.grey(f"  Current Capacity: {self.solar_watts:,.0f}W"))
+        print(COL.grey(f"  Vehicle Capacity: {self.solar_cap_watts:,.0f}W"))
 
     def wind_power_status(self):
         wind_current = self._wind_input_watts_now() / SYSTEM_VOLTAGE
-        print(COL.grey(f"Wind Input: {self._wind_input_watts_now():,.0f}W"))
-        print(COL.grey(f"Wind Current: {wind_current:.2f}A"))
-        print(COL.grey(f"Current Capacity: {self.wind_watts:,.0f}W"))
-        print(COL.grey(f"Vehicle Capacity: {self.wind_cap_watts:,.0f}W"))
+        print(COL.grey(f"  Wind Input: {self._wind_input_watts_now():,.0f}W"))
+        print(COL.grey(f"  Wind Current: {wind_current:.2f}A"))
+        print(COL.grey(f"  Current Capacity: {self.wind_watts:,.0f}W"))
+        print(COL.grey(f"  Vehicle Capacity: {self.wind_cap_watts:,.0f}W"))
 
     def bank(self):
         print(COL.green(f"You have ${self.cash:,.2f} dollars"))
@@ -993,15 +1034,23 @@ class Game:
         return (net_a, solar_a, wind_a, load_a)
 
     def electrical_panel(self):
-        battery = self.battery
-        solar_w = self._solar_input_watts_now()
-        wind_w  = self._wind_input_watts_now()
-        solar_a = solar_w / SYSTEM_VOLTAGE
-        wind_a  = wind_w  / SYSTEM_VOLTAGE
-        load_a  = self._load_amps_now()
-        net_a   = (solar_a + wind_a) - load_a
+        battery     = self.battery
+        solar_w     = self._solar_input_watts_now()
+        wind_w      = self._wind_input_watts_now()
+        solar_a     = solar_w / SYSTEM_VOLTAGE
+        wind_a      = wind_w  / SYSTEM_VOLTAGE
+        generator_a = self._generator_input_amps_now()
+        load_a      = self._load_amps_now()
+        net_a       = (solar_a + wind_a + generator_a) - load_a
         print(COL.grey(f" Solar: {solar_w:.0f}W | {solar_a:.1f}A"))
         print(COL.grey(f" Wind: {wind_w:.0f}W | {wind_a:.1f}A"))
+        g = self.devices.get('generator')
+        if not g.get('owned'):
+            print(COL.grey(f" Generator: 0W | {generator_a:.2f}A"))
+        elif not g.get('on'):
+            print(COL.grey(f" Generator: 2000W | {generator_a:.2f}A (off)"))
+        else:
+            print(COL.grey(f" Generator: 2000W | {generator_a:.2f}A"))
         print(COL.grey(f" Load: {load_a:.1f}A"))
         print(COL.grey(f" Net: {net_a:.1f}A"))
         print(COL.grey(f" Battery: {battery:.0f}%"))
@@ -1011,9 +1060,10 @@ class Game:
         elif net_a < 0:
             print(COL.yellow(f" Remaining: {self.house_cap_ah / self._load_amps_now():.2f} hours"))
         elif net_a > 0:
-            print(COL.green(f" Remaining: infinite"))
-        print(COL.grey(f" EV Battery: {self.ev_battery:.0f}%"))
-        print(COL.grey(f" EV Range: {self.ev_range_mi:.0f} miles"))
+            print(COL.green(f" Remaining: ∞"))
+        if 'electric' in self.mode:
+            print(COL.grey(f" EV Battery: {self.ev_battery:.0f}%"))
+            print(COL.grey(f" EV Range: {self.ev_range_mi:.0f} miles"))
 
     def _solar_input_watts_now(self):
         node = self.node()
@@ -1030,6 +1080,15 @@ class Game:
         w = derive_weather(self.node(), self.minutes)
         frac = {'low':0.2,'medium':0.6,'high':1.0}[w['wind']]
         return self.wind_watts * frac
+
+    def _generator_input_amps_now(self):
+        s = self.devices.get('generator')
+        if not s.get('owned') or not s.get('on'): return 0.0
+        if 'diesel' in s.get('fuel') and self.diesel_can_gal <= 0: return 0.0
+        if 'gas' in s.get('fuel') and self.gasoline_can_gal <= 0: return 0.0
+        if s.get('owned') and s.get('on'):
+            charge_a = float(s.get('charge_amps', 0.0))
+        return charge_a
 
     def _load_amps_now(self):
         amps = self.base_draw_amps
@@ -1068,7 +1127,7 @@ class Game:
     # ------------------ Devices ------------------
     def devices_panel(self):
         print("Devices:")
-        for k in ('fridge','weboost','starlink','heater','stove','jetboil','laptop','mousetrap'):
+        for k in ('fridge','weboost','starlink','heater','stove','jetboil','laptop','mousetrap','generator'):
             d = self.devices[k]
             owned = d.get('owned', False)
             on    = d.get('on', False)
@@ -1076,7 +1135,12 @@ class Game:
             if not owned:
                 print(f"  - {k}: not installed")
             else:
-                if 'on' in d:
+                if k == 'generator' and owned:
+                    ca = d.get('charge_amps', 0.0)
+                    fuel = d.get('fuel', 'gas')
+                    print(f"  - generator: {'ON ' if on else 'off'} (~{ca:.0f}A charge; {fuel}, {self.gasoline_can_gal:.2f} gal)" if fuel=='gas' else f"  - generator: {'ON ' if on else 'off'} (~{ca:.0f}A charge; diesel, {self.diesel_can_gal:.2f} gal)")
+
+                elif k != 'generator' and 'on' in d:
                     print(f"  - {k}: {'ON ' if on else 'off'}  (~{amps}A when on)")
                 else:
                     print(f"  - {k}: installed")
@@ -1110,6 +1174,37 @@ class Game:
                 burn = 0.15 * (TURN_MINUTES/60.0)
                 if self.diesel_can_gal >= burn: self.diesel_can_gal -= burn
                 else: self.diesel_can_gal = 0.0; self.devices['heater']['on'] = False
+
+            # Passive generator charging per tick (if ON)
+            gd = self.devices.get('generator', {})
+            if gd.get('owned') and gd.get('on'):
+                # fuel burn
+                burn_gal = gd.get('burn_gph', 0.0) * (TURN_MINUTES/60.0)
+                if gd.get('fuel','diesel') == 'diesel':
+                    if self.diesel_can_gal >= burn_gal:
+                        self.diesel_can_gal -= burn_gal
+                    else:
+                        self.devices['generator']['on'] = False
+                        print("Generator stops (out of fuel).")
+                        burn_gal = 0.0
+                else:
+                    if self.gasoline_can_gal >= burn_gal:
+                        self.gasoline_can_gal -= burn_gal
+                    else:
+                        self.devices['generator']['on'] = False
+                        print("Generator stops (out of fuel).")
+                        burn_gal = 0.0
+            
+                if burn_gal > 0.0:
+                    # add house %
+                    cap_ah  = 100.0 * getattr(self, 'house_cap', 1.0)
+                    add_pct = (gd.get('charge_amps',0.0) * (TURN_MINUTES/60.0)) / cap_ah * 100.0
+                    self.battery = clamp(self.battery + add_pct, 0, 100)
+                    # trickle EV too if electric mode
+                    if self.mode == 'electric':
+                        watts = gd.get('charge_amps',0.0) * 12.0
+                        ev_add = (watts/1000.0) * 4.0 * (TURN_MINUTES/60.0)
+                        self.ev_battery = clamp(self.ev_battery + ev_add, 0, 100)
 
             self.minutes += TURN_MINUTES
             self.water  = clamp(self.water - 0.03, 0, self.water_cap_gallons)
@@ -1709,7 +1804,7 @@ class Game:
     def charge(self, method):
         method = (method or '').lower()
         if self.mode != 'electric': print(COL.yellow("You're not in electric mode. Switch with: MODE electric")); return
-        if method not in ('station','solar','wind'): print(COL.yellow("CHARGE how? Options: station | solar | wind")); return
+        if method not in ('station','solar','wind','generator'): print(COL.yellow("CHARGE how? Options: station | solar | wind")); return
 
         if method == 'station':
             node = self.node()
@@ -1730,6 +1825,47 @@ class Game:
             self.battery = clamp(self.battery + add_pct, 0, 100)
             self.advance(int(hours*60))
             print(COL.green(f"Solar charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%."))
+
+        elif method == 'generator':
+            d = self.devices.get('generator', {})
+            if not d.get('owned'):
+                print("You don’t have a generator installed."); return
+
+            hours = 1.0  # one-hour session (tweakable)
+            charge_a = float(d.get('charge_amps', 0.0))
+            burn_gph = float(d.get('burn_gph', 0.0))
+            fuel_kind = d.get('fuel', 'diesel')
+
+            # Fuel check
+            need = burn_gph * hours
+            if fuel_kind == 'diesel':
+                if self.diesel_can_gal < need:
+                    print(f"Need {need:.2f} gal diesel; you have {self.diesel_can_gal:.2f}. BUY diesel <gallons> first."); return
+                self.diesel_can_gal -= need
+            else:
+                if self.gasoline_can_gal < need:
+                    print(f"Need {need:.2f} gal gasoline; you have {self.gasoline_can_gal:.2f}. BUY gasoline <gallons> first."); return
+                self.gasoline_can_gal -= need
+
+            # House battery % gain from amps * hours, scaled by effective house capacity
+            cap_ah = 100.0 * getattr(self, 'house_cap', 1.0)  # same model you already use
+            house_add_pct = (charge_a * hours) / cap_ah * 100.0
+
+            # EV battery % gain — approximate from watts into a DC charger
+            watts = charge_a * 12.0
+            ev_add_pct = (watts / 1000.0) * 4.0 * hours   # you already use ~4%/h per kW elsewhere
+
+            # Apply
+            self.battery = clamp(self.battery + house_add_pct, 0, 100)
+            if self.mode == 'electric':
+                self.ev_battery = clamp(self.ev_battery + ev_add_pct, 0, 100)
+
+            # Time passes; base loads/solar/wind still tick in advance()
+            self.advance(int(hours*60))
+
+            print(f"Generator ran {hours:.1f}h → House +{house_add_pct:.1f}%"
+                  + (f", EV +{ev_add_pct:.1f}%" if self.mode=='electric' else "")
+                  + f". Fuel used {need:.2f} gal.")
         else:
             hours = 2.0
             w = derive_weather(self.node(), self.minutes)
@@ -2169,6 +2305,7 @@ def main():
         elif u == "FRIDGE": game.manage_fridge()
         elif u == "HEATER": game.manage_heater()
         elif u == "LAPTOP": game.manage_laptop()
+        elif u == "GENERATOR": game.manage_generator()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))
