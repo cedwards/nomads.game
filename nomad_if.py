@@ -1183,7 +1183,7 @@ class Game:
 
     def route_to(self, dest_key):
         nid = self.world.find_node(dest_key)
-        if not nid: print("I don't recognize that destination."); return
+        if not nid: print(COL.yellow("I don't recognize that destination.")); return
         if nid == self.location: print(COL.yellow("You're already here.")); return
         path, total_turns = dijkstra_route(self.world, self.location, nid, self.minutes)
         if not path: print(COL.red("No route found.")); return
@@ -1194,7 +1194,7 @@ class Game:
         print(COL.grey("Use: DRIVE to set off."))
 
     def drive(self):
-        if not self.route: print(COL.red("No route plotted. Use: ROUTE TO <place>")); return
+        if not self.route: print(COL.yellow("No route plotted. Use: ROUTE TO <place>")); return
         if self.route_idx >= len(self.route): print(COL.yellow("Route already complete.")); return
         frm, to, conn = self.route[self.route_idx]
         turns, w = edge_drive_turns(self.world, frm, conn, self.minutes)
@@ -1726,7 +1726,7 @@ class Game:
             site = {'excellent':1.0, 'good':0.75, 'fair':0.5, 'poor':0.25}.get(sol, 0.5)
             uv_norm = clamp(derive_weather(self.node(), self.minutes)['uv'] / max(1.0, get_season(self.minutes)[1].get('uv_peak', 8.0)), 0, 1)
             add_pct = (self.solar_watts / 1000.0) * 8.0 * site * uv_norm
-            if add_pct <= 0.1: print("You need solar panels installed to gain meaningful charge.")
+            if add_pct <= 0.1: print(COL.yellow("You need solar panels installed to gain meaningful charge."))
             self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100)
             self.battery = clamp(self.battery + add_pct, 0, 100)
             self.advance(int(hours*60))
@@ -1736,7 +1736,7 @@ class Game:
             w = derive_weather(self.node(), self.minutes)
             wind_factor = {'low':0.2,'medium':0.6,'high':1.0}[w['wind']]
             add_pct = (self.wind_watts / 300.0) * 2.0 * wind_factor
-            if add_pct <= 0.1: print("You need a wind turbine (and some wind) to gain meaningful charge.")
+            if add_pct <= 0.1: print(COL.yellow("You need a wind turbine (and some wind) to gain meaningful charge."))
             self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100)
             self.battery = clamp(self.battery + add_pct, 0, 100)
             self.advance(int(hours*60))
@@ -1744,14 +1744,14 @@ class Game:
 
     def refuel(self, gallons):
         node = self.node()
-        if self.mode != 'fuel': print("You're not in fuel mode. Switch with: MODE fuel"); return
+        if self.mode != 'fuel': print(COL.yellow("You're not in fuel mode. Switch with: MODE fuel")); return
         loc_resources = node.get('resources', {}) or {}.get('gas')
         if not loc_resources['gas']: print(COL.yellow("No fuel stations here.")); return
         try: g = float(gallons)
-        except Exception: print("REFUEL <gallons>"); return
-        if g <= 0: print("That’s not how fuel works."); return
+        except Exception: print(COL.yellow("REFUEL <gallons>")); return
+        if g <= 0: print(COL.yellow("That’s not how fuel works.")); return
         if g + self.fuel_gal >= self.fuel_tank_gal: 
-            print("That's too much fuel."); return
+            print(COL.yellow("That's too much fuel.")); return
         else:
             price = 3.00; cost = g * price
             if self.cash < cost: print(COL.yellow(f"Need ${cost:.0f}; you have ${self.cash:,.2f}.")); return
@@ -1793,7 +1793,7 @@ class Game:
         self.add_xp(int(xp), "pet adoption")
 
     def feed_pet(self):
-        if not self.pet: print("You travel alone."); return
+        if not self.pet: print(COL.yellow("You travel alone.")); return
         if self.food <= 0: print(COL.red("You have nothing to share.")); return
         self.food -= 1; self.pet.bond = clamp(self.pet.bond + 6, 0, 100); self.advance(TURN_MINUTES)
         print(COL.grey(f"You feed {self.pet.name}. Bond warms."))
@@ -1801,7 +1801,7 @@ class Game:
         self.add_xp(int(xp), "pet care")
 
     def water_pet(self):
-        if not self.pet: print("You travel alone."); return
+        if not self.pet: print(COL.yellow("You travel alone.")); return
         if self.water < 0.3: print(COL.red("Water is too low.")); return
         self.water = clamp(self.water - 0.3, 0, self.water_cap_gallons); self.pet.bond = clamp(self.pet.bond + 3, 0, 100); self.advance(TURN_MINUTES//2)
         print(COL.grey(f"{self.pet.name} drinks happily."))
@@ -1809,21 +1809,21 @@ class Game:
         self.add_xp(int(xp), "pet care")
 
     def walk_pet(self):
-        if not self.pet: print("You travel alone."); return
+        if not self.pet: print(COL.yellow("You travel alone.")); return
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
         print(COL.grey(f"You walk {self.pet.name}. Spirits lift."))
         xp = clamp(self.xp + 10, 0, 25)
         self.add_xp(int(xp), "pet care")
 
     def wash_pet(self):
-        if not self.pet: print("You travel alone."); return
+        if not self.pet: print(COL.yellow("You travel alone.")); return
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
         print(COL.grey(f"You wash {self.pet.name}. Bubbles everywhere!"))
         xp = clamp(self.xp + 8, 0, 16)
         self.add_xp(int(xp), "pet care")
 
     def play_with_pet(self):
-        if not self.pet: print("You travel alone."); return
+        if not self.pet: print(COL.yellow("You travel alone.")); return
         self.pet.bond = clamp(self.pet.bond + 5, 0, 100); self.morale = clamp(self.morale + 4, 0, 100); self.advance(20)
         vehicle = self.vehicle_type.replace('_',' ')
         print(COL.grey(f"You play tug and fetch with {self.pet.name}. Laughter echoes in the {vehicle}."))
@@ -1831,7 +1831,7 @@ class Game:
         self.add_xp(int(xp), "play")
 
     def command_pet(self, verb):
-        if not self.pet: print("You travel alone."); return
+        if not self.pet: print(COL.yellow("You travel alone.")); return
         v = (verb or '').strip().upper()
         if v == 'GUARD':
             self.pet.guard_mode = True; self.pet.alert = clamp(self.pet.alert + 10, 0, 100)
@@ -1855,7 +1855,7 @@ class Game:
             self.morale = clamp(self.morale + 2, 0, 100)
             print(COL.grey(f"{self.pet.name} returns triumphantly with... a glove? Sure, that tracks."))
         else:
-            print("Available: HEEL, SEARCH, GUARD, CALM, FETCH.")
+            print(COL.grey("Available: HEEL, SEARCH, GUARD, CALM, FETCH."))
 
 # ---------------------------- IO & Loop -------------------------------
 
