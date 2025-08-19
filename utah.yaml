@@ -37,6 +37,7 @@ nodes:
       - { id: flash_flood_watch, chance: 0.06, tags: ["monsoon"] }
     connections:
       - { to: bryce, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
+      - { to: capitol_reef, road: "highway", miles: 176, grade: "moderate", wind_exposure: "high" }
 
   - id: bryce
     description: |
@@ -64,12 +65,13 @@ nodes:
     elevation_ft: 8000
     season_rules: ["cold_nights", "snow_shoulders"]
     resources: { water: "campground", food: "nearby_town", solar: "good", wind: "good" }
-    pet_rules: "moderate"
+    pet_rules: "strict"
     fuel_price: 3.55
     gigs:
       - { id: star_party, window: "night_clear", payout: [90, 180], rep: { rangers: 1 } }
     events:
       - { id: altitude_fatigue, chance: 0.10, tags: ["cold","energy"] }
+      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
     connections:
       - { to: zion, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
       - { to: capitol_reef, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
@@ -108,8 +110,9 @@ nodes:
     events:
       - { id: washout_detour, chance: 0.08, tags: ["monsoon","detour"] }
     connections:
-      - { to: bryce, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
-      - { to: san_rafael_swell, road: "scenic", miles: 65, grade: "moderate", wind_exposure: "medium" }
+      - { to: green_river, road: "scenic", miles: 85, grade: "moderate", wind_exposure: "medium" }
+      - { to: bryce, road: "scenic", miles: 112, grade: "mixed", wind_exposure: "medium" }
+      - { to: zion, road: "highway", miles: 176, grade: "moderate", wind_exposure: "low" }
 
   - id: arches
     description: |
@@ -144,9 +147,11 @@ nodes:
       - { id: delicate_dawn, window: "sunrise", payout: [140, 260], rep: { tourists: 1 } }
     events:
       - { id: permit_lottery, chance: 0.10, tags: ["access","timing"] }
+      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
     connections:
       - { to: moab, road: "highway", miles: 5, grade: "flat", wind_exposure: "low" }
       - { to: canyonlands, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
+      - { to: green_river, road: "highway", miles: 49, grade: "flat", wind_exposure: "high" }
 
   - id: canyonlands
     description: |
@@ -182,10 +187,11 @@ nodes:
       - { id: island_sky_set, window: "golden_hour", payout: [120, 220], rep: { nomads: 1 } }
     events:
       - { id: water_scarcity, chance: 0.12, tags: ["water","logistics"] }
+      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
     connections:
       - { to: moab, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
       - { to: arches, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
-      - { to: valley_of_gods, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
+      - { to: green_river, road: "highway", miles: 63, grade: "flat", wind_exposure: "high" }
 
   - id: moab
     description: |
@@ -220,10 +226,10 @@ nodes:
     events:
       - { id: rescue_event, chance: 0.12, tags: ["pets","community"] }
     connections:
-      - { to: arches, road: "highway", miles: 5, grade: "flat", wind_exposure: "low" }
+      - { to: arches, road: "highway", miles: 3, grade: "flat", wind_exposure: "low" }
       - { to: canyonlands, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
-      - { to: san_rafael_swell, road: "mixed", miles: 110, grade: "light", wind_exposure: "high" }
-      - { to: valley_of_gods, road: "highway", miles: 120, grade: "mixed", wind_exposure: "high" }
+      - { to: green_river, road: "highway", miles: 52, grade: "flat", wind_exposure: "high" }
+      - { to: valley_of_gods, road: "highway", miles: 122, grade: "mixed", wind_exposure: "high" }
 
   - id: san_rafael_swell
     description: |
@@ -259,9 +265,9 @@ nodes:
       - { id: wind_watch, chance: 0.22, tags: ["wind","power_boon"] }
       - { id: paw_cactus, chance: 0.08, req: ["pet"], effect: "pet_paw_health--" }
     connections:
+      - { to: green_river, road: "highway", miles: 66, grade: "flat", wind_exposure: "high" }
       - { to: moab, road: "mixed", miles: 110, grade: "light", wind_exposure: "high" }
-      - { to: capitol_reef, road: "scenic", miles: 65, grade: "moderate", wind_exposure: "medium" }
-      - { to: bonneville_salt_flats, road: "highway", miles: 160, grade: "mixed", wind_exposure: "high" }
+      - { to: bonneville_salt_flats, road: "highway", miles: 279, grade: "mixed", wind_exposure: "high" }
 
   - id: bonneville_salt_flats
     description: |
@@ -290,7 +296,7 @@ nodes:
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]
     resources: { water: "bring_lots", food: "scarce", solar: "excellent", wind: "fair" }
-    pet_rules: "moderate"
+    pet_rules: "friendly"
     fuel_price: 3.66
     gigs:
       - { id: salt_and_stars, window: "night_clear", payout: [150, 260], rep: { tourists: 1 } }
@@ -298,7 +304,8 @@ nodes:
       - { id: corrosion_check, chance: 0.10, tags: ["maintenance"] }
     connections:
       - { to: san_rafael_swell, road: "highway", miles: 160, grade: "mixed", wind_exposure: "high" }
-      - { to: mirror_lake_highway, road: "highway", miles: 150, grade: "mixed", wind_exposure: "medium" }
+      - { to: green_river, road: "highway", miles: 290, grade: "mixed", wind_exposure: "high" }
+      - { to: mirror_lake_highway, road: "highway", miles: 181, grade: "mixed", wind_exposure: "wind" }
 
   - id: mirror_lake_highway
     description: |
@@ -334,8 +341,9 @@ nodes:
     events:
       - { id: bear_check, chance: 0.06, tags: ["wildlife","storage"] }
     connections:
-      - { to: bonneville_salt_flats, road: "highway", miles: 150, grade: "mixed", wind_exposure: "medium" }
-      - { to: san_rafael_swell, road: "highway", miles: 250, grade: "mixed", wind_exposure: "high" }
+      - { to: bonneville_salt_flats, road: "highway", miles: 181, grade: "mixed", wind_exposure: "medium" }
+      - { to: san_rafael_swell, road: "highway", miles: 191, grade: "mixed", wind_exposure: "high" }
+      - { to: green_river, road: "highway", miles: 194, grade: "mixed", wind_exposure: "high" }
 
   - id: valley_of_gods
     description: |
@@ -369,6 +377,79 @@ nodes:
     events:
       - { id: dust_storm, chance: 0.10, tags: ["wind","visibility"] }
     connections:
-      - { to: zion, road: "highway", miles: 155, grade: "mixed", wind_exposure: "medium" }
-      - { to: moab, road: "highway", miles: 120, grade: "mixed", wind_exposure: "high" }
-      - { to: canyonlands, road: "highway", miles: 140, grade: "mixed", wind_exposure: "high" }
+      - { to: moab, road: "highway", miles: 125, grade: "mixed", wind_exposure: "high" }
+      - { to: arches, road: "mixed", miles: 128, grade: "mixed", wind_exposure: "high" }
+      - { to: canyonlands, road: "highway", miles: 155, grade: "mixed", wind_exposure: "high" }
+
+  - id: dead_horse_point
+    description: |
+      Dead Horse Point State Park is one of the most breathtaking overlooks in the
+      American Southwest, perched high above the sculpted canyons of the Colorado
+      River. Standing on the rim feels like stepping onto the edge of the world—2,000
+      feet of sheer drop plunges down to a river that glimmers like a ribbon of
+      silver in the desert sun. From the point, your eyes sweep across an endless
+      maze of sandstone cliffs, buttes, and mesas, all painted in layers of crimson,
+      ochre, and gold. At sunrise, the rocks ignite with fiery hues; at sunset, the
+      landscape cools into purples and blues, with shadows stretching like fingers
+      across the canyon floor.
+      
+      The park’s name comes from a frontier legend: cowboys once used the narrow neck
+      of land as a corral, but the horses left behind perished under the harsh desert
+      sun. Today, the place carries a haunting beauty—a reminder of both nature’s
+      grandeur and its unforgiving edge. The air smells faintly of sagebrush, and
+      ravens wheel overhead on desert thermals. In the stillness, it feels timeless,
+      a sacred vantage point where earth and sky meet. Dead Horse Point isn’t just a
+      view; it’s a stage for awe, humbling anyone who stands at its edge.
+
+      According to legend, the park is so named because of its use as a natural
+      corral by cowboys in the 19th century, where horses often died of exposure.
+    name: "Dead Horse Point"
+    biome: desert
+    elevation_ft: 5900
+    season_rules: ["monsoon_cells", "desert_extremes"]
+    resources: { water: "haul", food: "haul", solar: "excellent", wind: "excellent" }
+    pet_rules: "moderate"
+    gigs:
+      - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
+    events:
+      - { id: dust_storm, chance: 0.10, tags: ["wind","visibility"] }
+    connections:
+      - { to: canyonlands, road: "highway", miles: 11, grade: "mixed", wind_exposure: "high" }
+      - { to: arches, road: "mixed", miles: 27, grade: "mixed", wind_exposure: "high" }
+      - { to: moab, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
+
+  - id: green_river
+    description: |
+      Green River, Utah is a curious desert town that feels both tucked away and wide
+      open to the horizon. It lies along the banks of the river that gave it its
+      name, where the slow, silt-laden water threads through a stark landscape of
+      barren mesas and red sandstone cliffs. At first glance, the town seems
+      modest—gas stations, diners, and motels lining the old highway—but beneath that
+      veneer it carries the charm of a place shaped by resilience and the desert’s
+      quiet rhythm.
+      
+      The air here is dry and sharp, tinged with the smell of dust and alfalfa from
+      nearby fields. Once famous as a riverboat stop and railroad junction, Green
+      River now greets travelers on their way to Moab, Goblin Valley, or Canyonlands.
+      Yet it has a character all its own. The town celebrates its identity as the
+      “Watermelon Capital of the World,” and in late summer, truck beds brim with
+      giant, striped melons—juicy sweetness carved from desert soil.
+      
+      Evenings settle with a long, slow sunset that paints the Book Cliffs in rose
+      and amber, while the river reflects the last light like burnished copper. Green
+      River is part outpost, part oasis—a reminder of human persistence in the
+      desert’s vast, sculpted emptiness.
+    name: "Green River"
+    biome: desert
+    elevation_ft: 4078
+    season_rules: ["monsoon_cells", "desert_extremes"]
+    resources: { water: "available", food: "available", solar: "excellent", wind: "good" }
+    pet_rules: "friendly"
+    gigs:
+      - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
+    events:
+      - { id: dust_storm, chance: 0.15, tags: ["wind","visibility"] }
+    connections:
+      - { to: san_rafael_swell, road: "scenic", miles: 66, grade: "moderate", wind_exposure: "medium" }
+      - { to: moab, road: "highway", miles: 52, grade: "mixed", wind_exposure: "high" }
+      - { to: mirror_lake_highway, road: "highway", miles: 194, grade: "mixed", wind_exposure: "high" }

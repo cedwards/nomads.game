@@ -100,7 +100,7 @@ rooms:
     description: |
       Describe the Arches National Park visitor center
     exits:
-      southeast: arches_entrance_nw
+      east: arches_entrance_nw
     items: []
   - id: moabs_sand_hill
     name: Highway 191, Sand Hill

@@ -541,6 +541,46 @@ class Game:
         "sw":"southwest", "southwest":"southwest",
     }
 
+    def _network_metrics(self, device):
+        rng      = seeded_rng(self.location, self.minutes // 60, device)  # stable this hour
+        ping     = int(rng.triangular(95, 100, 98 ))
+        latency  = int(rng.triangular(9, 37, 20 ))
+        loss     = round(max(0.0, rng.triangular(0.0, 2.2, 0.2)), 2)
+        jitter   = int(rng.uniform(2, 15))
+        if device == 'starlink':
+            power    = int(rng.triangular(24, 48, 36))
+            download = round(rng.triangular(5, 222, 50), 1)
+            upload   = round(rng.triangular(5, 150, 50), 1)
+        elif device == 'weboost':
+            power    = int(rng.triangular(12, 36, 24))
+            download = round(rng.triangular(10, 50, 25), 1)
+            upload   = round(rng.triangular(5, 15, 10), 1)
+        print(f"Ping Success: {ping}%")
+        print(f"Latency: {latency}ms")
+        print(f"Power Draw: {power}W")
+        print(f"Download Speed: {download}Mbps")
+        print(f"Upload Speed: {upload}Mbps")
+        print(f"Network Jitter: {jitter}ms")
+        print(f"Packet Loss: {loss}%")
+
+    def manage_starlink(self):
+        s = self.devices.get('starlink')
+        if not s.get('owned'):
+            print(f"You don't own a starlink device.")
+        elif s.get('owned') and s.get('on'):
+            print(COL.grey(self._network_metrics('starlink')))
+        if s.get('owned') and not s.get('on'):
+            print(f"You need to power on your starlink (TURN STARLINK ON).")
+
+    def manage_weboost(self):
+        s = self.devices.get('weboost')
+        if not s.get('owned'):
+            print(f"You don't own a weboost device.")
+        elif s.get('owned') and s.get('on'):
+            print(COL.grey(self._network_metrics('weboost')))
+        elif s.get('owned') and not s.get('on'):
+            print(f"You need to power on your weboost (TURN WEBOOST ON).")
+
     def manage_laptop(self):
         """manage laptop (email, websites, etc)"""
         s = self.devices.get('laptop')
@@ -571,40 +611,6 @@ class Game:
         elif s.get('owned') and not s.get('on'):
             print(f"You need to power on your heater (TURN FRIDGE ON).")
 
-    def manage_weboost(self):
-        s = self.devices.get('weboost')
-        if not s.get('owned'):
-            print(f"You don't own a weboost device.")
-        elif s.get('owned') and s.get('on'):
-            p = random.uniform(98.5, 100.0)
-            l = random.uniform(9, 35)
-            d = random.uniform(25, 30)
-            t = random.uniform(1.1, 11.1)
-            print(f"Ping Success: {p:.2f}%")
-            print(f"Latency: {l:.0f}ms")
-            print(f"Power Draw: {d:.0f}W")
-            print(f"Throughput: {t:.2f}Mbps")
-            print(f"Outages: No outages >2s in the last 15 minutes")
-        elif s.get('owned') and not s.get('on'):
-            print(f"You need to power on your weboost (TURN WEBOOST ON).")
-
-    def manage_starlink(self):
-        s = self.devices.get('starlink')
-        if not s.get('owned'):
-            print(f"You don't own a starlink device.")
-        elif s.get('owned') and s.get('on'):
-            p = random.uniform(98.5, 100.0)
-            l = random.uniform(9, 35)
-            d = random.uniform(35, 40)
-            t = random.uniform(1.1, 55.5)
-            print(f"Ping Success: {p:.2f}%")
-            print(f"Latency: {l:.0f}ms")
-            print(f"Power Draw: {d:.0f}W")
-            print(f"Throughput: {t:.2f}Mbps")
-            print(f"Outages: No outages >2s in the last 15 minutes")
-        if s.get('owned') and not s.get('on'):
-            print(f"You need to power on your starlink (TURN STARLINK ON).")
-    
     def _available_local_map_here(self):
         """Return the map dict for this overworld location, or None."""
         for m in self.local_maps.values():
@@ -1213,7 +1219,6 @@ class Game:
         w = derive_weather(self.node(), self.minutes)
         daylight = "daylight" if is_daylight(self.minutes) else "night"
         print(COL.grey(f"{self.node()['name']} ({daylight}): {describe_weather(w)}."))
-        print(COL.grey(f"Wind: {n['resources'].get('wind','?')}."))
 
     def camp(self, style):
         style = (style or '').lower()
@@ -1591,7 +1596,7 @@ class Game:
         self.cash -= price
         print(COL.grey(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:,.2f}."))
         if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
-            print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W | wind: {self.wind_watts:,.0f}W | EV range: {self.ev_range_mi:,.0f} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
+            print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W/{self.solar_cap_watts:.0f} | wind: {self.wind_watts:,.0f}W/{self.wind_cap_watts:.0f} | EV range: {self.ev_range_mi:,.0f} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
 
     # ---------- Mode / Energy ----------
     def set_mode(self, mode):
@@ -1634,7 +1639,7 @@ class Game:
 
     def refuel(self, gallons):
         if self.mode != 'fuel': print("You're not in fuel mode. Switch with: MODE fuel"); return
-        if self.location not in 'valley_of_the_gods|bryce|moab|bonneville_salt_flats': print(COL.yellow("No fuel stations here.")); return
+        if self.location not in 'valley_of_the_gods|capitol_reef|moab|bonneville_salt_flats|green_river': print(COL.yellow("No fuel stations here.")); return
         try: g = float(gallons)
         except Exception: print("REFUEL <gallons>"); return
         if g <= 0: print("That’s not how fuel works."); return

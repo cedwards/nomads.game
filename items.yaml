@@ -72,14 +72,76 @@ items:
     effects:
       water_cap_gallons: "+10"
       food_cap_rations: "+5"
-  diesel:          { requires: { level: 5           }, name: "Diesel Fuel",     price: 3,    effects: { diesel_can_gal: "+1" } }
-  battery:         { requires: { level: 3           }, name: "House battery",   price: 1000, effects: { house_cap_ah: "+100" } }
-  ev_battery:      { requires: { level: 5           }, name: "EV battery",      price: 1200, effects: { ev_range_mi: "+40" } }
-  repair_manual:   { requires: { level: 10          }, name: "Repair Manual",   price: 1000, effects: { has_repair_manual: "+1" } }
-  guitar:          { requires: { level: 10          }, name: "Acoustic Guitar", price: 1000, effects: { has_guitar: "+1" } }
-  deluxe_tent:     { requires: { level: 10          }, name: "Deluxe Tent",     price: 1000, effects: { has_deluxe_tent: "+1" } }
-  camera:          { requires: { level: 10          }, name: "Digital Camera",  price: 700,  effects: { has_camera: "+1",  "device:camera":   "install", "device_amps:camera":   "1"   } }
-  heater:          { requires: { level: 5           }, name: "Diesel Heater",   price: 800,  effects: { comfort: "+5",     "device:heater":   "install", "device_amps:heater":   "1.2" } }
-  laptop:          { requires: { level: 3           }, name: "New Laptop",      price: 1500, effects: {                    "device:laptop":   "install", "device_amps:laptop":   "3"   } }
-  weboost:         { requires: { level: 2           }, name: "WeBoost 4G/5G",   price: 500,  effects: {                    "device:weboost":  "install", "device_amps:weboost":  "4"   } }
-  starlink:        { requires: { level: 2, exp: 0100}, name: "Starlink",        price: 700,  effects: {                    "device:starlink": "install", "device_amps:starlink": "5"   } }
+  diesel:
+    requires: { level: 5 }
+    name: "Diesel Fuel"
+    price: 3
+    effects: 
+      diesel_can_gal: "+1"
+  battery:
+    requires: { level: 3 }
+    name: "House battery"
+    price: 1000
+    effects:
+      house_cap_ah: "+100"
+  ev_battery:
+    requires: { level: 5 }
+    name: "EV battery"
+    price: 1200
+    effects:
+      ev_range_mi: "+40"
+  repair_manual:
+    requires: { level: 10 }
+    name: "Repair Manual"
+    price: 1000
+    effects:
+      has_repair_manual: "+1"
+  guitar:
+    requires: { level: 10 }
+    name: "Acoustic Guitar"
+    price: 1000
+    effects:
+      has_guitar: "+1"
+  deluxe_tent:
+    requires: { level: 10 }
+    name: "Deluxe Tent"
+    price: 1000
+    effects:
+      has_deluxe_tent: "+1"
+  camera:
+    requires: { level: 10 }
+    name: "Digital Camera"
+    price: 700
+    effects:
+      has_camera: "+1"
+      "device:camera": "install"
+      "device_amps:camera": "1"
+  heater:
+    requires: { level: 5 }
+    name: "Diesel Heater"
+    price: 800
+    effects:
+      comfort: "+5"
+      "device:heater": "install"
+      "device_amps:heater": "1.2"
+  laptop:
+    requires: { level: 3 }
+    name: "New Laptop"
+    price: 1500
+    effects:
+      "device:laptop": "install"
+      "device_amps:laptop": "3"
+  weboost:
+    requires: { level: 2 }
+    name: "WeBoost 4G/5G"
+    price: 500
+    effects:
+      "device:weboost": "install"
+      "device_amps:weboost": "4"
+  starlink:
+    requires: { level: 2, exp: 0100}
+    name: "Starlink"
+    price: 700
+    effects:
+      "device:starlink": "install"
+      "device_amps:starlink": "5"
