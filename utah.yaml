@@ -27,7 +27,7 @@ nodes:
     biome: canyon
     elevation_ft: 4000
     season_rules: ["monsoon_flash_flood", "summer_heat"]
-    resources: { water: "moderate", food: "moderate", gas: False, solar: "poor", wind: "fair" }
+    resources: { water: "moderate", food: "moderate", gas: False, ev: False, solar: "poor", wind: "fair" }
     pet_rules: "strict"
     fuel_price: 3.31
     gigs:
@@ -64,7 +64,7 @@ nodes:
     biome: high_plateau
     elevation_ft: 8000
     season_rules: ["cold_nights", "snow_shoulders"]
-    resources: { water: "campground", food: "moderate", gas: True, solar: "good", wind: "good" }
+    resources: { water: "campground", food: "moderate", gas: True, ev: True, solar: "good", wind: "good" }
     pet_rules: "strict"
     fuel_price: 3.55
     gigs:
@@ -102,7 +102,7 @@ nodes:
     biome: desert_canyon
     elevation_ft: 5500
     season_rules: ["flash_floods", "shoulder_season_best"]
-    resources: { water: "spigots", food: "nearby", gas: True, solar: "good", wind: "fair" }
+    resources: { water: "spigots", food: "nearby", gas: True, ev: True, solar: "good", wind: "fair" }
     pet_rules: "moderate"
     fuel_price: 3.35
     gigs:
@@ -142,7 +142,7 @@ nodes:
     biome: desert_canyon
     elevation_ft: 4100
     season_rules: ["timed_entry", "summer_heat"]
-    resources: { water: "visitor_center", food: "nearby", gas: False, solar: "good", wind: "fair" }
+    resources: { water: "visitor_center", food: "nearby", gas: False, ev: False, solar: "good", wind: "fair" }
     pet_rules: "strict"
     gigs:
       - { id: delicate_dawn, window: "sunrise", payout: [140, 260], rep: { tourists: 1 } }
@@ -182,7 +182,7 @@ nodes:
     elevation_ft: 6000
     shop_inventory: ["water"]
     season_rules: ["heat_exposure", "wind_mesas"]
-    resources: { water: "spigot", food: "none", gas: False, solar: "excellent", wind: "good" }
+    resources: { water: "spigot", food: "none", gas: False, ev: False, solar: "excellent", wind: "good" }
     pet_rules: "strict"
     gigs:
       - { id: island_sky_set, window: "golden_hour", payout: [120, 220], rep: { nomads: 1 } }
@@ -218,7 +218,7 @@ nodes:
     biome: town_desert
     elevation_ft: 4000
     season_rules: ["summer_heat", "cold_nights"]
-    resources: { water: "abundant", food: "abundant", gas: True, solar: "good", wind: "fair", parts: "shops" }
+    resources: { water: "abundant", food: "abundant", gas: True, ev: True, solar: "good", wind: "fair", parts: "shops" }
     pet_rules: "friendly"
     fuel_price: 3.47
     pet_adoption: true
@@ -258,7 +258,7 @@ nodes:
     biome: high_desert
     elevation_ft: 6000
     season_rules: ["windy_spring", "cold_winter_nights"]
-    resources: { water: "none", food: "none", gas: False, solar: "excellent", wind: "excellent" }
+    resources: { water: "none", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
     pet_rules: "friendly"
     gigs:
       - { id: milky_way_commission, window: "night_clear", payout: [180, 320], rep: { nomads: 1 } }
@@ -296,7 +296,7 @@ nodes:
     biome: salt_pan
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]
-    resources: { water: "none", food: "scarce", gas: True, solar: "excellent", wind: "fair" }
+    resources: { water: "none", food: "scarce", gas: True, ev: False, solar: "excellent", wind: "fair" }
     pet_rules: "friendly"
     fuel_price: 3.66
     gigs:
@@ -335,7 +335,7 @@ nodes:
     biome: alpine
     elevation_ft: 8500
     season_rules: ["snow_closure", "mosquito_summer"]
-    resources: { water: "limited", food: "none", gas: False, solar: "poor", wind: "good" }
+    resources: { water: "limited", food: "none", gas: False, ev: False, solar: "poor", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: high_lake_morning, window: "morning", payout: [80, 150], rep: { locals: 1 } }
@@ -367,11 +367,11 @@ nodes:
       isolation deepens, and the stars blanket the sky in glittering clarity. Valley
       of the Gods is both humble and grand—a place where solitude itself feels like
       the main attraction.
-    name: "Valley of the Gods / Four Corners"
+    name: "Valley of the Gods"
     biome: desert
     elevation_ft: 5200
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "none", food: "nearby", gas: True, solar: "excellent", wind: "good" }
+    resources: { water: "none", food: "nearby", gas: True, ev: False, solar: "excellent", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -405,7 +405,7 @@ nodes:
     biome: mesa_desert
     elevation_ft: 5900
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "none", food: "none", gas: False, solar: "excellent", wind: "excellent" }
+    resources: { water: "none", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
     pet_rules: "moderate"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -441,7 +441,7 @@ nodes:
     biome: desert
     elevation_ft: 4078
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "available", food: "available", gas: True, solar: "excellent", wind: "good" }
+    resources: { water: "available", food: "available", gas: True, ev: True, solar: "excellent", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -477,7 +477,7 @@ nodes:
     biome: arid
     elevation_ft: 6600
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "available", food: "none", gas: False, solar: "excellent", wind: "excellent" }
+    resources: { water: "available", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }

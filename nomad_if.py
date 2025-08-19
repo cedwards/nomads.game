@@ -500,6 +500,16 @@ class Game:
         self.work_hours_today = {}
         self.gig_cooldowns = {}
 
+        # Achievements (pending)
+        self.achievements = {
+            'camera':   {'owned': False, 'on': False, 'amps': 1.0},
+            'heater':   {'owned': False, 'on': False, 'amps': 1.2},
+            'fridge':   {'owned': False, 'on': False, 'amps': 2.0},
+            'laptop':   {'owned': False, 'on': False, 'amps': 3.0},
+            'weboost':  {'owned': False, 'on': False, 'amps': 4.5},
+            'starlink': {'owned': False, 'on': False, 'amps': 4.0},
+        }
+
         # Electrical loads
         self.base_draw_amps = 0.8  # standby draw
         self.devices = {
@@ -552,8 +562,8 @@ class Game:
             download = round(rng.triangular(5, 222, 50), 1)
             upload   = round(rng.triangular(5, 150, 50), 1)
         elif device == 'weboost':
-            power    = int(rng.triangular(12, 36, 24))
-            download = round(rng.triangular(10, 50, 25), 1)
+            power    = int(rng.triangular(24, 48, 36))
+            download = round(rng.triangular(10, 30, 20), 1)
             upload   = round(rng.triangular(5, 15, 10), 1)
         print(f"Ping Success: {ping}%")
         print(f"Latency: {latency}ms")
@@ -1543,6 +1553,18 @@ class Game:
         if self.cash < price:
             print(COL.yellow(f"Not enough cash (${self.cash:,.2f}). This costs ${price:.0f}.")); return
 
+        ## limit solar purchases to solar CAP
+        if "solar_watts" in item.get("effects"):
+            if self.solar_watts == self.solar_cap_watts:
+                print(COL.yellow(f"You're already at max solar wattage"))
+                return
+
+        ## limit wind purchases to wind CAP
+        if "wind_watts" in item.get("effects"):
+            if self.wind_watts == self.wind_cap_watts:
+                print(COL.yellow(f"You're already at max wind wattage"))
+                return
+
         purchased = None
         effects = item.get("effects", {})
         # If any effect values are strings like "+200", parse magnitude
@@ -1609,8 +1631,10 @@ class Game:
         if method not in ('station','solar','wind'): print(COL.yellow("CHARGE how? Options: station | solar | wind")); return
 
         if method == 'station':
-            if self.location != 'moab': print(COL.yellow("Fast charger unavailable here. Try Moab.")); return
-            hours = 1.0; add_pct = 40.0; cost = add_pct * 0.5
+            node = self.node()
+            loc_resources = node.get('resources', {}) or {}.get('ev')
+            if not loc_resources['ev']: print(COL.yellow("No EV chargers here.")); return
+            hours = 1.0; add_pct = 30.0; cost = add_pct * 0.5
             if self.cash < cost: print(COL.grey(f"Charging costs ${cost:.0f}. You have ${self.cash:,.2f}.")); return
             self.cash -= cost; self.ev_battery = clamp(self.ev_battery + add_pct, 0, 100); self.advance(int(hours*60))
             print(COL.grey(f"Charged {add_pct:.0f}% at station in {hours:.1f}h. EV battery: {self.ev_battery:.0f}% | Cash ${self.cash:,.2f}."))
@@ -1877,7 +1901,7 @@ def character_creation():
     else:
         mode = 'electric'
     rng = seeded_rng(name, color, vkey, jkey, mode)
-    start_cash = rng.randint(1000, 10000)
+    start_cash = rng.randint(1000, 50000)
     cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
     os.system('cls' if os.name == 'nt' else 'clear')
     print(COL.blue(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash:,.2f}')}"))
