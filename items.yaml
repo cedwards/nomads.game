@@ -58,7 +58,6 @@ items:
     name: "Mouse Trap"
     price: 10
     effects: 
-      mousetrap: "+1"
       "device:mousetrap": "install"
   solar:
     requires: { level: 2, exp: 50 }
@@ -123,6 +122,13 @@ items:
       has_camera: "+1"
       "device:camera": "install"
       "device_amps:camera": "1"
+  lights:
+    requires: { level: 1 }
+    name: "LED Lights"
+    price: 20
+    effects:
+      "device:lights": "install"
+      "device_amps:lights": "1"
   heater:
     requires: { level: 5 }
     name: "Diesel Heater"

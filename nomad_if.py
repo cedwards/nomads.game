@@ -1069,7 +1069,7 @@ class Game:
     # ------------------ Devices ------------------
     def devices_panel(self):
         print("Devices:")
-        for k in ('fridge','weboost','starlink','heater','stove','jetboil', 'laptop'):
+        for k in ('fridge','weboost','starlink','heater','stove','jetboil','laptop','mousetrap'):
             d = self.devices[k]
             owned = d.get('owned', False)
             on    = d.get('on', False)
@@ -1080,7 +1080,7 @@ class Game:
                 if 'on' in d:
                     print(f"  - {k}: {'ON ' if on else 'off'}  (~{amps}A when on)")
                 else:
-                    print(f"  - {k}: installed (uses fuel when cooking)")
+                    print(f"  - {k}: installed")
 
     def toggle_device(self, name, state):
         name = (name or '').lower()
@@ -1088,7 +1088,7 @@ class Game:
             print(COL.yellow("Unknown device. Try: fridge, starlink, heater, stove, jetboil")); return
         d = self.devices[name]
         if not d.get('owned', False):
-            print("You don't own that device."); return
+            print(COL.yellow("You don't own that device.")); return
         if 'on' not in d:
             print(COL.yellow(f"{name} has no on/off; it only consumes fuel when cooking.")); return
         on = True if state.lower() in ('on','true','1') else False
@@ -1298,41 +1298,41 @@ class Game:
             in_park = self.location in {'zion','bryce','arches','canyonlands','capitol_reef'}
             ranger_knock = 0.04 if in_park else 0.005
 
-    # --- Night visitors (rodents) ---
-    trap_owned = self.devices.get('mousetrap', {}).get('owned', False)
-    if not trap_owned:
-        # Baseline risk
-        risk = 0.10
-    
-        # Drawn to warmth/food; colder nights push them in
-        w = derive_weather(self.node(), self.minutes)
-        if w['heat'] == 'cold':     risk += 0.06
-        if self.food > 0:           risk += 0.05
-    
-        # Some biomes (town edges, farms, campgrounds) see more scroungers
-        biome = (self.node().get('biome') or '').lower()
-        if any(k in biome for k in ('mesa_desert','high_desert','alpine','town_desert')):  # tweak list as you like
-            risk += 0.03
-    
-        # Deterrence: pet → big reduction; cat → bigger reduction
-        if self.pet:
-            pet_mult = 0.30 if getattr(self.pet, 'pet_type', 'dog') != 'cat' else 0.10
-            risk *= pet_mult
-    
-        # Roll
-        rng = seeded_rng(self.location, self.minutes // DAY_MINUTES, 'rodent')
-        if rng.random() < risk:
-            # Pick a light consequence
-            if rng.random() < 0.6 and self.food > 0:
-                lost = 1 if self.food == 1 else rng.randint(1, min(2, self.food))
-                self.food = max(0, self.food - lost)
-                self.morale = clamp(self.morale - 3, 0, 100)
-                print(COL.red(f"Night visitors chew into your rations (−{lost} food). You’re not thrilled."))
-            else:
-                drop = rng.uniform(1.5, 4.0)  # tiny wiring nibble → minor house loss
-                self.battery = clamp(self.battery - drop, 0, 100)
-                self.energy = clamp(self.energy - 4, 0, 100)  # sleep disturbed
-                print(COL.red("A mouse gnaws some insulation. You lose a bit of battery and sleep."))
+        # --- Night visitors (rodents) ---
+        trap_owned = self.devices['mousetrap']['owned']
+        if not trap_owned:
+            # Baseline risk
+            risk = 0.10
+        
+            # Drawn to warmth/food; colder nights push them in
+            w = derive_weather(self.node(), self.minutes)
+            if w['heat'] == 'cold':     risk += 0.06
+            if self.food > 0:           risk += 0.05
+        
+            # Some biomes (town edges, farms, campgrounds) see more scroungers
+            biome = (self.node().get('biome') or '').lower()
+            if any(k in biome for k in ('mesa_desert','high_desert','alpine','town_desert')):  # tweak list as you like
+                risk += 0.03
+        
+            # Deterrence: pet → big reduction; cat → bigger reduction
+            if self.pet:
+                pet_mult = 0.30 if getattr(self.pet, 'pet_type', 'dog') != 'cat' else 0.10
+                risk *= pet_mult
+        
+            # Roll
+            rng = seeded_rng(self.location, self.minutes // DAY_MINUTES, 'rodent')
+            if rng.random() < risk:
+                # Pick a light consequence
+                if rng.random() < 0.6 and self.food > 0:
+                    lost = 1 if self.food == 1 else rng.randint(1, min(2, self.food))
+                    self.food = max(0, self.food - lost)
+                    self.morale = clamp(self.morale - 3, 0, 100)
+                    print(COL.red(f"Night visitors chew into your rations (−{lost} food). You’re not thrilled."))
+                else:
+                    drop = rng.uniform(1.5, 4.0)  # tiny wiring nibble → minor house loss
+                    self.battery = clamp(self.battery - drop, 0, 100)
+                    self.energy = clamp(self.energy - 4, 0, 100)  # sleep disturbed
+                    print(COL.red("A mouse gnaws some insulation. You lose a bit of battery and sleep."))
 
         # Apply overnight effects (before time advance)
         self.water   = clamp(self.water - 0.08*hours, 0, self.water_cap_gallons)
