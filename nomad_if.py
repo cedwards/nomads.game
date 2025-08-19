@@ -429,6 +429,11 @@ class Game:
         self.job_perks     = JOBS.get(self.job, {})
         self.mode          = config.get("mode", "electric")
 
+        # Pet
+        self.pet = None
+        self.pet_name = None
+        self.pet_type = None
+
         # Vehicle archetype
         v = VEHICLES[self.vehicle_type]
         self.water_cap_gallons = v["base_water_cap"]
@@ -448,9 +453,26 @@ class Game:
         # House battery (0–100%)
         self.battery = 75.0
 
+        # heat drains more water
+        w = derive_weather(self.node(), self.minutes)
+        heat_mult = {'cold':0.9, 'mild':1.0, 'hot':1.2, 'very_hot':1.35}[w['heat']]
+        print(heat_mult)
+
+        # Stats (pending integration)
+        self.energy     = 80.0
+        self.energy     = clamp(self.energy - 0.8  * heat_mult, 0, 100)
+        self.morale     = 60.0
+        self.comfort    = 50.0
+        self.health     = 100.0
+        self.confidence = 50
+        self.creativity = 50
+
         # Stores
-        self.water = min(8.0, self.water_cap_gallons)   # gallons
-        self.food  = min(6,   self.food_cap_rations)   # rations
+        self.food   = min(8,   self.food_cap_rations)
+        self.water  = min(8.0, self.water_cap_gallons)
+        self.water  = clamp(self.water - 0.03 * heat_mult, 0, self.water_cap_gallons)
+        if self.pet:
+            self.pet.energy = clamp(self.pet.energy - 0.5 * heat_mult, 0, 100)
 
         # Gear
         self.has_repair_manual = 0
@@ -459,23 +481,12 @@ class Game:
         self.has_deluxe_tent   = 0
         self.has_laptop        = 0
 
-        # Cash & stats
+        # Cash
         self.cash       = float(config.get("start_cash", 120.0))
-        self.morale     = 60.0
-        self.energy     = 80.0
-        self.comfort    = 50.0
-        self.health     = 100.0
-        self.confidence = 50
-        self.creativity = 50
 
         # XP
         self.xp = 0
         self.level = 1
-
-        # Pet
-        self.pet = None
-        self.pet_name = None
-        self.pet_type = None
 
         # Routing
         self.route = None
