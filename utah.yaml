@@ -27,7 +27,7 @@ nodes:
     biome: canyon
     elevation_ft: 4000
     season_rules: ["monsoon_flash_flood", "summer_heat"]
-    resources: { water: "moderate", food: "nearby_town", solar: "poor", wind: "fair" }
+    resources: { water: "moderate", food: "moderate", gas: False, solar: "poor", wind: "fair" }
     pet_rules: "strict"
     fuel_price: 3.31
     gigs:
@@ -64,14 +64,14 @@ nodes:
     biome: high_plateau
     elevation_ft: 8000
     season_rules: ["cold_nights", "snow_shoulders"]
-    resources: { water: "campground", food: "nearby_town", solar: "good", wind: "good" }
+    resources: { water: "campground", food: "moderate", gas: True, solar: "good", wind: "good" }
     pet_rules: "strict"
     fuel_price: 3.55
     gigs:
       - { id: star_party, window: "night_clear", payout: [90, 180], rep: { rangers: 1 } }
     events:
       - { id: altitude_fatigue, chance: 0.10, tags: ["cold","energy"] }
-      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
+      - { id: ranger_knock, chance: 0.15, tags: ["stealth","pet_noise"] }
     connections:
       - { to: zion, road: "highway", miles: 85, grade: "moderate", wind_exposure: "low" }
       - { to: capitol_reef, road: "scenic", miles: 120, grade: "mixed", wind_exposure: "medium" }
@@ -102,13 +102,14 @@ nodes:
     biome: desert_canyon
     elevation_ft: 5500
     season_rules: ["flash_floods", "shoulder_season_best"]
-    resources: { water: "spigots", food: "bakery", solar: "good", wind: "fair" }
+    resources: { water: "spigots", food: "nearby", gas: True, solar: "good", wind: "fair" }
     pet_rules: "moderate"
     fuel_price: 3.35
     gigs:
       - { id: orchard_stories, window: "daylight", payout: [60, 130], rep: { locals: 1 } }
     events:
       - { id: washout_detour, chance: 0.08, tags: ["monsoon","detour"] }
+      - { id: ranger_knock, chance: 0.08, tags: ["stealth","noise"] }
     connections:
       - { to: green_river, road: "scenic", miles: 85, grade: "moderate", wind_exposure: "medium" }
       - { to: bryce, road: "scenic", miles: 112, grade: "mixed", wind_exposure: "medium" }
@@ -141,17 +142,17 @@ nodes:
     biome: desert_canyon
     elevation_ft: 4100
     season_rules: ["timed_entry", "summer_heat"]
-    resources: { water: "visitor_center", food: "moab", solar: "good", wind: "fair" }
+    resources: { water: "visitor_center", food: "nearby", gas: False, solar: "good", wind: "fair" }
     pet_rules: "strict"
     gigs:
       - { id: delicate_dawn, window: "sunrise", payout: [140, 260], rep: { tourists: 1 } }
     events:
       - { id: permit_lottery, chance: 0.10, tags: ["access","timing"] }
-      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
+      - { id: ranger_knock, chance: 0.20, tags: ["stealth","noise"] }
     connections:
       - { to: moab, road: "highway", miles: 5, grade: "flat", wind_exposure: "low" }
       - { to: canyonlands, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
-      - { to: green_river, road: "highway", miles: 49, grade: "flat", wind_exposure: "high" }
+      - { to: dead_horse_point, road: "highway", miles: 26, grade: "mixed", wind_exposure: "high" }
 
   - id: canyonlands
     description: |
@@ -181,17 +182,17 @@ nodes:
     elevation_ft: 6000
     shop_inventory: ["water"]
     season_rules: ["heat_exposure", "wind_mesas"]
-    resources: { water: "scarce", food: "pack_in", solar: "excellent", wind: "good" }
+    resources: { water: "spigot", food: "none", gas: False, solar: "excellent", wind: "good" }
     pet_rules: "strict"
     gigs:
       - { id: island_sky_set, window: "golden_hour", payout: [120, 220], rep: { nomads: 1 } }
     events:
       - { id: water_scarcity, chance: 0.12, tags: ["water","logistics"] }
-      - { id: ranger_knock, chance: 0.12, tags: ["stealth","pet_noise"] }
+      - { id: ranger_knock, chance: 0.10, tags: ["stealth","pet_noise"] }
     connections:
       - { to: moab, road: "highway", miles: 30, grade: "mixed", wind_exposure: "high" }
       - { to: arches, road: "mixed", miles: 35, grade: "mixed", wind_exposure: "high" }
-      - { to: green_river, road: "highway", miles: 63, grade: "flat", wind_exposure: "high" }
+      - { to: dead_horse_point, road: "highway", miles: 11, grade: "flat", wind_exposure: "high" }
 
   - id: moab
     description: |
@@ -216,8 +217,8 @@ nodes:
     name: "Moab"
     biome: town_desert
     elevation_ft: 4000
-    season_rules: ["summer_heat"]
-    resources: { water: "abundant", food: "abundant", solar: "good", wind: "fair", parts: "shops" }
+    season_rules: ["summer_heat", "cold_nights"]
+    resources: { water: "abundant", food: "abundant", gas: True, solar: "good", wind: "fair", parts: "shops" }
     pet_rules: "friendly"
     fuel_price: 3.47
     pet_adoption: true
@@ -257,7 +258,7 @@ nodes:
     biome: high_desert
     elevation_ft: 6000
     season_rules: ["windy_spring", "cold_winter_nights"]
-    resources: { water: "scarce", food: "pack_in", solar: "excellent", wind: "excellent" }
+    resources: { water: "none", food: "none", gas: False, solar: "excellent", wind: "excellent" }
     pet_rules: "friendly"
     gigs:
       - { id: milky_way_commission, window: "night_clear", payout: [180, 320], rep: { nomads: 1 } }
@@ -295,7 +296,7 @@ nodes:
     biome: salt_pan
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]
-    resources: { water: "bring_lots", food: "scarce", solar: "excellent", wind: "fair" }
+    resources: { water: "none", food: "scarce", gas: True, solar: "excellent", wind: "fair" }
     pet_rules: "friendly"
     fuel_price: 3.66
     gigs:
@@ -334,7 +335,7 @@ nodes:
     biome: alpine
     elevation_ft: 8500
     season_rules: ["snow_closure", "mosquito_summer"]
-    resources: { water: "lakes_streams", food: "limited", solar: "poor", wind: "good" }
+    resources: { water: "limited", food: "none", gas: False, solar: "poor", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: high_lake_morning, window: "morning", payout: [80, 150], rep: { locals: 1 } }
@@ -370,7 +371,7 @@ nodes:
     biome: desert
     elevation_ft: 5200
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "haul", food: "sparse", solar: "excellent", wind: "good" }
+    resources: { water: "none", food: "nearby", gas: True, solar: "excellent", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -381,7 +382,7 @@ nodes:
       - { to: arches, road: "mixed", miles: 128, grade: "mixed", wind_exposure: "high" }
       - { to: canyonlands, road: "highway", miles: 155, grade: "mixed", wind_exposure: "high" }
 
-  - id: dead_horse_point
+  - id: dead_horse_point_state_park
     description: |
       Dead Horse Point State Park is one of the most breathtaking overlooks in the
       American Southwest, perched high above the sculpted canyons of the Colorado
@@ -401,10 +402,10 @@ nodes:
       a sacred vantage point where earth and sky meet. Dead Horse Point isn’t just a
       view; it’s a stage for awe, humbling anyone who stands at its edge.
     name: "Dead Horse Point"
-    biome: desert
+    biome: mesa_desert
     elevation_ft: 5900
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "haul", food: "haul", solar: "excellent", wind: "excellent" }
+    resources: { water: "none", food: "none", gas: False, solar: "excellent", wind: "excellent" }
     pet_rules: "moderate"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -440,7 +441,7 @@ nodes:
     biome: desert
     elevation_ft: 4078
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "available", food: "available", solar: "excellent", wind: "good" }
+    resources: { water: "available", food: "available", gas: True, solar: "excellent", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -450,3 +451,39 @@ nodes:
       - { to: san_rafael_swell, road: "scenic", miles: 66, grade: "moderate", wind_exposure: "medium" }
       - { to: moab, road: "highway", miles: 52, grade: "mixed", wind_exposure: "high" }
       - { to: mirror_lake_highway, road: "highway", miles: 194, grade: "mixed", wind_exposure: "high" }
+
+  - id: antelope_island_state_park
+    description: |
+      Green River, Utah is a curious desert town that feels both tucked away and wide
+      open to the horizon. It lies along the banks of the river that gave it its
+      name, where the slow, silt-laden water threads through a stark landscape of
+      barren mesas and red sandstone cliffs. At first glance, the town seems
+      modest—gas stations, diners, and motels lining the old highway—but beneath that
+      veneer it carries the charm of a place shaped by resilience and the desert’s
+      quiet rhythm.
+      
+      The air here is dry and sharp, tinged with the smell of dust and alfalfa from
+      nearby fields. Once famous as a riverboat stop and railroad junction, Green
+      River now greets travelers on their way to Moab, Goblin Valley, or Canyonlands.
+      Yet it has a character all its own. The town celebrates its identity as the
+      “Watermelon Capital of the World,” and in late summer, truck beds brim with
+      giant, striped melons—juicy sweetness carved from desert soil.
+      
+      Evenings settle with a long, slow sunset that paints the Book Cliffs in rose
+      and amber, while the river reflects the last light like burnished copper. Green
+      River is part outpost, part oasis—a reminder of human persistence in the
+      desert’s vast, sculpted emptiness.
+    name: "Antelope Island State Park"
+    biome: arid
+    elevation_ft: 6600
+    season_rules: ["monsoon_cells", "desert_extremes"]
+    resources: { water: "available", food: "none", gas: False, solar: "excellent", wind: "excellent" }
+    pet_rules: "friendly"
+    gigs:
+      - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
+    events:
+      - { id: dust_storm, chance: 0.15, tags: ["wind","visibility"] }
+    connections:
+      - { to: mirror_lake_highway, road: "highway", miles: 115, grade: "mixed", wind_exposure: "high" }
+      - { to: bonneville_salt_flats, road: "highway", miles: 147, grade: "mixed", wind_exposure: "high" }
+      - { to: green_river, road: "scenic", miles: 222, grade: "moderate", wind_exposure: "medium" }

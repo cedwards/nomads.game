@@ -1637,28 +1637,37 @@ class Game:
             print(COL.green(f"Wind charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%."))
 
     def refuel(self, gallons):
+        node = self.node()
         if self.mode != 'fuel': print("You're not in fuel mode. Switch with: MODE fuel"); return
-        if self.location not in 'valley_of_the_gods|capitol_reef|moab|bonneville_salt_flats|green_river': print(COL.yellow("No fuel stations here.")); return
+        loc_resources = node.get('resources', {}) or {}.get('gas')
+        if not loc_resources['gas']: print(COL.yellow("No fuel stations here.")); return
         try: g = float(gallons)
         except Exception: print("REFUEL <gallons>"); return
         if g <= 0: print("That’s not how fuel works."); return
-        price = 3.00; cost = g * price
-        if self.cash < cost: print(COL.yellow(f"Need ${cost:.0f}; you have ${self.cash:,.2f}.")); return
-        self.cash -= cost; self.fuel_gal += g; self.advance(10)
-        print(COL.green(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:,.2f}."))
+        if g + self.fuel_gal >= self.fuel_tank_gal: 
+            print("That's too much fuel."); return
+        else:
+            price = 3.00; cost = g * price
+            if self.cash < cost: print(COL.yellow(f"Need ${cost:.0f}; you have ${self.cash:,.2f}.")); return
+            self.cash -= cost; self.fuel_gal += g; self.advance(10)
+            print(COL.green(f"Added {g:.1f} gal for ${cost:.0f}. Fuel now {self.fuel_gal:.1f} gal. Cash ${self.cash:,.2f}."))
 
     # ----- Pets -----
     def adopt_pet(self):
         if not self.node().get('pet_adoption'): print(COL.yellow("No adoption event here. Try a larger town/rescue hub.")); return
         if self.pet: print(COL.yellow("You already travel with a loyal companion.")); return
 
+        ## subarus always get cats
         if self.vehicle_type == "subaru":
             self.pet_type = "cat"
+        ## truck campers always get dogs
         elif self.vehicle_type == "truck_camper":
             self.pet_type = "dog"
         else:
+            ## random selection otherwise
             self.pet_type = random.choice(["dog","cat"])
 
+        ## dynamic dog generation (name + breed + spirit + action)
         if self.pet_type == "dog":
             breed = random.choice(["French Bulldog","Golden Retriever","Labrador Retriever","Rottweiler","Beagle","Bulldog","Poodle","Dachsund","German Shorthair Pointer","German Shepherd","Shih Tzu","Terrier","Golden Doodle","Australian Sheepdog"])
             name = random.choice(["Oreo","Mesa","Juniper","Pixel","Bowie","Zion","Havasu","Spot","Flash","The Dude","Max","Scooter"])
@@ -1666,6 +1675,7 @@ class Game:
             action = random.choice(["licks your face","claims your passenger seat","looks at you with big brown eyes","wags their tail","barks excitedly"])
             self.pet = Pet(name, breed); self.morale = clamp(self.morale + 10, 0, 100)
             print(COL.grey(f"You meet {name}, a {spirit} {breed}, who walks up to you and {action}. Bond +10."))
+        ## dynamic cat generation (name + breed + spirit + action)
         if self.pet_type == "cat":
             breed = random.choice(["Siamese","Persian","Maine Coon","Ragdoll","Sphynx","American Shorthair","Burmese","British Shorthair","Longhair","Bobtail"])
             name = random.choice(["Swazi","Whiskers","Patches","Satan","Grouchy Pants","Moo","Olaf","Chandler","Joey","Monica","Ross","Phoebe","Rachael"])
@@ -1697,6 +1707,13 @@ class Game:
         self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
         print(COL.grey(f"You walk {self.pet.name}. Spirits lift."))
         xp = clamp(self.xp + 10, 0, 25)
+        self.add_xp(int(xp), "pet care")
+
+    def wash_pet(self):
+        if not self.pet: print("You travel alone."); return
+        self.energy = clamp(self.energy + 2, 0, 100); self.pet.energy = clamp(self.pet.energy + 5, 0, 100); self.pet.bond = clamp(self.pet.bond + 4, 0, 100); self.advance(30)
+        print(COL.grey(f"You wash {self.pet.name}. Bubbles everywhere!"))
+        xp = clamp(self.xp + 8, 0, 16)
         self.add_xp(int(xp), "pet care")
 
     def play_with_pet(self):
@@ -1738,36 +1755,50 @@ class Game:
 
 HELP_TEXT = """Commands:
   N|S|E|W|NE|NW|SE|SW
-  ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET
+  ADOPT PET | FEED PET | WATER PET | WALK PET | PLAY WITH PET | WASH PET
   ASK <npc> ABOUT <topic>
+  BANK | CASH | MONEY
+  BATTERY
   CAMP [stealth|paid|dispersed]
-  COMMAND PET <HEEL|SEARCH|GUARD|CALM|FETCH>
+  CHARGE <station|solar|wind>
+  COMMAND PET <heel|search|guard|calm|fetch>
   COOK | EAT
-  NAP
   DEVICES | TURN <device> <on|off>
   ELEVATION
+  ENERGY
   EV
+  EXP
   EXPLORE
+  FRIDGE
   FUEL
+  HEATER
+  HELP
   HIKE
   INVENTORY | INV | I
-  STATUS
+  LAPTOP
   LOOK NPC <id|name> | LOOK PET | LOOK ITEM <id> | LOOK VEHICLE
   MAP
-  MODE <electric|fuel> | CHARGE <station|solar|wind> | REFUEL <gallons>
+  MODE <electric|fuel>
+  MORALE
+  NAP
   PEOPLE | TALK <npc>
   PET
-  POWER | ELECTRICAL | BATTERY
+  POWER | ELECTRICAL
   READ
+  REFUEL <gallons>
   ROUTE TO <place> | DRIVE
   SHOP | BUY <item_id> [qty]
   SOLAR
+  STARLINK
+  STATUS
+  TIME
   TRADE <npc>
   WATCH <something>
   WEATHER
+  WEBOOST
   WIND
   WORK [photo|dev|mechanic|guide|artist|gig] [hours]
-  HELP | QUIT
+  EXIT | QUIT
 """
 
 def make_cli_prompt(game):
@@ -1995,6 +2026,7 @@ def main():
         elif u == "FEED PET": game.feed_pet()
         elif u == 'WATER PET': game.water_pet()
         elif u == 'WALK PET': game.walk_pet()
+        elif u == 'WASH PET': game.wash_pet()
         elif u == 'PLAY WITH PET': game.play_with_pet()
         elif u.startswith('COMMAND PET'):
             verb = line.split(' ', 2)[2] if len(line.split(' ', 2))>2 else ''
