@@ -1,18 +1,20 @@
 items:
   food:            
     requires: { level: 1 }
-    name: "Food ration"
-    desc: "Generic description of food"
+    name: "Food"
+    desc: "Shelf-stable foods: canned food, rice, pasta, granola, etc."
     price: 5
     effects: { food_rations: "+1" }
   water:
     requires: { level: 1}
     name: "Water (G)"
+    desc: "Refill water storage capacity (1 gallon)."
     price: 0.50
     effects: { water_gallons: "+1" }
   stove:
     requires: { level: 1 }
     name: "Propane Stove"
+    desc: "Two-burner propane cooktop. Requires propane fuel."
     price: 100
     effects: 
       stove:            "+1"
@@ -20,6 +22,7 @@ items:
   jetboil:
     requires: { level: 1 }
     name: "Jetboil"
+    desc: "Backpacking and camping stove (small)."
     price: 60
     effects: 
       jetboil:          "+1"
@@ -27,53 +30,62 @@ items:
   propane:
     requires: { level: 1 }
     name: "Propane (lb)"
+    desc: "Single green propane bottle (1 pound)."
     price: 4
     effects: { propane_lb: "+1" }
   butane:
     requires: { level: 1 }
     name: "Butane can"
+    desc: "Single can of butane fuel (for Jetboil)."
     price: 3
     effects: { butane_can: "+1" }
   fridge:
     requires: { level: 1 }
     name: "Fridge"
-    price: 300
+    desc: "Efficient 12v vehicle refrigerator."
+    price: 299
     effects:
       "device:fridge":      "install"
       "device_amps:fridge": "2"
   gasoline:
     requires: { level: 1 }
     name: "Extra Fuel"
+    desc: "Jerry can full of gasoline fuel (1 gallon)."
     price: 3.50
     effects:
       gasoline_can_gal: "+1"
   tent:
     requires: { level: 2 }
     name: "Tent"
-    price: 150
+    desc: "Standard set of tent, poles, stakes and tarp."
+    price: 75
     effects:
       has_tent: "install"
   mousetrap:
     requires: { level: 2 }
     name: "Mouse Trap"
+    desc: "Catch-and-release rodent trap to protect against unwanted visitors."
     price: 10
     effects: 
       "device:mousetrap": "install"
   solar:
     requires: { level: 2, exp: 50 }
     name: "Solar 200W"
-    price: 200
+    desc: "Portable Solar panel. Turns sunshine into power."
+    price: 199
     effects:
       solar_watts: "+200"
   wind:
     requires: { level: 3 }
-    name: "Wind 300W"
-    price: 300
+    name: "Wind 150W"
+    desc: "Portable Wind turbine. Turns wind into power."
+    price: 149
     effects:
-      wind_watts: "+300"
+      wind_watts: "+150"
   storage:
     requires: { level: 3 }
     name: "Storage kit"
+    desc: "Increase vehicle storage capacity."
     price: 300
     effects:
       water_cap_gallons: "+10"
@@ -81,43 +93,50 @@ items:
   diesel:
     requires: { level: 5 }
     name: "Diesel Fuel"
+    desc: "Jerry can full of diesel fuel (1 gallon)."
     price: 3
     effects: 
       diesel_can_gal: "+1"
   battery:
     requires: { level: 3 }
     name: "House battery"
-    price: 1000
+    desc: "Increase house battery capacity (100Ah+)."
+    price: 999
     effects:
       house_cap_ah: "+100"
   ev_battery:
     requires: { level: 5 }
     name: "EV battery"
-    price: 1200
+    desc: "Increase EV battery capacity (range+)."
+    price: 1500
     effects:
       ev_range_mi: "+40"
   repair_manual:
     requires: { level: 10 }
     name: "Repair Manual"
+    desc: "Automotive repair manual. Increases ability to self-repair vehicle."
     price: 1000
     effects:
       has_repair_manual: "+1"
   guitar:
     requires: { level: 10 }
     name: "Acoustic Guitar"
+    desc: "Beautifully crafted acoustic guitar that generates the cleanest sound you've ever heard."
     price: 1000
     effects:
       has_guitar: "+1"
   deluxe_tent:
     requires: { level: 10 }
     name: "Deluxe Tent"
+    desc: "Large, comfortable yet portable glamping tent."
     price: 1000
     effects:
       has_deluxe_tent: "+1"
   camera:
     requires: { level: 10 }
     name: "Digital Camera"
-    price: 700
+    desc: "Professional Digital Camera (DSLR)."
+    price: 1000
     effects:
       has_camera: "+1"
       "device:camera": "install"
@@ -125,6 +144,7 @@ items:
   lights:
     requires: { level: 1 }
     name: "LED Lights"
+    desc: "Cleanly installed LED lights. Improves vehicle comfort."
     price: 20
     effects:
       "device:lights": "install"
@@ -132,7 +152,8 @@ items:
   heater:
     requires: { level: 5 }
     name: "Diesel Heater"
-    price: 800
+    desc: "Burn diesel fuel to improve vehicle comfort."
+    price: 1000
     effects:
       comfort: "+5"
       "device:heater": "install"
@@ -140,21 +161,46 @@ items:
   laptop:
     requires: { level: 3 }
     name: "New Laptop"
-    price: 1500
+    desc: "Latest M-series MacBook laptop."
+    price: 2000
     effects:
       "device:laptop": "install"
       "device_amps:laptop": "3"
   weboost:
     requires: { level: 2 }
     name: "WeBoost 4G/5G"
-    price: 500
+    desc: "Mobile device signal booster."
+    price: 400
     effects:
       "device:weboost": "install"
       "device_amps:weboost": "4"
   starlink:
     requires: { level: 2, exp: 0100}
     name: "Starlink"
-    price: 700
+    desc: "Satellite internet available anywhere!"
+    price: 800
     effects:
       "device:starlink": "install"
       "device_amps:starlink": "5"
+  maxxfan:
+    requires: { level: 3 }
+    name: "Maxfann"
+    desc: "Ceiling-mounted fan to improve vehicle comfort."
+    price: 300
+    effects:
+      "device:maxfann": "install"
+      "device_amps:starlink": "4.5"
+  generator:
+    requires: { level: 5 }
+    name: "Generator (gasoline)"
+    desc: "Fuel-powered generator. Generates electricity and consumes gasoline."
+    price: 400
+    effects:
+      "device:generator": "install"
+  charger:
+    requires: { level: 5 }
+    name: "DC-to-DC Battery Charger"
+    desc: "Charges house batteries using alternator while traveling. 40A"
+    price: 200
+    effects:
+      "device:dc-to-dc-charger": "install"
