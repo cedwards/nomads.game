@@ -1047,7 +1047,7 @@ class Game:
         g = self.devices.get('generator')
         if not g.get('owned'):
             print(COL.grey(f" Generator: 0W | {generator_a:.2f}A"))
-        elif not g.get('on'):
+        if g.get('owned') and not g.get('on'):
             print(COL.grey(f" Generator: 2000W | {generator_a:.2f}A (off)"))
         else:
             print(COL.grey(f" Generator: 2000W | {generator_a:.2f}A"))
