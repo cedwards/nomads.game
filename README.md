@@ -357,7 +357,6 @@ this can make the mechanic role appealing in this regard.
 
 ### REFUEL
 refuel vehicle with gasoline
-(FIXME: station lets you buy more than your cap)
 
 ### STARLINK
 This outputs realistic metrics from a functioning Starlink device
@@ -369,6 +368,9 @@ having an interface)
 ### FRIDGE
 This (will) interact with the fridge inventory. better food requires the
 fridge.
+
+Installing a fridge avoids food from spoiling overnight. Chance increases in heat.
+Installing a fridge reduces the attraction from rodents.
 
 ### HEATER
 This (will) interact with the diesel heater to increase/decrease the heat based

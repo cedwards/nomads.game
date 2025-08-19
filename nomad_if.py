@@ -456,7 +456,6 @@ class Game:
         # heat drains more water
         w = derive_weather(self.node(), self.minutes)
         heat_mult = {'cold':0.9, 'mild':1.0, 'hot':1.2, 'very_hot':1.35}[w['heat']]
-        print(heat_mult)
 
         # Stats (pending integration)
         self.energy     = 80.0
