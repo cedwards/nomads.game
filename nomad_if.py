@@ -752,13 +752,13 @@ class Game:
             print(COL.grey(f"  effect: {k} = {v}"))
 
     def report_pet_status(self):
-        print(COL.grey(f"Name: {self.pet.name}"))
-        print(COL.grey(f"Breed: {self.pet.breed}"))
-        print(COL.grey(f"Bond: {self.pet.bond}"))
-        print(COL.grey(f"Energy: {self.pet.energy}"))
-        print(COL.grey(f"Obedience: {self.pet.obedience}"))
-        print(COL.grey(f"Paw: {self.pet.paw}"))
-        print(COL.grey(f"Alert: {self.pet.alert}"))
+        print(COL.grey(f"Name: {self.pet_name}"))
+        print(COL.grey(f"Breed: {self.pet_breed}"))
+        print(COL.grey(f"Bond: {self.pet.bond:.0f}"))
+        print(COL.grey(f"Energy: {self.pet.energy:.0f}"))
+        print(COL.grey(f"Obedience: {self.pet.obedience:.0f}"))
+        print(COL.grey(f"Paw: {self.pet.paw:.0f}"))
+        print(COL.grey(f"Alert: {self.pet.alert:.0f}"))
         print(COL.grey(f"Guard Mode: {self.pet.guard_mode}"))
 
     def report_morale(self):
@@ -795,7 +795,6 @@ class Game:
                 if not (start <= m <= end): continue
                 present.append(npc); break
         return present
-
 
     def _check_for_truck_camper(self):
         if self.vehicle_type == 'truck_camper':
