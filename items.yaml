@@ -53,6 +53,13 @@ items:
     price: 150
     effects:
       has_tent: "install"
+  mousetrap:
+    requires: { level: 2 }
+    name: "Mouse Trap"
+    price: 10
+    effects: 
+      mousetrap: "+1"
+      "device:mousetrap": "install"
   solar:
     requires: { level: 2, exp: 50 }
     name: "Solar 200W"

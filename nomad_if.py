@@ -312,7 +312,7 @@ def describe_weather(w):
 
 # ---------------------------- Travel ----------------------------------
 
-BASE_SPEED = {'interstate':65.0,'highway':55.0,'scenic':45.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
+BASE_SPEED = {'interstate':70.0,'highway':60.0,'scenic':55.0,'mixed':40.0,'gravel':30.0,'trail':10.0}
 GRADE_MOD  = {'flat':1.00,'light':0.95,'moderate':0.85,'mixed':0.90,'steep':0.70}
 
 def edge_drive_turns(world, start_node_id, conn, total_minutes):
@@ -419,7 +419,7 @@ class Game:
     def __init__(self, world, config, catalog, npcs=None):
         self.world = world
         self.location = 'moab' if 'moab' in world.nodes else next(iter(world.nodes.keys()))
-        self.minutes = 8*60  # start Day 1 morning
+        self.minutes = 6*60  # start Day 1 morning
 
         # Player & role
         self.player_name   = config.get("name", "Traveler")
@@ -532,6 +532,7 @@ class Game:
             'weboost':       {'owned': False, 'on': False, 'amps': 4.5},
             'stove':         {'owned': False},
             'jetboil':       {'owned': False},
+            'mousetrap':     {'owned': False},
         }
         self.diesel_can_gal = 0.0
         self.propane_lb     = 0.0
@@ -1199,6 +1200,31 @@ class Game:
         turns, w = edge_drive_turns(self.world, frm, conn, self.minutes)
         hours = turns * TURN_MINUTES / 60.0
         miles = float(conn.get('miles', 10))
+
+        # Weather closures/delays on rough roads
+        road = conn.get('road', 'mixed')
+        closure_p = 0.0
+        if w['flood_watch'] and road in ('trail','gravel','scenic'):
+            closure_p = 0.12
+        elif w['monsoon'] and road in ('trail','gravel'):
+            closure_p = 0.08
+        
+        # Slight advantage for burlier rigs
+        if self.vehicle_type in ('truck_camper','skoolie'):
+            closure_p *= 0.6  # bigger stance, better clearance
+        
+        rng2 = seeded_rng(frm, to, int(self.minutes/60), 'closure')
+        if rng2.random() < closure_p:
+            # Either a full closure (must wait), or a messy delay
+            if rng2.random() < 0.4:
+                wait_h = rng2.uniform(0.5, 2.0)
+                self.advance(int(wait_h*60))
+                print(f"Road closure lifts after ~{wait_h:.1f}h wait due to high water.")
+            else:
+                extra = rng2.randint(2, 5)  # extra turns
+                turns += extra
+                print(f"Muddy detours slow you down (+{extra} turns).")
+
         # Energy check
         if self.mode == 'electric':
             needed_pct = (miles / max(1.0, self.ev_range_mi)) * 100.0
@@ -1272,14 +1298,59 @@ class Game:
             in_park = self.location in {'zion','bryce','arches','canyonlands','capitol_reef'}
             ranger_knock = 0.04 if in_park else 0.005
 
+    # --- Night visitors (rodents) ---
+    trap_owned = self.devices.get('mousetrap', {}).get('owned', False)
+    if not trap_owned:
+        # Baseline risk
+        risk = 0.10
+    
+        # Drawn to warmth/food; colder nights push them in
+        w = derive_weather(self.node(), self.minutes)
+        if w['heat'] == 'cold':     risk += 0.06
+        if self.food > 0:           risk += 0.05
+    
+        # Some biomes (town edges, farms, campgrounds) see more scroungers
+        biome = (self.node().get('biome') or '').lower()
+        if any(k in biome for k in ('mesa_desert','high_desert','alpine','town_desert')):  # tweak list as you like
+            risk += 0.03
+    
+        # Deterrence: pet → big reduction; cat → bigger reduction
+        if self.pet:
+            pet_mult = 0.30 if getattr(self.pet, 'pet_type', 'dog') != 'cat' else 0.10
+            risk *= pet_mult
+    
+        # Roll
+        rng = seeded_rng(self.location, self.minutes // DAY_MINUTES, 'rodent')
+        if rng.random() < risk:
+            # Pick a light consequence
+            if rng.random() < 0.6 and self.food > 0:
+                lost = 1 if self.food == 1 else rng.randint(1, min(2, self.food))
+                self.food = max(0, self.food - lost)
+                self.morale = clamp(self.morale - 3, 0, 100)
+                print(COL.red(f"Night visitors chew into your rations (−{lost} food). You’re not thrilled."))
+            else:
+                drop = rng.uniform(1.5, 4.0)  # tiny wiring nibble → minor house loss
+                self.battery = clamp(self.battery - drop, 0, 100)
+                self.energy = clamp(self.energy - 4, 0, 100)  # sleep disturbed
+                print(COL.red("A mouse gnaws some insulation. You lose a bit of battery and sleep."))
+
         # Apply overnight effects (before time advance)
         self.water   = clamp(self.water - 0.08*hours, 0, self.water_cap_gallons)
-        self.food    = max(0, self.food - 1)
         self.energy  = clamp(self.energy + energy_gain, 0, 100)
         self.morale  = clamp(self.morale + morale_gain, 0, 100)
         if self.pet:
             self.pet.energy = clamp(self.pet.energy + pet_energy, 0, 100)
             self.pet.bond   = clamp(self.pet.bond   + pet_bond, 0, 100)
+
+        # Food spoilage if no working fridge and it’s hot
+        fridge_ok = (self.devices['fridge']['owned'] and self.devices['fridge'].get('on'))
+        w = derive_weather(self.node(), self.minutes)
+        if not fridge_ok and w['heat'] in ('hot','very_hot') and self.food > 0:
+            rng = seeded_rng(self.location, self.minutes // DAY_MINUTES, 'spoil')
+            if rng.random() < 0.35:  # ~1/3 of hot nights
+                spoiled = 1 if self.food == 1 else rng.randint(1, min(2, self.food))
+                self.food = max(0, self.food - spoiled)
+                print(COL.yellow(f"The heat spoils {spoiled} ration{'s' if spoiled>1 else ''}."))
 
         # Events
         if style == 'dispersed':
@@ -1912,7 +1983,7 @@ def character_creation():
     else:
         mode = 'electric'
     rng = seeded_rng(name, color, vkey, jkey, mode)
-    start_cash = rng.randint(1000, 50000)
+    start_cash = rng.randint(1000, 5000)
     cfg = {"name": name, "color": color, "vehicle_key": vkey, "job_key": jkey, "mode": mode, "start_cash": float(start_cash)}
     os.system('cls' if os.name == 'nt' else 'clear')
     print(COL.blue(f"Welcome, {name}. {color.title()} {VEHICLES[vkey]['label']} | {JOBS[jkey]['label']} | Start cash: {COL.green(f'${start_cash:,.2f}')}"))
