@@ -382,7 +382,7 @@ nodes:
       - { to: arches, road: "mixed", miles: 128, grade: "mixed", wind_exposure: "high" }
       - { to: canyonlands, road: "highway", miles: 155, grade: "mixed", wind_exposure: "high" }
 
-  - id: dead_horse_point_state_park
+  - id: dead_horse_point
     description: |
       Dead Horse Point State Park is one of the most breathtaking overlooks in the
       American Southwest, perched high above the sculpted canyons of the Colorado

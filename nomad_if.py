@@ -489,7 +489,7 @@ class Game:
         self.fuel_tank_gal    = v["fuel_tank_gal"]
         self.gasoline_can_gal = 0.0
         if self.mode == 'fuel':
-            self.fuel_gal = 0.6 * self.fuel_tank_gal  # start with some fuel
+            self.fuel_gal = 0.8 * self.fuel_tank_gal  # start with some fuel
 
         # Dispersed stay tracking
         self.last_camp_node = None
