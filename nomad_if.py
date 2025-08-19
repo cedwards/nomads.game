@@ -1714,36 +1714,52 @@ class Game:
         return purchased
 
     def buy(self, item_id, qty=1):
-        if self.location != 'moab': print(COL.yellow("You need to be in Moab to buy gear.")); return
+        if self.location != 'moab':
+            print(COL.yellow("You need to be in Moab to buy gear.")); return
+    
         item_id = (item_id or '').lower()
         try: qty = int(qty)
         except Exception: qty = 1
         if qty <= 0: qty = 1
+    
         if item_id not in self.catalog:
             print(COL.red("Unknown item id. Type SHOP to list items.")); return
-        item = self.catalog[item_id]
+    
+        item    = self.catalog[item_id]
+        effects = item.get("effects", {}) or {}
+        requires= item.get("requires", {}) or {}
+    
+        # ---- 1) REQUIREMENTS FIRST (no side effects yet) ----
+        need_lvl = int(requires.get("level", 0) or 0)
+        need_xp  = int(requires.get("exp",   0) or 0)
+        unmet = False
+        if self.level < need_lvl:
+            print(COL.yellow(f"Requires level {need_lvl}. You are only level {self.level}.")); unmet = True
+        if self.xp < need_xp:
+            print(COL.yellow(f"Requires {need_xp} experience. You only have {self.xp} experience.")); unmet = True
+        if unmet: return
+    
+        # ---- 2) PRE-CHECK hard caps / already-owned BEFORE charging ----
+        if "solar_watts" in effects and self.solar_watts >= self.solar_cap_watts:
+            print(COL.yellow("You're already at max solar wattage")); return
+        if "wind_watts" in effects and self.wind_watts >= self.wind_cap_watts:
+            print(COL.yellow("You're already at max wind wattage")); return
+        if "has_tent" in effects and self.has_tent:
+            print(COL.yellow("You already own a tent.")); return
+        for k in effects:
+            if k.startswith("device:"):
+                dev = k.split(":",1)[1]
+                if self.devices.get(dev, {}).get("owned", False):
+                    print(COL.yellow(f"You already own {dev}.")); return
+    
+        # ---- 3) PRICE (after we know purchase is allowed) ----
         price = float(item.get("price", 0)) * qty
-        # job discount for upgrades/devices (heuristic: price >= $150)
         if item.get("price", 0) >= 150:
             price *= (1.0 - self.job_perks.get('shop_discount', 0.0))
         if self.cash < price:
             print(COL.yellow(f"Not enough cash (${self.cash:,.2f}). This costs ${price:.0f}.")); return
-
-        ## limit solar purchases to solar CAP
-        if "solar_watts" in item.get("effects"):
-            if self.solar_watts == self.solar_cap_watts:
-                print(COL.yellow(f"You're already at max solar wattage"))
-                return
-
-        ## limit wind purchases to wind CAP
-        if "wind_watts" in item.get("effects"):
-            if self.wind_watts == self.wind_cap_watts:
-                print(COL.yellow(f"You're already at max wind wattage"))
-                return
-
-        purchased = None
-        effects = item.get("effects", {})
-        # If any effect values are strings like "+200", parse magnitude
+    
+        # ---- 4) Apply auxiliary device_amps config, but no stateful "purchases" yet ----
         for eff_key, eff_val in effects.items():
             if eff_key.startswith("device_amps:"):
                 dev = eff_key.split(":",1)[1]
@@ -1752,50 +1768,43 @@ class Game:
                     self.devices.setdefault(dev, {})['amps'] = amps
                 except Exception:
                     pass
-                continue
-
+    
+        # ---- 5) APPLY EFFECTS NOW (all checks passed) ----
+        purchased_any = False
         for eff_key, eff_val in effects.items():
+            if eff_key.startswith("device_amps:"):
+                continue  # already handled
             if isinstance(eff_val, str) and eff_val.startswith("+"):
-                try:
-                    mag = float(eff_val[1:]) * qty
-                except Exception:
-                    mag = 0
-                purchased = self._apply_effect(eff_key, mag)
+                try: mag = float(eff_val[1:]) * qty
+                except Exception: mag = 0
             elif eff_val == "install":
-                purchased = self._apply_effect(eff_key, 1)
+                mag = 1
             else:
-                try:
-                    mag = float(eff_val) * qty
-                except Exception:
-                    mag = 0
-                purchased = self._apply_effect(eff_key, mag)
-
-        if item.get("requires"):
-            requires = item.get("requires", {})
-            if requires.get("exp") and requires.get("level"): 
-                exp = requires.get("exp")
-                lvl = requires.get("level")
-                if self.xp < int(exp) or self.level < int(lvl):
-                    print(COL.yellow(f"Requires level {lvl}. You are only level {self.level}."))
-                    print(COL.yellow(f"Requires {exp} experience. You only have {self.xp} experience."))
-                    return
-            elif requires.get("level"): 
-                lvl = requires.get("level")
-                if self.level < int(lvl):
-                    print(COL.yellow(f"Requires level {lvl}. You are only level {self.level}."))
-                    return
-            elif requires.get("exp"): 
-                exp = requires.get("exp")
-                if self.xp < int(exp):
-                    print(COL.yellow(f"Requires {exp} experience. You only have {self.xp} experience."))
-                    return
-
+                try: mag = float(eff_val) * qty
+                except Exception: mag = 0
+    
+            res = self._apply_effect(eff_key, mag)
+            if res == "already":
+                # Should not happen due to pre-checks; treat as no-sale to be safe.
+                print(COL.yellow("You already have that upgrade.")); return
+            # Consider any nonzero numeric change or a non-empty string as a successful purchase
+            if (isinstance(res, (int,float)) and abs(res) > 1e-9) or (isinstance(res, str) and res):
+                purchased_any = True
+    
+        # If nothing effectively changed (e.g., clamped to cap), don't charge.
+        if not purchased_any:
+            print(COL.yellow("No capacity left to apply this upgrade.")); return
+    
+        # ---- 6) Take the money only after success ----
         self.cash -= price
         print(COL.grey(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:,.2f}."))
         if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
-            print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W/{self.solar_cap_watts:.0f} | wind: {self.wind_watts:,.0f}W/{self.wind_cap_watts:.0f} | EV range: {self.ev_range_mi:,.0f} mi | caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
+            print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W/{self.solar_cap_watts:.0f} | "
+                           f"wind: {self.wind_watts:,.0f}W/{self.wind_cap_watts:.0f} | "
+                           f"EV range: {self.ev_range_mi:,.0f} mi | "
+                           f"caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
 
-    # ---------- Mode / Energy ----------
+    # ---------- Drivetrain Mode ----------
     def set_mode(self, mode):
         m = (mode or '').lower()
         if m not in ('electric','fuel'): print(COL.red("MODE electric | MODE fuel")); return
@@ -2012,6 +2021,7 @@ HELP_TEXT = """Commands:
   EXPLORE
   FRIDGE
   FUEL
+  GENERATOR
   HEATER
   HELP
   HIKE
