@@ -563,6 +563,11 @@ class Game:
         "sw":"southwest", "southwest":"southwest",
     }
 
+    def share_goals(self):
+        with open('GOALS', "r", encoding="utf-8") as f:
+            goals = f.read()
+            print(COL.grey(goals))
+
     def _network_metrics(self, device):
         rng      = seeded_rng(self.location, self.minutes // 60, device)  # stable this hour
         ping     = int(rng.triangular(95, 100, 98 ))
@@ -588,30 +593,30 @@ class Game:
     def manage_starlink(self):
         s = self.devices.get('starlink')
         if not s.get('owned'):
-            print(f"You don't own a starlink device.")
+            print(COL.grey(f"You don't own a starlink device."))
         elif s.get('owned') and s.get('on'):
             print(COL.grey(self._network_metrics('starlink')))
         if s.get('owned') and not s.get('on'):
-            print(f"You need to power on your starlink (TURN STARLINK ON).")
+            print(COL.yellow(f"You need to power on your starlink (TURN STARLINK ON)."))
 
     def manage_weboost(self):
         s = self.devices.get('weboost')
         if not s.get('owned'):
-            print(f"You don't own a weboost device.")
+            print(COL.yellow(f"You don't own a weboost device."))
         elif s.get('owned') and s.get('on'):
             print(COL.grey(self._network_metrics('weboost')))
         elif s.get('owned') and not s.get('on'):
-            print(f"You need to power on your weboost (TURN WEBOOST ON).")
+            print(COL.grey(f"You need to power on your weboost (TURN WEBOOST ON)."))
 
     def manage_laptop(self):
         """manage laptop (email, websites, etc)"""
         s = self.devices.get('laptop')
         if not s.get('owned'):
-            print(f"You don't own a laptop.")
+            print(COL.yellow(f"You don't own a laptop."))
         elif s.get('owned') and s.get('on'):
-            print("You hear the familiar bootup sound of your laptop")
+            print(COL.grey("You hear the familiar bootup sound of your laptop"))
         elif s.get('owned') and not s.get('on'):
-            print(f"You need to power on your laptop (TURN LAPTOP ON).")
+            print(COL.yellow(f"You need to power on your laptop (TURN LAPTOP ON)."))
 
     def manage_generator(self):
         """query generator status"""
@@ -655,21 +660,21 @@ class Game:
         """heat level, fuel consumption, heat output"""
         s = self.devices.get('heater')
         if not s.get('owned'):
-            print(f"You don't own a diesel heater.")
+            print(COL.grey(f"You don't own a diesel heater."))
         elif s.get('owned') and s.get('on'):
-            print("Chinese characters display on the screen.")
+            print(COL.grey("Chinese characters display on the screen."))
         elif s.get('owned') and not s.get('on'):
-            print(f"You need to power on your heater (TURN HEATER ON).")
+            print(COL.yellow(f"You need to power on your heater (TURN HEATER ON)."))
 
     def manage_fridge(self):
         """store fresh veggies, meat, etc"""
         s = self.devices.get('fridge')
         if not s.get('owned'):
-            print(f"You don't own a fridge device.")
+            print(COL.yellow(f"You don't own a fridge device."))
         elif s.get('owned') and s.get('on'):
-            print("You peer into an empty fridge.")
+            print(COL.grey("You peer into an empty fridge."))
         elif s.get('owned') and not s.get('on'):
-            print(f"You need to power on your heater (TURN FRIDGE ON).")
+            print(COL.yellow(f"You need to power on your heater (TURN FRIDGE ON)."))
 
     def _available_local_map_here(self):
         """Return the map dict for this overworld location, or None."""
@@ -2316,6 +2321,7 @@ def main():
         elif u == "HEATER": game.manage_heater()
         elif u == "LAPTOP": game.manage_laptop()
         elif u == "GENERATOR": game.manage_generator()
+        elif u == "GOALS": game.share_goals()
         elif u.startswith('WATCH '): game.watch_something(line.split(' ', 1)[1])
         else:
             print(COL.red("Unknown command. Type HELP."))

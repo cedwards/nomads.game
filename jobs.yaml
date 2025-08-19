@@ -16,3 +16,15 @@ trail_guide:
   label: Trail Guide
   hike_energy_mult: 0.8
   hike_find_bonus: 0.1
+retiree:
+  shop_discount: 0.20
+  label: Retired Firefighter
+seasonal_worker:
+  shop_discount: 0.05
+  label: Seasonal Worker
+  remote_camp_income: 150
+veteran:
+  shop_discount: 0.20
+  hike_energy_mult: 0.8
+  hike_find_bonus: 0.1
+  morale_multiplier: -0.1

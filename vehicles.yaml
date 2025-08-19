@@ -28,7 +28,7 @@ prius:
   base_water_cap: 25
   ev_range: 300
   fuel_tank_gal: 14
-  house_cap_factor: 0.7
+  house_cap_factor: 0.5
   label: Prius
   max_food_cap: 14
   max_water_cap: 40
@@ -64,10 +64,34 @@ van:
   base_water_cap: 50
   ev_range: 240
   fuel_tank_gal: 24
-  house_cap_factor: 1.0
+  house_cap_factor: 1.5
   label: Van
-  max_food_cap: 20
+  max_food_cap: 25
   max_water_cap: 90
-  mpg: 22
+  mpg: 16
   solar_cap_watts: 400
   wind_cap_watts: 600
+RV:
+  base_food_cap: 20
+  base_water_cap: 75
+  ev_range: 200
+  fuel_tank_gal: 30
+  house_cap_factor: 2.0
+  label: RV
+  max_food_cap: 40
+  max_water_cap: 100
+  mpg: 10
+  solar_cap_watts: 800
+  wind_cap_watts: 900
+motorhome:
+  base_food_cap: 40
+  base_water_cap: 80
+  ev_range: 130
+  fuel_tank_gal: 40
+  house_cap_factor: 2.5
+  label: Motor Home
+  max_food_cap: 60
+  max_water_cap: 100
+  mpg: 5
+  solar_cap_watts: 1200
+  wind_cap_watts: 1200

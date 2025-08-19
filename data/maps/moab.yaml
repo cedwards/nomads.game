@@ -6,7 +6,13 @@ rooms:
     name: Bridge (Colorado River)
     camping: none
     description: |
-      Scenic bridge crossing the mighty Colorado River.
+      A graceful pedestrian span crosses the Colorado here, its rust-toned truss
+      echoing the surrounding sandstone. Cyclists and runners hum across, linking the
+      trails that snake along US-191 and UT-128. Below, the river slides by—green in
+      shade, copper in sun—while swallows stitch the air under the girders. Benches
+      face the water, and interpretive signs nod to geology and human travel through
+      the canyon. Evening brings long shadows and that river-cool breeze that makes
+      you linger a few extra minutes before moving on.
     exits:
       northwest: courthouse_wash
       southeast: lions_park
@@ -15,7 +21,13 @@ rooms:
     name: Courthouse Wash (Rock Art)
     camping: stealth
     description: |
-      Describe the Courthouse Wash and rock art.
+      The wash cuts a pale ribbon through cottonwood and tamarisk, a quiet corridor
+      where crickets take the night shift and ravens handle days. Sand underfoot
+      records passing hooves, bike treads, and paw prints until the next gust
+      rewrites the page. Sandstone walls pull close, then open, teasing distant views
+      of fins and buttes. Somewhere upstream, rock art panels hint at travelers who
+      paused here long before pavement and park gates. Water is seasonal, but the
+      memory of water shapes every curve and undercut along the way. 
     exits:
       southeast: colorado_river_bridge
       northwest: courthouse_wash_parking
@@ -24,7 +36,13 @@ rooms:
     name: Highway 191
     camping: stealth
     description: |
-      Describe this stretch of highway 191 north of Moab
+      A compact pullout serves as the trailhead, edged by desert varnish-streaked
+      cliffs and a scatter of juniper and rabbitbrush. From here, a short, gently
+      rising path crosses a small bridge and slips toward a famed rock art panel,
+      where ancient pigments still breathe against the stone. It’s the kind of stop
+      that’s easy to miss at highway speed and unforgettable once you’ve stood
+      beneath those figures. Expect soft sand, a little sun, and just enough
+      elevation to feel like you’ve earned the view. 
     exits:
       southeast: courthouse_wash
       west: the_bend
@@ -33,7 +51,12 @@ rooms:
     name: Highway 191, Bend
     camping: stealth
     description: |
-      Describe this bend in the highway 191 north of Moab
+      The road eases into a generous curve, hugging the base of a warm, wind-carved
+      wall. On the inside of the bend sits a gravel turnout with just enough room for
+      a couple rigs and a tripod or two. From here the canyon’s geometry lines up:
+      river, cottonwoods, and the red cliff’s clean arc like a compass stroke.
+      Traffic noise fades to a low ribbon; ravens gossip from a ledge. It’s a natural
+      pause point—the sort of place where maps earn their margins.
     exits:
       east: courthouse_wash_parking
       northwest: power_relay_station
@@ -42,8 +65,13 @@ rooms:
     name: Highway 191, Potash Rd
     camping: stealth
     description: |
-      Describe this intersection of HW191 and Potash Road
-      (secret unlock for Jeep, Potash Ponds)
+      Carved into the canyon’s shadowed flank, Potash Road tracks the river’s bends,
+      with cliff faces so close you can read their mineral stories. Pullouts reveal
+      petroglyphs and occasional dinosaur tracks; other turnoffs lead to climbers
+      inching up sunlit slabs. Farther down, the industrial skeleton of the potash
+      operation contrasts with the wildness, an honest note in the symphony of stone
+      and water. Expect tight shoulders, big views, and the feeling you’ve slipped
+      backstage on Moab’s geologic theater. 
     exits:
       east: courthouse_wash_parking
       northwest: power_relay_station
@@ -52,7 +80,14 @@ rooms:
     name: Highway 191, Power Relay Station
     camping: stealth
     description: |
-      Describe the power relay station to the west side of the highway
+      A chain-link fence squares off an acre of hum and heat. Transformers crouch
+      like metal bison, radiators ticking, insulators gleaming ceramic-white. Warning
+      placards repeat the mantra: high voltage, authorized personnel only. Beyond the
+      perimeter, red rock and blue sky make the machinery look borrowed from a
+      different world. The gravel here is meticulously raked by wind and maintenance
+      crews alike; footprints don’t last long. It’s not scenic, but it’s
+      honest—current gathered and distributed so nearby neon, ice machines, and
+      headlamps can burn after dark.
     exits:
       southeast: potash_road
       east: visitor_center_intersection
@@ -62,7 +97,13 @@ rooms:
     name: Arches National Park, Visitor Center Intersection
     camping: none
     description: |
-      Describe the intersection of HWY191 and Arches National Park
+      Lanes split here: one rises toward parkland, the other continues the long
+      north–south pulse of US-191. Wayfinding signs stack like polite
+      arguments—trailheads this way, permits that way, water and restrooms up ahead.
+      Morning brings a parade of rental cars, dusty vans, and sun-faded Subarus; by
+      late afternoon, the queue thins and ravens take back the light poles. The sense
+      is transitional: last call for gas, first chance for maps, and an invitation to
+      trade speed for deep time just up the grade. 
     exits:
       west: power_relay_station
       northwest: arches_entrance_se
@@ -71,7 +112,13 @@ rooms:
     name: Arches National Park Entrance
     camping: none
     description: |
-      Describe the entrance path to the national park
+      A checkerboard of booths and bollards sits at the foot of the switchbacks. On
+      the southeast side, low shrubs and cryptobiotic soil frame the asphalt—fragile
+      as lace, older than empires. Rangers wave vehicles forward with an economy of
+      motion honed by long lines and short conversations. The world tilts upward
+      here; you can feel the park road begin its steady climb toward fins and windows
+      even before you move. Sunlight ricochets off hoods and sandstone, and the
+      desert’s dry sage-and-dust perfume gathers in the heat.
     exits:
       southeast: visitor_center_intersection
       northwest: arches_entrance_mid
@@ -80,7 +127,13 @@ rooms:
     name: Arches National Park Entrance
     camping: none
     description: |
-      Describe the entrance path to the national park, mid
+      Centered between lanes, a stony median holds a flag, a sign, and a sense of
+      threshold. Here the wind carries two languages: the murmur of road
+      talk—permits, passes, “where’s Delicate?”—and the silence that lives in the
+      rock, patient and unbothered. Ahead, the grade snakes upward in deliberate
+      switchbacks, each turn revealing another plane of rust-red cliff. Behind, the
+      valley flattens toward the river. It’s the briefest kind of liminal space,
+      measured in idling minutes and first glances at the deep time above. 
     exits:
       southeast: arches_entrance_se
       northwest: arches_entrance_nw
@@ -89,7 +142,13 @@ rooms:
     name: Arches National Park Entrance NW
     camping: none
     description: |
-      Describe the entrance path to the national park, NW
+      On the northwest shoulder, basalt-looking boulders and scrubby grasses edge the
+      queue. The view back toward the Book Cliffs stacks up like stage scenery—blue
+      far, brown near, red underfoot. Visitor chatter flares whenever a bighorn rumor
+      sparks, then settles into sunscreen and water-bottle rituals. The fee booth
+      windows reflect the sky in strips; a ranger’s hat brim slices the glare. You
+      can almost feel the park’s topography tugging at you: leave the grid, follow
+      the switchbacks, trade road noise for the quieter grammar of stone. 
     exits:
       southeast: arches_entrance_mid
       west: arches_visitor_center
@@ -98,7 +157,13 @@ rooms:
     name: Arches National Park Visitor Center
     camping: none
     description: |
-      Describe the Arches National Park visitor center
+      A low-slung complex of stone and steel rises at the base of the cliffs,
+      weather-colored to sit comfortably in its place. Inside: exhibits on arches’
+      improbable physics, a relief map that makes route choices obvious, and rangers
+      who’ve answered every version of “how long does Delicate Arch take?” Outside:
+      water, shade structures, and a steady breeze crossing the parking lot. It’s the
+      smart first stop—permits, restrooms, trail conditions—and a last good reality
+      check before you trade air-conditioning for desert sun. 
     exits:
       east: arches_entrance_nw
     items: []
@@ -106,7 +171,13 @@ rooms:
     name: Highway 191, Sand Hill
     camping: stealth
     description: |
-      Describe the sand hill activities
+      A giant dune slumps against the roadside like a golden avalanche paused
+      mid-fall. Kids (and adults who admit nothing) trudge up, then launch down in
+      laughter and cartwheels, trailing comets of sand. The grains here are fine and
+      warm, slipping under your heels, obligating rest breaks halfway. Across the
+      highway, the park entrance beckons, but this low-tech playground often wins the
+      vote. In wind, the dune hisses softly; after rain, it compacts just enough to
+      reward the climbers with easier steps. 
     exits:
       southeast: power_relay_station
     items: []
@@ -114,17 +185,29 @@ rooms:
     name: Moab Main Street (South)
     camping: stealth
     description: |
-      Moab Mainstreet South (Grocery Store)
+      South Main tightens into a pleasing clutter of outfitters, taco windows, and
+      motel neon. The evening air blends the aromas of chain lube, mesquite smoke,
+      and desert dust. Side streets peel off toward residential pockets and hidden
+      bungalows. Traffic pulses with raft trailers, lifted Jeeps, and rental sedans
+      still learning about potholes. Murals splash color where stucco used to give
+      up. It’s the working rhythm of a town that earns its sunsets—gear returned, day
+      stories traded, tomorrow’s plans drawn on napkins.
     exits:
       north: moab_mainstreet_north
-      south: the_blue_pig
+      south: the_blu_pig
       east: moab_rv_park
     items: []
-  - id: the_blue_pig
-    name: The Blue Pig
+  - id: the_blu_pig
+    name: The Blu Pig
     camping: stealth
     description: |
-      The Blue Pig - BBQ and Blues!
+      A low-slung roadhouse vibe: smoke curling from the pit, blues on the speakers,
+      and a chalkboard promising ribs, brisket, and burnt ends. Inside, tables wear
+      the day’s dust proudly; boots and bike shoes get equal welcome. The bar keeps
+      local taps cold and the sauce choices hotter than the parking lot. If you’re
+      smart, you order like a sampler—pulled pork, a hushpuppy or three, and
+      something slaw-crunchy to earn your next ride. Out front, the neon pig grins
+      like it knows you’ll be back. 
     exits:
       north: moab_mainstreet_south
     items: ["food","beer"]
@@ -132,7 +215,13 @@ rooms:
     name: Moab Mainstreet (North)
     camping: stealth
     description: |
-      Moab Mainstreet North (Hardware Store)
+      North Main stretches toward the river, with bigger lots, newer hotels, and long
+      views that stack mesas against the sky. Rental trucks wear red dust jackets;
+      river shuttles idle with rafts piled high and wide. A steady stream heads for
+      evening light on the canyon walls, or back from a day spent there—frames on
+      roof racks, grit in sock cuffs, grins under salt-white hat lines. Overhead,
+      swifts scribble loops between streetlamps. The farther you go, the more highway
+      gives way to horizon.
     exits:
       north: lions_park
       south: moab_mainstreet_south
@@ -141,8 +230,13 @@ rooms:
     name: Lions Park
     camping: stealth
     description: |
-      This is a description of Lions park. I thought they were printing the
-      same thing but actually I was lazy and didn't fill out a description.
+      A green pocket at the confluence of roads and river, Lions Park hosts
+      trailheads, restrooms, and shade trees that feel like a revelation in July.
+      It’s Moab’s transit hub in miniature—bikes, buses, strollers—everyone trading
+      asphalt for pathways. The pedestrian bridge lands here, a gentle invitation to
+      cross the river and lace into the paved trail network. Picnic tables sit within
+      earshot of water; interpretive panels quietly fill in the backstory. Start
+      here, end here, or just breathe here between adventures.
     items: []
     exits:
       northwest: colorado_river_bridge
@@ -152,7 +246,13 @@ rooms:
     camping: stealth
     name: Colorado River (Intersection)
     description: |
-      Colorado River Intersection
+      Here US-191 shakes hands with UT-128, and the river obliges with a scenic
+      drumroll. Signs point east along the “river road,” a two-lane ribbon that
+      shadows the Colorado between cathedral walls. The air cools a degree the moment
+      you turn, and cottonwoods begin to outnumber power poles. It’s a decision point
+      with very few wrong answers: food back in town, or a slow-drive gallery of
+      bends, boat ramps, and pullouts ahead. The light changes every minute;
+      photographers argue happily with their tripods. 
     items: []
     exits:
       southwest: lions_park
@@ -161,7 +261,12 @@ rooms:
     name: Colorado River (H-128)
     camping: dispersed
     description: |
-      Colorado River First
+      The byway settles into its rhythm: river to the right, cliff to the left, with
+      just enough shoulder for a careful pullout. From here you see eddies muscling
+      past boulders and the way canyon walls keep their own private weather—sunlit
+      crowns, shadowed feet. A fisherman works a seam; swallows pop in and out of
+      tiny caves like ideas. The road sound softens to a hush that pairs perfectly
+      with water talk. This is where you realize the drive is the destination. 
     items: []
     exits:
       southwest: colorado_river_intersection
@@ -170,7 +275,13 @@ rooms:
     name: Colorado River (H-128)
     camping: dispersed
     description: |
-      Colorado River Two
+      A wider turnout opens to a small beach, the kind where sandals find their way
+      off without anyone deciding. Cottonwood leaves clap softly even when the air
+      seems still. Across the channel, mineral streaks—black varnish, lemony
+      lichens—paint the cliff in patient brushstrokes. Rafts slide by, pilots reading
+      the water like sheet music. The sense of scale recalibrates: ants turn into
+      hikers on the far bank, then vanish behind a bulge of rock. Time gets elastic;
+      schedules politely step aside. 
     items: []
     exits:
       east: colorado_river_three
@@ -179,7 +290,13 @@ rooms:
     name: Colorado River (H-128)
     camping: dispersed
     description: |
-      Colorado River Three
+      Here the river kinks against the wall and deepens, mirror-calm under morning
+      shade. The cliff’s base offers a narrow gravel shelf where driftwood gathers
+      after high water. Ravens surf thermals above the rim, then drop to inspect
+      picnic prospects. Half the sky is canyon, the other half pure weather: a moving
+      fresco of cloud and sun that repaints everything several times an hour. It’s an
+      excellent place to calibrate cameras, cool ankles, and remember to drink water
+      before you feel thirsty. 
     items: []
     exits:
       northeast: colorado_river_four
@@ -188,7 +305,13 @@ rooms:
     name: Colorado River (H-128)
     camping: dispersed
     description: |
-      Colorado River Four
+      The canyon loosens its grip a little, granting a longer view downstream where
+      cliffs stagger like pages in a giant book. A boat ramp sits upriver; you can
+      hear the thrum of trailers and the splash of nervous first steps into rafts.
+      The byway hums with satisfied engines and bug-spattered windshields. Here, even
+      the road seems to breathe with the river—slow in the shade, quick in the sun,
+      always aiming for the next bend that promises a better photograph and delivers
+      it. 
     items: []
     exits:
       northeast: colorado_river_five
@@ -197,7 +320,12 @@ rooms:
     name: Colorado River (H-128)
     camping: dispersed
     description: |
-      Colorado River Five
+      At this final pullout the canyon’s palette shifts warmer, as if the day turned
+      a dimmer knob toward sunset. The cliff on the far bank wears wave marks
+      hundreds of feet up—stone graffiti from ancient floods. A heron lifts off with
+      languid wingbeats, crossing the current like a slow metronome. The road is
+      quieter here, but the river never is; it keeps telling the long story to anyone
+      who will listen. When you roll away, you’ll hear it in the rearview. 
     items: []
     exits:
       southwest: colorado_river_four
@@ -205,7 +333,13 @@ rooms:
     name: Moab RV Park
     camping: paid
     description: |
-      A description of a desert tiny town RV park.
+      A tidy grid of gravel pads, power pedestals, and shade trees forms a temporary
+      small town of awnings and camp chairs. Solar panels tilt like sunflowers; dogs
+      learn new leashes and old tricks. Showers hiss, washers thump, and someone is
+      always nursing a grill toward perfection. At dusk, fairy lights flicker along
+      canopies while the cliffs pick up their last impossible color. It’s a practical
+      haven—water, dump, Wi-Fi—and a social one where trail beta trades hands between
+      the clink of enamel mugs and stargazing apps.
     items: []
     exits:
       west: moab_mainstreet_south
