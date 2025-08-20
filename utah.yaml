@@ -138,7 +138,7 @@ nodes:
       fragility becomes grandeur and where the land itself seems to be holding its
       breath.
     name: "Arches"
-    ansi: "delicate_arch.ans"
+    sixel: "delicate_arch.jpg"
     biome: desert_canyon
     elevation_ft: 4100
     season_rules: ["timed_entry", "summer_heat"]
@@ -177,7 +177,7 @@ nodes:
       Canyonlands is vastness personified, a place that reminds you how small you are
       and how endless the desert can be.
     name: "Canyonlands"
-    ansi: mesa_arch.ans
+    sixel: mesa_arch.jpg
     biome: mesa_desert
     elevation_ft: 6000
     shop_inventory: ["water"]
@@ -292,7 +292,7 @@ nodes:
       to the essentials: light, salt, sky, and the unsettling reminder that you are a
       small figure moving across an infinite canvas.
     name: "Bonneville Salt Flats"
-    ansi: salt_flats.ans
+    sixel: salt_flats.jpg
     biome: salt_pan
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]

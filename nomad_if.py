@@ -12,6 +12,7 @@
 
 import yaml
 import re, os, sys, math, json, random
+import shutil, subprocess, sys
 from collections import defaultdict
 
 TURN_MINUTES = 10
@@ -30,6 +31,14 @@ class COL:
     prompt= lambda s: f"\033[36m{s}\033[0m"
     red   = lambda s: f"\033[31m{s}\033[0m"
     yellow= lambda s: f"\033[33m{s}\033[0m"
+
+def show_image(path, width_px=800):
+    if not shutil.which("img2sixel"):
+        print(f"[photo: {os.path.basename(path)} — SIXEL unavailable]")
+        return
+    # stream the sixel directly to the terminal
+    subprocess.run(["img2sixel", "-w", str(width_px), path], check=False)
+    sys.stdout.flush()
 
 ## ---- Load site-local maps ----
 def load_local_maps(maps_root="data/maps"):
@@ -1244,14 +1253,12 @@ class Game:
         #print(f"You are at {n['name']}. {biome} at {elev} ft.")
         # intentionally no bar HUD (per your earlier preference)
         desc = n.get('description')
-        ansi = n.get('ansi')
+        sixel = n.get('sixel')
         if desc: print(COL.green(desc))
         input(COL.blue("Press ENTER to continue..."))
         os.system('cls' if os.name == 'nt' else 'clear')
-        if ansi: 
-            with open(ansi, "r", encoding="utf-8") as f: 
-                ansi_content = f.read()
-                print(ansi_content)
+        if sixel: 
+            show_image(sixel)
         #print(f"Time: {minutes_to_hhmm(self.minutes)}")
         #print(COL.grey(f"Weather: {describe_weather(w)}."))
         #print(f"Resources — water: {n['resources'].get('water','?')}, "
