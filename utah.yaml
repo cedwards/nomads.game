@@ -102,7 +102,7 @@ nodes:
     biome: desert_canyon
     elevation_ft: 5500
     season_rules: ["flash_floods", "shoulder_season_best"]
-    resources: { water: "spigots", food: "nearby", gas: True, ev: True, solar: "good", wind: "fair" }
+    resources: { water: "spigots", food: "nearby", gas: True, ev: True, solar: "good", wind: "poor" }
     pet_rules: "moderate"
     fuel_price: 3.35
     gigs:
@@ -142,7 +142,7 @@ nodes:
     biome: desert_canyon
     elevation_ft: 4100
     season_rules: ["timed_entry", "summer_heat"]
-    resources: { water: "visitor_center", food: "nearby", gas: False, ev: False, solar: "good", wind: "fair" }
+    resources: { water: "visitor_center", food: "nearby", gas: False, ev: False, solar: "good", wind: "good" }
     pet_rules: "strict"
     gigs:
       - { id: delicate_dawn, window: "sunrise", payout: [140, 260], rep: { tourists: 1 } }
@@ -182,7 +182,7 @@ nodes:
     elevation_ft: 6000
     shop_inventory: ["water"]
     season_rules: ["heat_exposure", "wind_mesas"]
-    resources: { water: "spigot", food: "none", gas: False, ev: False, solar: "excellent", wind: "good" }
+    resources: { water: "spigot", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
     pet_rules: "strict"
     gigs:
       - { id: island_sky_set, window: "golden_hour", payout: [120, 220], rep: { nomads: 1 } }
@@ -296,7 +296,7 @@ nodes:
     biome: salt_pan
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]
-    resources: { water: "none", food: "scarce", gas: True, ev: False, solar: "excellent", wind: "fair" }
+    resources: { water: "none", food: "scarce", gas: True, ev: False, solar: "excellent", wind: "excellent" }
     pet_rules: "friendly"
     fuel_price: 3.66
     gigs:
@@ -335,12 +335,13 @@ nodes:
     biome: alpine
     elevation_ft: 8500
     season_rules: ["snow_closure", "mosquito_summer"]
-    resources: { water: "limited", food: "none", gas: False, ev: False, solar: "poor", wind: "good" }
+    resources: { water: "limited", food: "none", gas: False, ev: False, solar: "poor", wind: "fair" }
     pet_rules: "friendly"
     gigs:
       - { id: high_lake_morning, window: "morning", payout: [80, 150], rep: { locals: 1 } }
     events:
       - { id: bear_check, chance: 0.06, tags: ["wildlife","storage"] }
+      - { id: sasquatch, chance: 0.01, tags: ["wildlife","encounter","rare"] }
     connections:
       - { to: bonneville_salt_flats, road: "highway", miles: 181, grade: "mixed", wind_exposure: "medium" }
       - { to: san_rafael_swell, road: "highway", miles: 191, grade: "mixed", wind_exposure: "high" }
@@ -371,7 +372,7 @@ nodes:
     biome: desert
     elevation_ft: 5200
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "none", food: "nearby", gas: True, ev: False, solar: "excellent", wind: "good" }
+    resources: { water: "none", food: "nearby", gas: True, ev: False, solar: "excellent", wind: "excellent" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -441,7 +442,7 @@ nodes:
     biome: desert
     elevation_ft: 4078
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "available", food: "available", gas: True, ev: True, solar: "excellent", wind: "good" }
+    resources: { water: "available", food: "available", gas: True, ev: True, solar: "good", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
@@ -477,7 +478,7 @@ nodes:
     biome: arid
     elevation_ft: 6600
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "available", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
+    resources: { water: "available", food: "none", gas: False, ev: False, solar: "good", wind: "excellent" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }

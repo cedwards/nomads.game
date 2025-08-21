@@ -773,7 +773,7 @@ class Game:
         else:
             print(COL.grey(f"Drive: Fuel {self.fuel_gal:.1f} gal (~{int(self.fuel_gal*self.mpg)} mi)"))
         print(COL.grey(f"House: {int(self.battery):.0f}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)"))
-        print(COL.grey(f"Harvest: Solar {self.solar_watts:.0f}W (cap {self.solar_cap_watts}W), Wind {self.wind_watts:.0f}W (cap {self.wind_cap_watts}W)"))
+        print(COL.grey(f"Harvest: Solar {self.solar_watts:.0f}/{self.solar_cap_watts}W), Wind {self.wind_watts:.0f}/{self.wind_cap_watts}W)"))
         if self.mode == "electric":
             print(COL.grey(f"Stores: H₂O {self.water:.2f}/{self.water_cap_gallons:.0f}G, Food {self.food:.2f}/{self.food_cap_rations:.0f}, Propane {self.propane_lb:.2f}/{self.propane_lb_cap:.0f}, Butane {self.butane_can:.2f}/{self.butane_can_cap:.0f}, Diesel {self.diesel_can_gal:.2f}/{self.diesel_can_cap:.0f}"))
         if self.mode == "fuel":
@@ -981,7 +981,6 @@ class Game:
     def exp(self):
         print(COL.grey(f"Level: {self.level} | Experience: {self.xp} | Needed: {xp_needed_for_level(self.level+1)-self.xp}"))
 
-
     def people(self):
         crew = self.npcs_here_now()
         if not crew:
@@ -1092,7 +1091,7 @@ class Game:
     def _solar_input_watts_now(self):
         node = self.node()
         sol = (node.get('resources', {}) or {}).get('solar', 'fair')
-        site = {'excellent':1.0,'good':0.75,'fair':0.5,'poor':0.25}.get(sol, 0.5)
+        site = {'excellent':0.9,'good':0.70,'fair':0.40,'poor':0.20, 'terrible':0.5}.get(sol, 0.5)
         if self.solar_watts <= 0: return 0.0
         w = derive_weather(node, self.minutes)
         # Scale by UV (0..uv_peak) normalized to peak
@@ -1102,7 +1101,7 @@ class Game:
     def _wind_input_watts_now(self):
         if self.wind_watts <= 0: return 0.0
         w = derive_weather(self.node(), self.minutes)
-        frac = {'low':0.2,'medium':0.6,'high':1.0}[w['wind']]
+        frac = {'low':0.1,'medium':0.4,'high':8.0}[w['wind']]
         return self.wind_watts * frac
 
     def _generator_input_amps_now(self):
@@ -2171,7 +2170,7 @@ def main():
 
     title_image = random.choice(["title-1.png","title-2.png","title-3.png","title-4.png"])
     show_image(title_image)
-    input(COL.blue("Press ENTER to begin."))
+    input(COL.blue("---------------------------------------[Press ENTER to begin]---------------------------------------"))
     with open('WELCOME', "r", encoding="utf-8") as f:
         welcome_txt = f.read()
         print(welcome_txt)
