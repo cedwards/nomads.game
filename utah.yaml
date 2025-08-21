@@ -215,6 +215,7 @@ nodes:
       buttes, and slot canyons. Standing at the Island in the Sky, you feel suspended
       above a broken world, each canyon a wound in the earth.
     name: "Moab"
+    sixel: title.png
     biome: town_desert
     elevation_ft: 4000
     season_rules: ["summer_heat", "cold_nights"]

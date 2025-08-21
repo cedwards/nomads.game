@@ -501,14 +501,15 @@ class Game:
         self.route_idx = 0
 
         # EV / Fuel systems
-        self.ev_battery       = 80.0  # traction battery %
-        self.ev_range_mi      = v["ev_range"]
-        self.fuel_gal         = 0.0
-        self.mpg              = v["mpg"]
-        self.fuel_tank_gal    = v["fuel_tank_gal"]
-        self.gasoline_can_gal = 0.0
+        self.gasoline_can_gal       = 0.0
+        self.gasoline_can_cap       = v["gasoline_can_cap"]
+        self.ev_range_mi            = v["ev_range"] # range in miles
+        if self.mode == 'electric':
+            self.ev_battery         = 80.0  # traction battery %
         if self.mode == 'fuel':
-            self.fuel_gal = 0.8 * self.fuel_tank_gal  # start with some fuel
+            self.fuel_tank_gal      = v["fuel_tank_gal"] # fuel tank size
+            self.fuel_gal           = 0.75 * self.fuel_tank_gal  # start with 3/4 tank
+            self.mpg                = v["mpg"] # vehicle mpg
 
         # Dispersed stay tracking
         self.last_camp_node = None
@@ -544,8 +545,11 @@ class Game:
             'generator': {'owned': False, 'on': False, 'charge_amps': 16.67, 'burn_gph': 0.15, 'fuel': 'diesel'},
         }
         self.diesel_can_gal = 0.0
+        self.diesel_can_cap = v["diesel_can_cap"]
         self.propane_lb     = 0.0
+        self.propane_lb_cap = v["propane_lb_cap"]
         self.butane_can     = 0.0
+        self.butane_can_cap = v["butane_can_cap"]
 
         # Items catalog
         self.catalog = catalog
@@ -771,9 +775,9 @@ class Game:
         print(COL.grey(f"House: {int(self.battery):.0f}%  ({getattr(self, 'house_cap_ah', 100):.0f}Ah)"))
         print(COL.grey(f"Harvest: Solar {self.solar_watts:.0f}W (cap {self.solar_cap_watts}W), Wind {self.wind_watts:.0f}W (cap {self.wind_cap_watts}W)"))
         if self.mode == "electric":
-            print(COL.grey(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap"))
+            print(COL.grey(f"Stores: H₂O {self.water:.2f}/{self.water_cap_gallons:.0f}G, Food {self.food:.2f}/{self.food_cap_rations:.0f}, Propane {self.propane_lb:.2f}/{self.propane_lb_cap:.0f}, Butane {self.butane_can:.2f}/{self.butane_can_cap:.0f}, Diesel {self.diesel_can_gal:.2f}/{self.diesel_can_cap:.0f}"))
         if self.mode == "fuel":
-            print(COL.grey(f"Stores: H₂O {self.water:.1f}/{self.water_cap_gallons:.0f}G, Food {self.food}/{self.food_cap_rations}, Propane {self.propane_lb}/cap, Butane {self.butane_can}/cap, Diesel {self.diesel_can_gal}/cap, Extra Fuel {self.gasoline_can_gal}/cap"))
+            print(COL.grey(f"Stores: H₂O {self.water:.2f}/{self.water_cap_gallons:.0f}G, Food {self.food:.2f}/{self.food_cap_rations:.0f}, Propane {self.propane_lb:.2f}/{self.propane_lb_cap:.0f}, Butane {self.butane_can:.2f}/{self.butane_can_cap:.0f}, Diesel {self.diesel_can_gal:.2f}/{self.diesel_can_cap:.0f}, Gasoline {self.gasoline_can_gal:.2f}/{self.gasoline_can_cap:.0f}"))
         # Quick device summary
         on = []
         for k, d in self.devices.items():
@@ -950,18 +954,18 @@ class Game:
         water_cap = self.water_cap_gallons
         food_cap = self.food_cap_rations
         if self.food >= 0:
-            print(COL.grey(f"Food: {self.food:.0f}/{food_cap} meals"))
+            print(COL.grey(f"Food: {self.food:.2f}/{food_cap:.0f} meals"))
         if self.water >= 0:
-            print(COL.grey(f"Water: {self.water:.2f}/{water_cap} gallons"))
+            print(COL.grey(f"Water: {self.water:.2f}/{water_cap:.0f} gallons"))
         if self.propane_lb >= 0:
-            print(COL.grey(f"Propane: {self.propane_lb:.2f} lbs"))
+            print(COL.grey(f"Propane: {self.propane_lb:.2f}/{self.propane_lb_cap:.0f} lbs"))
         if self.butane_can >= 0:
-            print(COL.grey(f"Butane: {self.butane_can:.2f} canisters"))
+            print(COL.grey(f"Butane: {self.butane_can:.2f}/{self.butane_can_cap:.0f} canisters"))
         if self.diesel_can_gal >= 0:
-            print(COL.grey(f"Diesel: {self.diesel_can_gal:.2f} gallons"))
+            print(COL.grey(f"Diesel: {self.diesel_can_gal:.2f}/{self.diesel_can_cap:.0f} gallons"))
         if self.mode == 'fuel':
             if self.gasoline_can_gal >= 0:
-                print(COL.grey(f"Extra Fuel: {self.gasoline_can_gal:.2f} gallons"))
+                print(COL.grey(f"Gasoline: {self.gasoline_can_gal:.2f}/{self.gasoline_can_cap:.0f} gallons"))
 
     def elevation(self):
         elev_ft = self.node().get('elevation_ft','?')
@@ -1719,6 +1723,8 @@ class Game:
             # ignore here; amps set via value string of effect; handled in buy()
         elif key == "diesel_can_gal":
             self.diesel_can_gal = max(0.0, self.diesel_can_gal + qty); purchased = f"{qty} gal"
+        elif key == "gasoline_can_gal":
+            self.gasoline_can_gal = max(0.0, self.gasoline_can_gal + qty); purchased = f"{qty} gal"
         elif key == "propane_lb":
             self.propane_lb = max(0.0, self.propane_lb + qty); purchased = f"{qty} lb"
         elif key == "butane_can":
@@ -1758,6 +1764,10 @@ class Game:
             print(COL.yellow("You're already at max wind wattage")); return
         if "has_tent" in effects and self.has_tent:
             print(COL.yellow("You already own a tent.")); return
+        if "gasoline_can_gal" in effects and self.gasoline_can_gal > self.gasoline_can_cap:
+            print(COL.yellow("You're already at max extra gasoline.")); return
+        if "gasoline_can_gal" in effects and self.diesel_can_gal > self.diesel_can_cap:
+            print(COL.yellow("You're already at max extra diesel.")); return
         for k in effects:
             if k.startswith("device:"):
                 dev = k.split(":",1)[1]
@@ -1766,7 +1776,7 @@ class Game:
     
         # ---- 3) PRICE (after we know purchase is allowed) ----
         price = float(item.get("price", 0)) * qty
-        if item.get("price", 0) >= 150:
+        if item.get("price", 0) >= 500:
             price *= (1.0 - self.job_perks.get('shop_discount', 0.0))
         if self.cash < price:
             print(COL.yellow(f"Not enough cash (${self.cash:,.2f}). This costs ${price:.0f}.")); return
@@ -1787,8 +1797,11 @@ class Game:
             if eff_key.startswith("device_amps:"):
                 continue  # already handled
             if isinstance(eff_val, str) and eff_val.startswith("+"):
-                try: mag = float(eff_val[1:]) * qty
-                except Exception: mag = 0
+                print(eff_key, eff_val)
+                try:
+                    mag = float(eff_val[1:]) * qty
+                except Exception:
+                    mag = 0
             elif eff_val == "install":
                 mag = 1
             else:
@@ -1810,11 +1823,11 @@ class Game:
         # ---- 6) Take the money only after success ----
         self.cash -= price
         print(COL.grey(f"Purchased {qty} × {item_id} for ${price:.0f}. Cash left: ${self.cash:,.2f}."))
-        if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
-            print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W/{self.solar_cap_watts:.0f} | "
-                           f"wind: {self.wind_watts:,.0f}W/{self.wind_cap_watts:.0f} | "
-                           f"EV range: {self.ev_range_mi:,.0f} mi | "
-                           f"caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
+        #if any(k in effects for k in ('solar_watts','wind_watts','ev_range_mi','water_cap_gallons','food_cap_rations')):
+        #    print(COL.grey(f"Upgrades — solar: {self.solar_watts:,.0f}W/{self.solar_cap_watts:.0f} | "
+        #                   f"wind: {self.wind_watts:,.0f}W/{self.wind_cap_watts:.0f} | "
+        #                   f"EV range: {self.ev_range_mi:,.0f} mi | "
+        #                   f"caps: {self.water_cap_gallons:.0f}G/{self.food_cap_rations} rations"))
 
     # ---------- Drivetrain Mode ----------
     def set_mode(self, mode):
@@ -1846,7 +1859,6 @@ class Game:
             self.battery = clamp(self.battery + add_pct, 0, 100)
             self.advance(int(hours*60))
             print(COL.green(f"Solar charging for {hours:.1f}h adds ~{add_pct:.1f}%. EV battery: {self.ev_battery:.0f}%."))
-
         elif method == 'generator':
             d = self.devices.get('generator', {})
             if not d.get('owned'):
@@ -2153,6 +2165,7 @@ def main():
 
     with open('WELCOME', "r", encoding="utf-8") as f:
         welcome_txt = f.read()
+        print(welcome_txt)
     os.system('cls' if os.name == 'nt' else 'clear')
     print(COL.blue(welcome_txt))
     input(COL.blue("Press ENTER to continue..."))

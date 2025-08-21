@@ -8,9 +8,13 @@ jeep:
   label: Jeep
   max_food_cap: 18
   max_water_cap: 30
+  gasoline_can_cap: 2.0
+  diesel_can_cap: 2.0
   mpg: 22
   solar_cap_watts: 200
   wind_cap_watts: 300
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 subaru:
   base_food_cap: 10
   base_water_cap: 25
@@ -23,6 +27,10 @@ subaru:
   mpg: 32
   solar_cap_watts: 400
   wind_cap_watts: 600
+  gasoline_can_cap: 2.0
+  diesel_can_cap: 2.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 prius:
   base_food_cap: 8
   base_water_cap: 25
@@ -35,6 +43,10 @@ prius:
   mpg: 30
   solar_cap_watts: 200
   wind_cap_watts: 300
+  gasoline_can_cap: 1.0
+  diesel_can_cap: 1.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 skoolie:
   base_food_cap: 24
   base_water_cap: 120
@@ -47,6 +59,10 @@ skoolie:
   mpg: 8
   solar_cap_watts: 1200
   wind_cap_watts: 900
+  gasoline_can_cap: 7.0
+  diesel_can_cap: 7.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 truck_camper:
   base_food_cap: 14
   base_water_cap: 60
@@ -59,6 +75,10 @@ truck_camper:
   mpg: 15
   solar_cap_watts: 200
   wind_cap_watts: 600
+  gasoline_can_cap: 4.0
+  diesel_can_cap: 4.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 van:
   base_food_cap: 12
   base_water_cap: 50
@@ -71,6 +91,10 @@ van:
   mpg: 16
   solar_cap_watts: 400
   wind_cap_watts: 600
+  gasoline_can_cap: 5.0
+  diesel_can_cap: 5.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 RV:
   base_food_cap: 20
   base_water_cap: 75
@@ -83,6 +107,10 @@ RV:
   mpg: 10
   solar_cap_watts: 800
   wind_cap_watts: 900
+  gasoline_can_cap: 6.0
+  diesel_can_cap: 6.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0
 motorhome:
   base_food_cap: 40
   base_water_cap: 80
@@ -95,3 +123,7 @@ motorhome:
   mpg: 5
   solar_cap_watts: 1200
   wind_cap_watts: 1200
+  gasoline_can_cap: 7.0
+  diesel_can_cap: 7.0
+  propane_lb_cap: 4.0
+  butane_can_cap: 4.0

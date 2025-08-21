@@ -47,13 +47,6 @@ items:
     effects:
       "device:fridge":      "install"
       "device_amps:fridge": "2"
-  gasoline:
-    requires: { level: 1 }
-    name: "Extra Fuel"
-    desc: "Jerry can full of gasoline fuel (1 gallon)."
-    price: 3.50
-    effects:
-      gasoline_can_gal: "+1"
   tent:
     requires: { level: 2 }
     name: "Tent"
@@ -95,22 +88,25 @@ items:
     name: "Diesel Fuel"
     desc: "Jerry can full of diesel fuel (1 gallon)."
     price: 3
-    effects: 
-      diesel_can_gal: "+1"
+    effects: { diesel_can_gal: "+1" }
+  gasoline:
+    requires: { level: 1 }
+    name: "Gasoline"
+    desc: "Jerry can full of gasoline fuel (1 gallon)."
+    price: 3
+    effects: { gasoline_can_gal: "+1" }
   battery:
     requires: { level: 3 }
     name: "House battery"
     desc: "Increase house battery capacity (100Ah+)."
     price: 999
-    effects:
-      house_cap_ah: "+100"
+    effects: { house_cap_ah: "+100" }
   ev_battery:
     requires: { level: 5 }
     name: "EV battery"
     desc: "Increase EV battery capacity (range+)."
     price: 1500
-    effects:
-      ev_range_mi: "+40"
+    effects: { ev_range_mi: "+50" }
   repair_manual:
     requires: { level: 10 }
     name: "Repair Manual"
