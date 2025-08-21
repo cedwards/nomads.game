@@ -934,18 +934,24 @@ class Game:
             print(COL.grey(f"EV Range: {self.ev_range_mi:.0f} miles"))
 
     def solar_power_status(self):
-        solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
-        print(COL.grey(f"  Solar Input: {self._solar_input_watts_now():,.0f}W"))
-        print(COL.grey(f"  Solar Current: {solar_current:.2f}A"))
-        print(COL.grey(f"  Current Capacity: {self.solar_watts:,.0f}W"))
-        print(COL.grey(f"  Vehicle Capacity: {self.solar_cap_watts:,.0f}W"))
+        if self.solar_watts == 0:
+            print(COL.yellow(f"You don't own any solar panels.")); return
+        else:
+            solar_current = self._solar_input_watts_now() / SYSTEM_VOLTAGE
+            print(COL.grey(f"  Solar Input: {self._solar_input_watts_now():,.0f}W"))
+            print(COL.grey(f"  Solar Current: {solar_current:.2f}A"))
+            print(COL.grey(f"  Current Capacity: {self.solar_watts:,.0f}W"))
+            print(COL.grey(f"  Vehicle Capacity: {self.solar_cap_watts:,.0f}W"))
 
     def wind_power_status(self):
-        wind_current = self._wind_input_watts_now() / SYSTEM_VOLTAGE
-        print(COL.grey(f"  Wind Input: {self._wind_input_watts_now():,.0f}W"))
-        print(COL.grey(f"  Wind Current: {wind_current:.2f}A"))
-        print(COL.grey(f"  Current Capacity: {self.wind_watts:,.0f}W"))
-        print(COL.grey(f"  Vehicle Capacity: {self.wind_cap_watts:,.0f}W"))
+        if self.wind_watts == 0:
+            print(COL.yellow(f"You don't own any wind turbines.")); return
+        else:
+            wind_current = self._wind_input_watts_now() / SYSTEM_VOLTAGE
+            print(COL.grey(f"  Wind Input: {self._wind_input_watts_now():,.0f}W"))
+            print(COL.grey(f"  Wind Current: {wind_current:.2f}A"))
+            print(COL.grey(f"  Current Capacity: {self.wind_watts:,.0f}W"))
+            print(COL.grey(f"  Vehicle Capacity: {self.wind_cap_watts:,.0f}W"))
 
     def bank(self):
         print(COL.green(f"You have ${self.cash:,.2f} dollars"))
@@ -2128,7 +2134,7 @@ def pick_from_dict(title, dct):
     keys = list(dct.keys())
     for i, k in enumerate(keys, 1):
         lab = dct[k].get("label", k)
-        print(f"  {i}) {lab} [{k}]")
+        print(f"  {i}) {lab}")
     while True:
         ans = input(COL.prompt("> ")).strip().lower() or random.choice(keys)
         if ans.isdigit():
@@ -2163,6 +2169,9 @@ def main():
     catalog = load_items_catalog()
     npcs = load_npcs()
 
+    title_image = random.choice(["title-1.png","title-2.png","title-3.png","title-4.png"])
+    show_image(title_image)
+    input(COL.blue("Press ENTER to begin."))
     with open('WELCOME', "r", encoding="utf-8") as f:
         welcome_txt = f.read()
         print(welcome_txt)
