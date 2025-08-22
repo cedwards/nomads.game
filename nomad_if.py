@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Nomad IF — Utah slice (cleaned build)
 # - Seasons/items loaded from YAML with robust parsing
 # - Colorized CLI prompt with time, net current, cash, level/XP
 # - Hiking: daylight-only, auto-limits near dusk
@@ -398,7 +397,7 @@ def load_items_catalog():
 def xp_needed_for_level(level):
     # Gentle curve
     if level <= 1: return 0
-    return int(100 * (level-1) ** 1.35 + 0.5)
+    return int(500 * (level-1) ** 1.35 + 0.5)
 
 def level_from_xp(xp):
     lvl = 1
@@ -501,6 +500,7 @@ class Game:
         self.route_idx = 0
 
         # EV / Fuel systems
+        self.odometer               = 0.0
         self.gasoline_can_gal       = 0.0
         self.gasoline_can_cap       = v["gasoline_can_cap"]
         self.ev_range_mi            = v["ev_range"] # range in miles

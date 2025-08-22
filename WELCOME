@@ -4,16 +4,18 @@
 # Welcome to Nomads! The only (known) text-based Nomad simulator, created by an  #
 # actual nomad.                                                                  #
 #                                                                                #
-# This game simulates life on the road traveling while living in a vehicle.      #
+# This game simulates life on the road while living in a vehicle.                #
 #                                                                                #
 # Feel free to experiment with different vehicles and job combinations to        #
-# discover your style!                                                           #
+# discover your style! Each combination comes with unique strengths and          #
+# weaknesses.                                                                    #
 #                                                                                #
 # ------------------------------------------------------------------------------ #
-# 
-# 
-#
-#
-#
-#
+#                                   OBJECTIVES                                   #
+#   1) Try not to die or get stuck. 💀                                           #
+#   2) Try not to run out of food or water. 🥫 / 🚰                              #
+#   3) Try not to run out of fuel or electricity. ⛽ / 🔋                        #
+#   4) Outfit your rig with solar, wind and other improvements. ☀️  / 🍃 / 🛰️    #
+#   5) NPCs will have quests for you, if you can find them. 🧔 / 🧑 / 👱         #
 ##################################################################################
+

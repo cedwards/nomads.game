@@ -25,6 +25,7 @@ nodes:
       scenery, but scripture written in geologic time.
     name: "Zion National Park"
     biome: canyon
+    sixel: zion.jpg
     elevation_ft: 4000
     season_rules: ["monsoon_flash_flood", "summer_heat"]
     resources: { water: "moderate", food: "moderate", gas: False, ev: False, solar: "poor", wind: "fair" }
@@ -62,6 +63,7 @@ nodes:
       sculpture garden where erosion doubles as artistry.
     name: "Bryce Canyon"
     biome: high_plateau
+    sixel: brycecanyon.jpg
     elevation_ft: 8000
     season_rules: ["cold_nights", "snow_shoulders"]
     resources: { water: "campground", food: "moderate", gas: True, ev: True, solar: "good", wind: "good" }
@@ -100,6 +102,7 @@ nodes:
       through time itself.
     name: "Capitol Reef"
     biome: desert_canyon
+    sixel: capitolreef.jpg
     elevation_ft: 5500
     season_rules: ["flash_floods", "shoulder_season_best"]
     resources: { water: "spigots", food: "nearby", gas: True, ev: True, solar: "good", wind: "poor" }
@@ -256,6 +259,7 @@ nodes:
       sense that you’ve wandered into Earth’s unfinished workshop.
     name: "San Rafael Swell"
     biome: high_desert
+    sixel: sanrafaelswell.jpg
     elevation_ft: 6000
     season_rules: ["windy_spring", "cold_winter_nights"]
     resources: { water: "none", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
@@ -333,6 +337,7 @@ nodes:
       where silence, reflection, and wilderness meet.
     name: "Mirror Lake Highway (Uintas)"
     biome: alpine
+    sixel: mirrorlakehighway.jpg
     elevation_ft: 8500
     season_rules: ["snow_closure", "mosquito_summer"]
     resources: { water: "limited", food: "none", gas: False, ev: False, solar: "poor", wind: "fair" }
@@ -370,6 +375,7 @@ nodes:
       the main attraction.
     name: "Valley of the Gods"
     biome: desert
+    sixel: valleyofthegods.jpg
     elevation_ft: 5200
     season_rules: ["monsoon_cells", "desert_extremes"]
     resources: { water: "none", food: "nearby", gas: True, ev: False, solar: "excellent", wind: "excellent" }
@@ -404,6 +410,7 @@ nodes:
       view; it’s a stage for awe, humbling anyone who stands at its edge.
     name: "Dead Horse Point"
     biome: mesa_desert
+    sixel: deadhorsepoint.jpg
     elevation_ft: 5900
     season_rules: ["monsoon_cells", "desert_extremes"]
     resources: { water: "none", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
@@ -476,9 +483,10 @@ nodes:
       desert’s vast, sculpted emptiness.
     name: "Antelope Island State Park"
     biome: arid
+    sixel: antelopeisland.jpg
     elevation_ft: 6600
     season_rules: ["monsoon_cells", "desert_extremes"]
-    resources: { water: "available", food: "none", gas: False, ev: False, solar: "good", wind: "excellent" }
+    resources: { water: "available", food: "none", gas: False, ev: False, solar: "fair", wind: "good" }
     pet_rules: "friendly"
     gigs:
       - { id: monumental_loop, window: "daylight", payout: [90, 180], rep: { nomads: 1 } }
