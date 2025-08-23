@@ -1676,8 +1676,10 @@ class Game:
 
     # ---------- Moab Shop ----------
     def shop(self):
-        if self.location != 'moab': print(COL.yellow("No outfitter here. Try Moab.")); return
-        print(COL.blue("Moab Outfitters — items (BUY <item_id> [qty])"))
+        if self.location not in ('moab','green_river','bryce'): print(COL.yellow("No outfitter here.")); return
+        loc = self.location.replace('_',' ').title()
+        print(loc)
+        print(COL.blue(f"{loc} Outfitters — items (BUY <item_id> [qty])"))
         for key, it in self.catalog.items():
             name = it.get("name", key)
             price = it.get("price", 0)
@@ -1737,8 +1739,8 @@ class Game:
         return purchased
 
     def buy(self, item_id, qty=1):
-        if self.location != 'moab':
-            print(COL.yellow("You need to be in Moab to buy gear.")); return
+        if self.location not in ('moab','bryce','green_river'):
+            print(COL.yellow("There are no shops here.")); return
     
         item_id = (item_id or '').lower()
         try: qty = int(qty)
@@ -1748,9 +1750,9 @@ class Game:
         if item_id not in self.catalog:
             print(COL.red("Unknown item id. Type SHOP to list items.")); return
     
-        item    = self.catalog[item_id]
-        effects = item.get("effects", {}) or {}
-        requires= item.get("requires", {}) or {}
+        item     = self.catalog[item_id]
+        effects  = item.get("effects", {}) or {}
+        requires = item.get("requires", {}) or {}
     
         # ---- 1) REQUIREMENTS FIRST (no side effects yet) ----
         need_lvl = int(requires.get("level", 0) or 0)
@@ -1802,7 +1804,6 @@ class Game:
             if eff_key.startswith("device_amps:"):
                 continue  # already handled
             if isinstance(eff_val, str) and eff_val.startswith("+"):
-                print(eff_key, eff_val)
                 try:
                     mag = float(eff_val[1:]) * qty
                 except Exception:
