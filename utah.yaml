@@ -25,7 +25,7 @@ nodes:
       scenery, but scripture written in geologic time.
     name: "Zion National Park"
     biome: canyon
-    sixel: zion.jpg
+    sixel: six/zion.six
     elevation_ft: 4000
     season_rules: ["monsoon_flash_flood", "summer_heat"]
     resources: { water: "moderate", food: "moderate", gas: False, ev: False, solar: "poor", wind: "fair" }
@@ -63,7 +63,7 @@ nodes:
       sculpture garden where erosion doubles as artistry.
     name: "Bryce Canyon"
     biome: high_plateau
-    sixel: brycecanyon.jpg
+    sixel: six/brycecanyon.six
     elevation_ft: 8000
     season_rules: ["cold_nights", "snow_shoulders"]
     resources: { water: "campground", food: "moderate", gas: True, ev: True, solar: "good", wind: "good" }
@@ -102,7 +102,7 @@ nodes:
       through time itself.
     name: "Capitol Reef"
     biome: desert_canyon
-    sixel: capitolreef.jpg
+    sixel: six/capitolreef.six
     elevation_ft: 5500
     season_rules: ["flash_floods", "shoulder_season_best"]
     resources: { water: "spigots", food: "nearby", gas: True, ev: True, solar: "good", wind: "poor" }
@@ -141,7 +141,7 @@ nodes:
       fragility becomes grandeur and where the land itself seems to be holding its
       breath.
     name: "Arches"
-    sixel: "delicate_arch.jpg"
+    sixel: six/delicate_arch.six
     biome: desert_canyon
     elevation_ft: 4100
     season_rules: ["timed_entry", "summer_heat"]
@@ -180,7 +180,7 @@ nodes:
       Canyonlands is vastness personified, a place that reminds you how small you are
       and how endless the desert can be.
     name: "Canyonlands"
-    sixel: mesa_arch.jpg
+    sixel: six/mesa_arch.six
     biome: mesa_desert
     elevation_ft: 6000
     shop_inventory: ["water"]
@@ -259,7 +259,7 @@ nodes:
       sense that you’ve wandered into Earth’s unfinished workshop.
     name: "San Rafael Swell"
     biome: high_desert
-    sixel: sanrafaelswell.jpg
+    sixel: six/sanrafaelswell.six
     elevation_ft: 6000
     season_rules: ["windy_spring", "cold_winter_nights"]
     resources: { water: "none", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
@@ -296,7 +296,7 @@ nodes:
       to the essentials: light, salt, sky, and the unsettling reminder that you are a
       small figure moving across an infinite canvas.
     name: "Bonneville Salt Flats"
-    sixel: salt_flats.jpg
+    sixel: six/salt_flats.six
     biome: salt_pan
     elevation_ft: 4225
     season_rules: ["spring_flooding", "summer_glare"]
@@ -337,7 +337,7 @@ nodes:
       where silence, reflection, and wilderness meet.
     name: "Mirror Lake Highway (Uintas)"
     biome: alpine
-    sixel: mirrorlakehighway.jpg
+    sixel: six/mirrorlakehighway.six
     elevation_ft: 8500
     season_rules: ["snow_closure", "mosquito_summer"]
     resources: { water: "limited", food: "none", gas: False, ev: False, solar: "poor", wind: "fair" }
@@ -375,7 +375,7 @@ nodes:
       the main attraction.
     name: "Valley of the Gods"
     biome: desert
-    sixel: valleyofthegods.jpg
+    sixel: six/valleyofthegods.six
     elevation_ft: 5200
     season_rules: ["monsoon_cells", "desert_extremes"]
     resources: { water: "none", food: "nearby", gas: True, ev: False, solar: "excellent", wind: "excellent" }
@@ -410,7 +410,7 @@ nodes:
       view; it’s a stage for awe, humbling anyone who stands at its edge.
     name: "Dead Horse Point"
     biome: mesa_desert
-    sixel: deadhorsepoint.jpg
+    sixel: six/deadhorsepoint.six
     elevation_ft: 5900
     season_rules: ["monsoon_cells", "desert_extremes"]
     resources: { water: "none", food: "none", gas: False, ev: False, solar: "excellent", wind: "excellent" }
@@ -483,7 +483,7 @@ nodes:
       desert’s vast, sculpted emptiness.
     name: "Antelope Island State Park"
     biome: arid
-    sixel: antelopeisland.jpg
+    sixel: six/antelopeisland.six
     elevation_ft: 6600
     season_rules: ["monsoon_cells", "desert_extremes"]
     resources: { water: "available", food: "none", gas: False, ev: False, solar: "fair", wind: "good" }

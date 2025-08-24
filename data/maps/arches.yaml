@@ -1,0 +1,48 @@
+id: arches
+world_node: arches
+start: arches_visitor_center
+rooms:
+  - id: arches_visitor_center
+    name: Arches National Park Visitor Center
+    camping: none
+    description: |
+      A low-slung complex of stone and steel rises at the base of the cliffs,
+      weather-colored to sit comfortably in its place. Inside: exhibits on arches’
+      improbable physics, a relief map that makes route choices obvious, and rangers
+      who’ve answered every version of “how long does Delicate Arch take?” Outside:
+      water, shade structures, and a steady breeze crossing the parking lot. It’s the
+      smart first stop—permits, restrooms, trail conditions—and a last good reality
+      check before you trade air-conditioning for desert sun. 
+    exits:
+      east: arches_national_park_gate
+      west: arches_visitor_center_parking
+    items: []
+  - id: arches_visitor_center_parking
+    name: Arches National Park Visitor Center, Parking Area
+    camping: none
+    description: |
+      A low-slung complex of stone and steel rises at the base of the cliffs,
+      weather-colored to sit comfortably in its place. Inside: exhibits on arches’
+      improbable physics, a relief map that makes route choices obvious, and rangers
+      who’ve answered every version of “how long does Delicate Arch take?” Outside:
+      water, shade structures, and a steady breeze crossing the parking lot. It’s the
+      smart first stop—permits, restrooms, trail conditions—and a last good reality
+      check before you trade air-conditioning for desert sun. 
+    exits:
+      east: arches_visitor_center
+      west: arches_scenic_drive_one
+    items: []
+  - id: arches_scenic_drive_one
+    name: Arches National Park Scenic Drive, Entrance
+    camping: none
+    description: |
+      A low-slung complex of stone and steel rises at the base of the cliffs,
+      weather-colored to sit comfortably in its place. Inside: exhibits on arches’
+      improbable physics, a relief map that makes route choices obvious, and rangers
+      who’ve answered every version of “how long does Delicate Arch take?” Outside:
+      water, shade structures, and a steady breeze crossing the parking lot. It’s the
+      smart first stop—permits, restrooms, trail conditions—and a last good reality
+      check before you trade air-conditioning for desert sun. 
+    exits:
+      east: arches_visitor_center_parking
+    items: []

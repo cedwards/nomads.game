@@ -1,0 +1,96 @@
+# quests.yaml
+weekend_at_the_swell:
+  title: "Weekend at the Swell"
+  why:
+    synopsis: "A quiet weekend becomes a small rite of passage in the San Rafael Swell."
+    track_tags: ["chronicle_maker", "ranger_ally"]
+  who:
+    player_role: "wanderer"
+    participants:
+      mir: { npc_id: "npc.mir", spawn: { where: "swell_camp", when: { date_between: ["2025-08-20","2025-08-31"] } } }
+      sheriff: { npc_id: "npc.sheriff_emery", arrival_hint: "patrol", optional: true }
+  when:
+    opens: { date_between: ["2025-08-20","2025-08-31"] }
+    expires: { date_after: "2025-09-15" }  # fail-forward window
+  where:
+    hub: "swell_camp"
+    hike_trail: "swell_morning_trail"
+  prerequisites: []
+  beats:
+    - id: morning_hike
+      kind: action
+      require:
+        all:
+          - { interaction: "hike", where: "swell_morning_trail" }
+          - { time_between: ["sunrise","10:00"] }
+          - { is_first_action_of_day: true }
+      on_start_text: "First light knits the canyon edges together. Time to stretch the legs."
+      on_complete_text: "You crest the ridge as the sun clears the reef."
+    - id: greet_stranger
+      kind: talk
+      require:
+        all:
+          - { interaction: "greet", target: "mir", where_near: "swell_morning_trail" }
+      dialogue:
+        prompt_npc: "Mir nods from the shade of a juniper. 'Morning.'"
+        topics_accept: ["hello","greeting"]
+      on_complete_text: "You trade names; the morning quiet reassembles."
+    - id: share_meal
+      kind: social
+      require:
+        all:
+          - { interaction: "share_meal", with: "mir", where: "swell_camp" }
+      affordances:
+        offer_by_npc:
+          npc: "mir"
+          topic: "breakfast"
+          requires_any_item: ["coffee","fried_bread","fried_eggs"]
+          fallback: { consume_time_minutes: 20 }  # if no items, you still share time
+      on_complete_text: "Coffee steam, canyon breeze. Simple is holy."
+    - id: welcome_sheriff
+      kind: talk
+      optional: true
+      require:
+        all:
+          - { event: "npc_arrival", npc: "sheriff", where: "swell_camp" }
+          - { interaction: "welcome", target: "sheriff" }
+      dialogue:
+        topics_accept: ["welcome","howdy","all_clear"]
+      on_complete_text: "A friendly nod; a note in the patrol log."
+    - id: camp_with_mir
+      kind: camp
+      require:
+        all:
+          - { interaction: "camp_with", with: "mir", where: "swell_camp" }
+          - { time_between: ["18:00","23:59"] }
+      on_complete_text: "Lantern light draws a small circle against the reef."
+    - id: receive_blessing
+      kind: ritual
+      require:
+        all:
+          - { interaction: "receive_blessing", from: "mir", where: "swell_camp" }
+      affordances:
+        blessing:
+          type: "spoken"
+          topic: "blessing"
+          effect_tags: ["blessed_by_mir"]
+      on_complete_text: "Mir places a hand on your shoulder, words soft as dust."
+  success_if:
+    all: [{ beat_done: "morning_hike" }, { beat_done: "greet_stranger" }, { beat_done: "share_meal" }, { beat_done: "camp_with_mir" }, { beat_done: "receive_blessing" }]
+  rewards:
+    credits: 0
+    reputation: { chronicle_maker: 8, ranger_ally: 2 }
+    perks: ["calm_nights:+1"]  # example QOL buff
+    memories:
+      add: ["weekend_with_mir_2025"]
+  fail_forward:
+    partials:
+      if_missed_window:
+        allow_reentry_on: { date_between: ["2025-09-01","2025-09-10"] }
+        reputation: { chronicle_maker: 3 }
+      if_no_items_for_meal:
+        still_complete: "share_meal"
+        reduce_rep: 1
+      if_sheriff_not_welcomed:
+        note: "No penalty. Optional courtesy."
+

@@ -61,8 +61,7 @@ def load_local_maps(maps_root="data/maps"):
             continue
 
         # derive id from filename if absent
-        import os as _os
-        mid = data.get("id") or _os.path.splitext(_os.path.basename(p))[0]
+        mid = data.get("id") or os.path.splitext(os.path.basename(p))[0]
         data["id"] = mid
 
         # index rooms by id
@@ -2169,7 +2168,7 @@ def main():
     catalog = load_items_catalog()
     npcs = load_npcs()
 
-    title_image = random.choice(["title-1.png","title-2.png","title-3.png","title-4.png"])
+    title_image = random.choice(["six/title-1.six","six/title-2.six","six/title-3.six","six/title-4.six"])
     show_image(title_image)
     input(COL.blue("---------------------------------------[Press ENTER to begin]---------------------------------------"))
     with open('WELCOME', "r", encoding="utf-8") as f:
@@ -2218,7 +2217,7 @@ def main():
             game.enter_map()  # auto-picks the map tied to this overworld node
             continue
         
-        elif u in ("LEAVE","EXIT MAP"):
+        elif u in ("LEAVE","LEAVE CAR","EXIT CAR","EXIT VEHICLE","PARK CAR"):
             game.leave_map(); continue
         elif u.startswith('LOOK'):
             # Forms:

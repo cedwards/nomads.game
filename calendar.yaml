@@ -1,0 +1,17 @@
+year_length: 365        # matches your seasons: 90+120+90+60
+months:
+  - { id: "Mar", days: 31, season: "winter" }
+  - { id: "Apr", days: 30, season: "spring" }
+  - { id: "May", days: 31, season: "spring" }
+  - { id: "Jun", days: 30, season: "summer" }
+  - { id: "Jul", days: 31, season: "summer" }
+  - { id: "Aug", days: 31, season: "summer" }
+  - { id: "Sep", days: 30, season: "summer" } # monsoon window lives here
+  - { id: "Oct", days: 31, season: "autumn" }
+  - { id: "Nov", days: 30, season: "autumn" }
+  - { id: "Dec", days: 31, season: "winter" }
+  - { id: "Jan", days: 31, season: "winter" }
+  - { id: "Feb", days: 30, season: "winter" }
+weekdays: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+epoch: { year: 1, month_index: 0, day: 1 }  # start-of-world anchor
+
